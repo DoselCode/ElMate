@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button } from "@/components/ui/button";
-import { Field, inputClass, inputErrorClass } from "@/components/ui/field";
-import { signInAction, type LoginState } from "./actions";
+import { signInAction, type LoginState } from "@/back/admin/auth/actions";
+import { Button } from "@/front/shared/ui/button";
+import { Field, inputClass, inputErrorClass } from "@/front/shared/ui/field";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState<LoginState, FormData>(signInAction, undefined);

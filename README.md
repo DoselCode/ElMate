@@ -40,12 +40,15 @@ Los tests de base de datos corren las migraciones reales sobre [PGlite](https://
 ## Cómo está armado
 
 ```
-supabase/migrations/   modelo de datos, RLS, funciones SQL, vistas
-src/proxy.ts           refresca la sesión y manda al login (chequeo optimista)
-src/lib/auth.ts        capa de acceso: usuario actual, requireStaff / requireAdmin
-src/lib/schemas/       validación Zod compartida entre formulario y servidor
-src/app/admin/         login y panel (stock, movimientos, formulario de producto)
+supabase/          base de datos: migraciones (tablas, RLS, funciones SQL, vistas) y seed
+src/app/           rutas de Next.js: cada página pide datos al back y los dibuja con el front
+src/front/         componentes React       → admin/ · landing/ · shared/ (ui y estilos)
+src/back/          datos, permisos, acciones → admin/ · landing/ · shared/ (Supabase)
+src/shared/        validaciones, tipos y formatos que usan front y back
+tests/db/          tests de la base sobre Postgres en memoria
 ```
+
+Detalle, reglas de qué puede importar qué y dónde va cada cosa nueva: [docs/ESTRUCTURA.md](docs/ESTRUCTURA.md).
 
 ### Decisiones de diseño
 

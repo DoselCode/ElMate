@@ -4,39 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Plus, Trash, X } from "@phosphor-icons/react";
-import { Button, buttonClass } from "@/components/ui/button";
-import { Field, inputClass, TextField } from "@/components/ui/field";
-import { Modal } from "@/components/ui/modal";
-import { fieldErrors, productSchema, type ProductInput } from "@/lib/schemas/product";
-import type { Option } from "@/lib/types";
-import { archiveProductAction, saveProductAction } from "./actions";
+import { archiveProductAction, saveProductAction } from "@/back/admin/stock/actions";
+import { Button, buttonClass } from "@/front/shared/ui/button";
+import { Field, inputClass, TextField } from "@/front/shared/ui/field";
+import { Modal } from "@/front/shared/ui/modal";
+import { fieldErrors, productSchema, type ProductInput } from "@/shared/schemas/product";
+import type { Option, ProductForEdit, VariantForEdit } from "@/shared/types";
 import { ImageUploader } from "./image-uploader";
 
-export type VariantInitial = {
-  id: string;
-  sku: string;
-  barcode: string | null;
-  attributes: Record<string, string>;
-  price: number;
-  cost: number;
-  minStock: number;
-  stock: number;
-  active: boolean;
-};
-
-export type ProductInitial = {
-  id: string;
-  name: string;
-  description: string;
-  categoryId: string | null;
-  supplierId: string | null;
-  optionNames: string[];
-  images: string[];
-  isVisible: boolean;
-  badge: string | null;
-  variants: VariantInitial[];
-};
-
+/** Estado de una variante mientras se edita: los números se guardan como texto (lo que tipea el usuario). */
 type VariantDraft = {
   key: string;
   id?: string;
@@ -72,7 +48,7 @@ function emptyVariant(from?: VariantDraft): VariantDraft {
   };
 }
 
-function toDraft(v: VariantInitial): VariantDraft {
+function toDraft(v: VariantForEdit): VariantDraft {
   return {
     key: v.id,
     id: v.id,
@@ -104,7 +80,7 @@ export function ProductForm({
   categories,
   suppliers,
 }: {
-  initial?: ProductInitial;
+  initial?: ProductForEdit;
   categories: Option[];
   suppliers: Option[];
 }) {

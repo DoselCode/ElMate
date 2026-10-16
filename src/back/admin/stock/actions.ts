@@ -1,13 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getAdminOrNull } from "@/lib/auth";
-import { friendlyDbError } from "@/lib/db-errors";
-import { fieldErrors, productSchema, toSavePayload } from "@/lib/schemas/product";
-import { stockAdjustSchema, stockInSchema } from "@/lib/schemas/stock";
-import { slugify, uniqueSlug } from "@/lib/slug";
-import { createClient } from "@/lib/supabase/server";
-import type { ActionResult } from "@/lib/types";
+import { getAdminOrNull } from "@/back/admin/auth/session";
+import { friendlyDbError } from "@/back/shared/db-errors";
+import { createClient } from "@/back/shared/supabase/server";
+import { fieldErrors, productSchema, toSavePayload } from "@/shared/schemas/product";
+import { stockAdjustSchema, stockInSchema } from "@/shared/schemas/stock";
+import { slugify, uniqueSlug } from "@/shared/slug";
+import type { ActionResult } from "@/shared/types";
+
+/**
+ * Escrituras del panel de stock (Server Actions). Las llama el front; cada una valida permiso y
+ * datos acá, y delega la operación a una función SQL transaccional en la base.
+ */
 
 const NOT_ALLOWED = { ok: false, error: "Solo un administrador puede hacer esto." } as const;
 const INVALID = { ok: false, error: "Revisá los datos ingresados." } as const;

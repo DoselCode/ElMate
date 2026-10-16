@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowsLeftRight, Package, SignOut } from "@phosphor-icons/react";
-import { signOutAction } from "@/app/admin/login/actions";
+import { signOutAction } from "@/back/admin/auth/actions";
+import type { Role } from "@/shared/types";
 
+/** Secciones del panel. Para agregar una pantalla nueva, sumarla acá. */
 const items = [
-  { href: "/admin/stock", label: "Inventario y stock", icon: Package, exact: true },
-  { href: "/admin/stock/movements", label: "Movimientos", icon: ArrowsLeftRight, exact: false },
+  { href: "/admin/stock", label: "Inventario y stock", icon: Package },
+  { href: "/admin/stock/movements", label: "Movimientos", icon: ArrowsLeftRight },
 ] as const;
 
-export function Sidebar({ userName, role }: { userName: string; role: "admin" | "empleado" }) {
+export function Sidebar({ userName, role }: { userName: string; role: Role }) {
   const pathname = usePathname();
 
   // /admin/stock también es prefijo de /admin/stock/movements: el activo es el más específico

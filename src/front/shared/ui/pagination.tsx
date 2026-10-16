@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { buildQuery } from "@/lib/query";
+import { buildQuery } from "@/shared/query";
 
 /** Paginación por links (funciona sin JS). `params` son los filtros vigentes a conservar. */
 export function Pagination({

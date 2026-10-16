@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/button";
-import { Field, inputClass, inputErrorClass } from "@/components/ui/field";
-import { Modal } from "@/components/ui/modal";
-import { formatMoney, formatSigned } from "@/lib/format";
-import type { StockRow } from "@/lib/types";
-import { adjustStockAction, registerStockInAction } from "./actions";
+import { adjustStockAction, registerStockInAction } from "@/back/admin/stock/actions";
+import { Button } from "@/front/shared/ui/button";
+import { Field, inputClass, inputErrorClass } from "@/front/shared/ui/field";
+import { Modal } from "@/front/shared/ui/modal";
+import { formatMoney, formatSigned } from "@/shared/format";
+import type { StockRow } from "@/shared/types";
 
 /** "12" → 12, "" → NaN (el esquema lo rechaza con un mensaje claro). */
 const num = (s: string) => (s.trim() === "" ? Number.NaN : Number(s));

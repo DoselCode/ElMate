@@ -1,9 +1,13 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/back/shared/supabase/server";
+import type { Role } from "@/shared/types";
 
-export type Role = "admin" | "empleado";
+/**
+ * Sesión y permisos del panel. Es la única puerta para saber quién está logueado y qué puede hacer:
+ * páginas, consultas y acciones del admin pasan por acá.
+ */
 
 export type CurrentUser = {
   id: string;

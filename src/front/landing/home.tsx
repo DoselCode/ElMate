@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-// Placeholder: la landing y el catálogo público son la siguiente fase.
-export default function Home() {
+/** Portada provisoria. La landing y el catálogo público son la próxima fase. */
+export function LandingHome() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
       <h1 className="font-serif text-4xl font-bold">El Mate</h1>

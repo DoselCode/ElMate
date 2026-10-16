@@ -19,9 +19,13 @@ Stack: Next.js 16 · TypeScript · Tailwind v4 · Supabase (Postgres, Auth, Stor
 - Alta y edición de producto con variantes y fotos (se comprimen en el navegador).
 - Ingreso de mercadería, ajuste manual y recuento de inventario.
 - Historial de movimientos.
-- Diseño tomado del panel de El Terruño (paleta como base provisoria, centralizada en `src/app/globals.css`).
+- Diseño tomado del panel de El Terruño (paleta como base provisoria, centralizada en `src/front/shared/styles/globals.css`).
 
-### 3. Calidad
+### 3. Estructura del código
+- Separado en **front** (componentes) y **back** (datos, permisos, acciones), cada uno dividido en **admin** y **landing**, más `shared/` para lo común. Las páginas de `src/app/` solo enrutan.
+- Guía completa: [ESTRUCTURA.md](ESTRUCTURA.md).
+
+### 4. Calidad
 - 43 tests: base de datos real en memoria (PGlite) con admin/empleado/anónimo, más validaciones.
 - Lint, typecheck y build de producción sin errores.
 

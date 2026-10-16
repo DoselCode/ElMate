@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useId, useRef, useState } from "react";
 import { ArrowLeft, Star, Trash, UploadSimple } from "@phosphor-icons/react";
-import { createClient } from "@/lib/supabase/browser";
+import { uploadProductImage } from "@/back/admin/stock/images";
 
 const MAX_IMAGES = 6;
 const MAX_SOURCE_BYTES = 15 * 1024 * 1024;
@@ -54,36 +54,25 @@ export function ImageUploader({
     if (files.length > room) setMessage(`Se pueden cargar hasta ${MAX_IMAGES} imágenes; se subieron solo las primeras.`);
 
     setUploading(true);
-    const supabase = createClient();
     const uploaded: string[] = [];
-    try {
-      for (const file of picked) {
-        if (!file.type.startsWith("image/")) {
-          setMessage(`"${file.name}" no es una imagen.`);
-          continue;
-        }
-        if (file.size > MAX_SOURCE_BYTES) {
-          setMessage(`"${file.name}" pesa más de 15 MB.`);
-          continue;
-        }
-        const { blob, ext } = await compressImage(file);
-        const path = `${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("product-images").upload(path, blob, {
-          contentType: blob.type,
-          cacheControl: "31536000",
-        });
-        if (upErr) {
-          setMessage("No se pudo subir una imagen. Probá de nuevo.");
-          continue;
-        }
-        uploaded.push(supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl);
+    for (const file of picked) {
+      if (!file.type.startsWith("image/")) {
+        setMessage(`"${file.name}" no es una imagen.`);
+        continue;
       }
-    } catch {
-      setMessage("No se pudo procesar una de las imágenes.");
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
+      if (file.size > MAX_SOURCE_BYTES) {
+        setMessage(`"${file.name}" pesa más de 15 MB.`);
+        continue;
+      }
+      try {
+        const { blob, ext } = await compressImage(file);
+        uploaded.push(await uploadProductImage(blob, ext));
+      } catch {
+        setMessage(`No se pudo subir "${file.name}". Probá de nuevo.`);
+      }
     }
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
     if (uploaded.length) onChange([...images, ...uploaded]);
   }
 

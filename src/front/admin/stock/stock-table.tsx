@@ -4,9 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PencilSimple, PlusCircle, SlidersHorizontal, Package } from "@phosphor-icons/react";
-import { Badge } from "@/components/ui/badge";
-import { formatMoney } from "@/lib/format";
-import type { StockRow } from "@/lib/types";
+import { Badge } from "@/front/shared/ui/badge";
+import { formatMoney } from "@/shared/format";
+import type { StockRow } from "@/shared/types";
 import { StockAdjustDialog, StockInDialog } from "./stock-dialogs";
 
 function Thumb({ src, alt }: { src: string | null; alt: string }) {

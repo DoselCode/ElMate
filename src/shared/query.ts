@@ -1,12 +1,16 @@
-type Params = Record<string, string | string[] | undefined>;
+/** Helpers de parámetros de URL (?q=...&page=2), usados por las consultas y por la paginación. */
+
+export type SearchParams = Record<string, string | string[] | undefined>;
+
+export const PAGE_SIZE = 25;
 
 /** Valor de un searchParam como string (si viene repetido, el primero). */
-export function param(sp: Params, key: string): string {
+export function param(sp: SearchParams, key: string): string {
   const v = sp[key];
   return (Array.isArray(v) ? v[0] : v)?.trim() ?? "";
 }
 
-export function pageParam(sp: Params): number {
+export function pageParam(sp: SearchParams): number {
   const n = Number.parseInt(param(sp, "page"), 10);
   return Number.isFinite(n) && n > 0 ? Math.min(n, 10_000) : 1;
 }
@@ -28,5 +32,3 @@ export function buildQuery(params: Record<string, string | number | undefined | 
   const s = usp.toString();
   return s ? `?${s}` : "";
 }
-
-export const PAGE_SIZE = 25;

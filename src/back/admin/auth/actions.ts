@@ -2,7 +2,9 @@
 
 import { redirect } from "next/navigation";
 import * as z from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/back/shared/supabase/server";
+
+/** Login y logout del panel (Server Actions). */
 
 const credentials = z.object({
   email: z.email({ error: "Ingresá un email válido" }).trim(),
