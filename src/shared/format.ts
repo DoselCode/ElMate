@@ -1,7 +1,7 @@
 const TIME_ZONE = "America/Argentina/Buenos_Aires";
 
-const money = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 2 });
-const moneyRound = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+const amount = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const amountRound = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const dateTime = new Intl.DateTimeFormat("es-AR", {
   timeZone: TIME_ZONE,
   day: "2-digit",
@@ -11,12 +11,13 @@ const dateTime = new Intl.DateTimeFormat("es-AR", {
   minute: "2-digit",
 });
 
-/** $ 12.500 si es entero, $ 12.500,50 si tiene centavos. */
+/** $12.500 si es entero, $12.500,50 si tiene centavos (sin espacio después del $, como en el diseño). */
 export function formatMoney(value: number | string | null | undefined): string {
   if (value === null || value === undefined || value === "") return "—";
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  return Number.isInteger(n) ? moneyRound.format(n) : money.format(n);
+  const digits = Number.isInteger(n) ? amountRound.format(Math.abs(n)) : amount.format(Math.abs(n));
+  return `${n < 0 ? "−" : ""}$${digits}`;
 }
 
 export function formatDateTime(value: string | Date): string {

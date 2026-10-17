@@ -24,7 +24,7 @@ export function MovementsScreen({ list, filters }: { list: Paged<MovementRow>; f
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-serif text-2xl font-bold">Movimientos de stock</h1>
+        <h1 className="font-display text-2xl font-bold">Movimientos de stock</h1>
         <p className="mt-1 text-sm text-muted">
           Registro de todo lo que entró y salió. No se puede editar ni borrar: las correcciones se hacen con un ajuste.
         </p>

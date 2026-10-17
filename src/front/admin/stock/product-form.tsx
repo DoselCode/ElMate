@@ -20,6 +20,8 @@ type VariantDraft = {
   barcode: string;
   attributes: Record<string, string>;
   price: string;
+  /** Precio anterior (tachado en la web). Vacío = sin oferta. */
+  compareAt: string;
   cost: string;
   minStock: string;
   initialStock: string;
@@ -41,6 +43,7 @@ function emptyVariant(from?: VariantDraft): VariantDraft {
     barcode: "",
     attributes: {},
     price: from?.price ?? "",
+    compareAt: from?.compareAt ?? "",
     cost: from?.cost ?? "",
     minStock: from?.minStock ?? "0",
     initialStock: "0",
@@ -56,6 +59,7 @@ function toDraft(v: VariantForEdit): VariantDraft {
     barcode: v.barcode ?? "",
     attributes: v.attributes,
     price: String(v.price),
+    compareAt: v.compareAtPrice === null ? "" : String(v.compareAtPrice),
     cost: String(v.cost),
     minStock: String(v.minStock),
     initialStock: "0",
@@ -67,7 +71,7 @@ function toDraft(v: VariantForEdit): VariantDraft {
 function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
     <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
-      <h2 className="font-serif text-lg font-bold">{title}</h2>
+      <h2 className="font-display text-lg font-bold">{title}</h2>
       {description && <p className="mb-4 mt-0.5 text-sm text-muted">{description}</p>}
       {!description && <div className="mb-4" />}
       {children}
@@ -155,6 +159,7 @@ export function ProductForm({
         barcode: v.barcode,
         attributes: v.attributes,
         price: num(v.price),
+        compareAtPrice: v.compareAt.trim() === "" ? null : num(v.compareAt),
         cost: v.cost.trim() === "" ? 0 : num(v.cost),
         minStock: v.minStock.trim() === "" ? 0 : num(v.minStock),
         initialStock: v.initialStock.trim() === "" ? 0 : num(v.initialStock),
@@ -208,7 +213,7 @@ export function ProductForm({
   return (
     <form onSubmit={submit} noValidate className="mx-auto max-w-4xl space-y-6 pb-10">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-2xl font-bold">{isEdit ? "Editar producto" : "Nuevo producto"}</h1>
+        <h1 className="font-display text-2xl font-bold">{isEdit ? "Editar producto" : "Nuevo producto"}</h1>
         <Link href="/admin/stock" className={buttonClass("ghost")}>
           Volver al inventario
         </Link>
@@ -426,6 +431,18 @@ export function ProductForm({
                     value={v.price}
                     error={err(`${p}.price`)}
                     onChange={(e) => patchVariant(v.key, { price: e.target.value })}
+                  />
+                  <TextField
+                    id={`${idp}-compare`}
+                    label="Precio anterior"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
+                    value={v.compareAt}
+                    hint="Opcional: se muestra tachado como oferta"
+                    error={err(`${p}.compareAtPrice`)}
+                    onChange={(e) => patchVariant(v.key, { compareAt: e.target.value })}
                   />
                   <TextField
                     id={`${idp}-cost`}

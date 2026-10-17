@@ -11,33 +11,44 @@ ElMate/
 ├── src/
 │   ├── app/                   RUTAS — solo enrutamiento, sin lógica ni diseño
 │   │   ├── layout.tsx         layout raíz (fuentes, estilos globales)
-│   │   ├── (landing)/         web pública  →  /
+│   │   ├── (landing)/         web pública: /, /tienda, /producto/[slug]
 │   │   └── admin/             panel        →  /admin/...
 │   │       ├── login/
-│   │       └── (panel)/       todo lo que requiere sesión (stock, movimientos…)
+│   │       └── (panel)/       todo lo que requiere sesión (stock, movimientos, datos del local)
 │   │
 │   ├── front/                 FRONT — componentes React
 │   │   ├── admin/
 │   │   │   ├── auth/          pantalla y formulario de login
 │   │   │   ├── layout/        marco del panel (menú lateral)
+│   │   │   ├── settings/      formulario "Datos del local"
 │   │   │   └── stock/         inventario, movimientos, formulario de producto, diálogos
-│   │   ├── landing/           portada (provisoria) y, a futuro, catálogo
+│   │   ├── landing/
+│   │   │   ├── content.ts     textos fijos editables (hero, beneficios, títulos de secciones)
+│   │   │   ├── layout/        header, footer, logo y marco de las páginas públicas
+│   │   │   ├── home/          secciones de la home
+│   │   │   ├── shop/          /tienda (categorías, búsqueda, orden, ofertas)
+│   │   │   ├── product/       /producto (fotos, elección de variante)
+│   │   │   ├── catalog/       tarjeta de producto, precio, imagen, botón de carrito
+│   │   │   └── cart/          carrito (estado en el navegador) y panel que arma el WhatsApp
 │   │   └── shared/
 │   │       ├── ui/            botón, campo, modal, badge, paginación, estados vacíos
-│   │       └── styles/        globals.css (colores y tokens de marca)
+│   │       └── styles/        globals.css (colores y tipografías de marca)
 │   │
 │   ├── back/                  BACK — solo corre en el servidor (salvo images.ts)
 │   │   ├── admin/
 │   │   │   ├── auth/          session.ts (quién está logueado, requireStaff/requireAdmin)
 │   │   │   │                  actions.ts (login / logout)
+│   │   │   ├── settings/      queries.ts y actions.ts de "Datos del local"
 │   │   │   └── stock/         queries.ts (lecturas), actions.ts (escrituras),
 │   │   │                      images.ts (subida de fotos a Storage)
-│   │   ├── landing/           lecturas públicas del catálogo (próxima fase)
+│   │   ├── landing/           catalog.ts (lo que usan las páginas) + fuente Supabase o demo
 │   │   └── shared/            clientes de Supabase, sesión del proxy, errores de base
 │   │
 │   ├── shared/                COMPARTIDO — lo usan front y back
 │   │   ├── schemas/           validaciones Zod (formulario y servidor usan las mismas)
 │   │   ├── types.ts           tipos de datos (filas, filtros, resultados)
+│   │   ├── cart.ts            operaciones del carrito (funciones puras)
+│   │   ├── whatsapp.ts        número de WhatsApp y mensaje del pedido
 │   │   ├── format.ts          formato de plata, fechas y cantidades
 │   │   ├── query.ts           parámetros de URL y paginación
 │   │   └── slug.ts            "Mate Imperial" → "mate-imperial"
@@ -84,10 +95,11 @@ app/admin/(panel)/stock/page.tsx          1. recibe la URL
 3. `app/admin/(panel)/ventas/page.tsx`, que solo une las dos cosas.
 4. Sumar el link en `front/admin/layout/sidebar.tsx`.
 
-**Una sección de la landing** (por ejemplo, el catálogo):
-1. `back/landing/catalog.ts`, que lee las vistas `public_*`.
-2. `front/landing/catalog/...`.
-3. `app/(landing)/catalogo/page.tsx`.
+**Una página o sección de la landing** (por ejemplo, "Preguntas frecuentes"):
+1. Si necesita datos: una función en `back/landing/catalog.ts` (y en las dos fuentes, Supabase y demo), que lee las vistas `public_*`.
+2. `front/landing/faq/faq-screen.tsx`.
+3. `app/(landing)/preguntas-frecuentes/page.tsx`.
+4. Si es un texto fijo, va en `front/landing/content.ts`.
 
 **Un componente que usan admin y landing:** va en `front/shared/ui/`.
 **Un cambio en la base:** una migración nueva en `supabase/migrations/` y su test en `tests/db/`.

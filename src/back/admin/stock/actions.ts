@@ -17,8 +17,9 @@ import type { ActionResult } from "@/shared/types";
 const NOT_ALLOWED = { ok: false, error: "Solo un administrador puede hacer esto." } as const;
 const INVALID = { ok: false, error: "Revisá los datos ingresados." } as const;
 
+/** Refresca el panel y la web pública (precios, stock y ofertas cambian en la tienda al instante). */
 function refreshStock() {
-  revalidatePath("/admin/stock", "layout");
+  revalidatePath("/", "layout");
 }
 
 export async function saveProductAction(input: unknown): Promise<ActionResult<{ id: string }>> {

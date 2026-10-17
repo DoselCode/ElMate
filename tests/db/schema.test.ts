@@ -433,3 +433,57 @@ describe("panel de stock", () => {
     expect(log.find((m) => m.type === "ajuste")?.reason).toBe("Rotura");
   });
 });
+
+describe("web pública: ofertas, categorías y más vendidos", () => {
+  it("el precio anterior tiene que ser mayor al precio", async () => {
+    await expect(
+      saveProduct(adminId, { name: "Mate mal", slug: "mate-mal", variants: [{ sku: "MAL-1", price: 1000, compare_at_price: 900 }] }),
+    ).rejects.toThrow(/check|compare_at_price/i);
+  });
+
+  it("la tarjeta muestra la variante más barata con su precio anterior y % de descuento", async () => {
+    const [cat] = await rows("insert into public.categories (name, slug) values ('Termos', 'termos') returning id");
+    await saveProduct(adminId, {
+      name: "Termo Oferta",
+      slug: "termo-oferta",
+      category_id: cat.id,
+      option_names: ["Color"],
+      variants: [
+        { sku: "TO-VERDE", attributes: { Color: "Verde" }, price: 50000, compare_at_price: 60000, initial_stock: 3 },
+        { sku: "TO-NEGRO", attributes: { Color: "Negro" }, price: 55000 },
+      ],
+    });
+    const [p] = await as("anon", () => rows("select * from public.public_products where slug = 'termo-oferta'"));
+    expect(Number(p.price)).toBe(50000);
+    expect(Number(p.compare_at_price)).toBe(60000);
+    expect(p.discount_pct).toBe(17);
+    expect(p.variant_count).toBe(2);
+    expect(p.has_price_range).toBe(true); // 50.000 y 55.000
+    expect(p.in_stock).toBe(true);
+    expect(p.category_slug).toBe("termos");
+
+    const variants = await as("anon", () => rows("select label, in_stock from public.public_variants where product_id = $1 order by label", [p.id]));
+    expect(variants).toEqual([
+      { label: "Negro", in_stock: false },
+      { label: "Verde", in_stock: true },
+    ]);
+  });
+
+  it("las categorías cuentan solo productos visibles", async () => {
+    const count = async () =>
+      (await as("anon", () => rows("select product_count from public.public_categories where slug = 'termos'")))[0].product_count;
+    expect(await count()).toBe(1);
+    await rows("update public.products set is_visible = false where slug = 'termo-oferta'");
+    expect(await count()).toBe(0);
+    await rows("update public.products set is_visible = true where slug = 'termo-oferta'");
+  });
+
+  it("los más vendidos salen de ventas pagadas, sin exponer cantidades", async () => {
+    const best = await as("anon", () => rows("select * from public.public_best_sellers"));
+    expect(Object.keys(best[0]).sort()).toEqual(["product_id", "rank"]);
+    const [mate] = await rows("select id from public.products where slug = 'mate-imperial'");
+    expect(best.find((b) => b.rank === 1)?.product_id).toBe(mate.id);
+    // anon no puede leer las ventas de las que sale el ranking
+    await expect(as("anon", () => rows("select * from public.sale_items"))).rejects.toThrow(/permission denied/);
+  });
+});

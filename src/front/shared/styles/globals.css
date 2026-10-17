@@ -1,31 +1,35 @@
 @import "tailwindcss";
 
 /*
- * Tokens de marca. Partimos de la paleta del panel de El Terruño (verde oliva + tierra);
- * cuando ElMate defina su identidad se cambia solo acá.
+ * Tokens de marca ElMate (Diseño 2 de Figma): verde mate, crema y verde claro.
+ * Los usan la web pública y el panel. Para cambiar la identidad, se cambia solo acá.
+ * Contraste verificado: texto blanco sobre primary 6.5:1, muted sobre background 5.5:1, sale 4.6:1.
  */
 :root {
-  --primary: #55633d;
-  --primary-hover: #445030;
-  --primary-soft: #eef0e6;
-  --background: #f7f5ee;
+  --primary: #2b6a3e;
+  --primary-hover: #235834;
+  --primary-deep: #173f28;
+  --primary-soft: #e7f0da;
+  --background: #f8f6ee;
   --surface: #ffffff;
-  --foreground: #3d2c23;
-  --muted: #6f5f56;
-  --border: #ebe6d8;
-  --border-strong: #c8bdae;
-  --accent: #8b7355;
+  --foreground: #1d2a20;
+  --muted: #5b675c;
+  --border: #e8e4d6;
+  --border-strong: #cfc9b6;
+  --accent: #b4561a;
+  --sale: #d63a3a;
   --danger: #b42318;
   --danger-soft: #fdeceb;
   --warning: #92400e;
   --warning-soft: #fff5e6;
-  --success: #3f6b2a;
-  --success-soft: #e6f4e1;
+  --success: #2b6a3e;
+  --success-soft: #e7f0da;
 }
 
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-deep: var(--primary-deep);
   --color-primary-soft: var(--primary-soft);
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -34,15 +38,16 @@
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
+  --color-sale: var(--sale);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-serif: Georgia, "Times New Roman", serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* Nunito para texto, Baloo 2 para títulos (se cargan en app/layout.tsx) */
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+  --font-display: var(--font-baloo), var(--font-nunito), system-ui, sans-serif;
   --radius-card: 1.5rem;
 }
 
@@ -52,7 +57,7 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Foco visible y consistente en todo el panel */
+/* Foco visible y consistente en toda la app */
 :where(a, button, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
@@ -62,7 +67,16 @@ body {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+}
+
+/* Carruseles: se desplazan pero sin barra de scroll visible */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 dialog::backdrop {

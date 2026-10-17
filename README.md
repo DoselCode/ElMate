@@ -10,7 +10,7 @@ Landing + catálogo web + sistema de stock/caja en un solo proyecto.
 |---|---|---|
 | 1 | Modelo de datos + panel de stock (inventario, variantes, ingresos, ajustes, movimientos) | ✅ |
 | 2 | Punto de venta, ventas, caja (arqueo/cierre), ticket | Modelado en la base y probado; falta la interfaz |
-| 3 | Landing y catálogo público (pedido por WhatsApp) | Vistas `public_*` listas; falta la interfaz |
+| 3 | Web pública (Diseño 2 de Figma): home, tienda, producto, carrito → WhatsApp, "Datos del local" | ✅ probada en modo demo; falta probar contra Supabase |
 
 ## Puesta en marcha
 
@@ -20,10 +20,18 @@ Landing + catálogo web + sistema de stock/caja en un solo proyecto.
    - `supabase/migrations/20261002000000_core_schema.sql`
    - `supabase/migrations/20261002000001_storage.sql`
    - `supabase/migrations/20261002000002_stock_views.sql`
+   - `supabase/migrations/20261016000000_web_publica.sql`
+   - `supabase/migrations/20261016000001_fix_search_path.sql`
+
+   Una migración ya aplicada en la base real no se edita: los cambios van siempre en una migración nueva.
 4. Crear el primer usuario en **Authentication → Users → Add user** (con "Auto Confirm"). Será el admin.
 5. Copiar `.env.example` a `.env.local` y completar la URL y la clave *publishable* (Project Settings → API).
-6. `npm install` y `npm run dev` → http://localhost:3000/admin
-7. Opcional, solo desarrollo: `supabase/seed.sql` carga productos de ejemplo. **No usar en producción.**
+6. `npm install` y `npm run dev` → web en http://localhost:3000, panel en http://localhost:3000/admin
+7. En el panel, **Datos del local**: cargar el WhatsApp de pedidos (sin eso el carrito no puede enviar), contacto, redes y horarios.
+8. Opcional, solo desarrollo: `supabase/seed.sql` carga productos de ejemplo. **No usar en producción.**
+
+**Ver la web sin base de datos:** con `ELMATE_DEMO=1` la web pública usa un catálogo de ejemplo en memoria
+(en PowerShell: `$env:ELMATE_DEMO='1'; npm run dev`). El panel sigue necesitando Supabase.
 
 ## Scripts
 

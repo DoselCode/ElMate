@@ -6,7 +6,7 @@ export function LoginScreen({ noAccess }: { noAccess: boolean }) {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm rounded-[var(--radius-card)] bg-surface p-8 shadow-sm">
-        <h1 className="font-serif text-2xl font-bold">El Mate</h1>
+        <h1 className="font-display text-2xl font-bold">El Mate</h1>
         <p className="mb-6 mt-1 text-sm text-muted">Panel de administración</p>
 
         {noAccess && (

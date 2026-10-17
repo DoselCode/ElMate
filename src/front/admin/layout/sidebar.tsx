@@ -2,18 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowsLeftRight, Package, SignOut } from "@phosphor-icons/react";
+import { ArrowsLeftRight, Package, SignOut, Storefront } from "@phosphor-icons/react";
 import { signOutAction } from "@/back/admin/auth/actions";
 import type { Role } from "@/shared/types";
 
 /** Secciones del panel. Para agregar una pantalla nueva, sumarla acá. */
-const items = [
-  { href: "/admin/stock", label: "Inventario y stock", icon: Package },
-  { href: "/admin/stock/movements", label: "Movimientos", icon: ArrowsLeftRight },
+const ALL_ITEMS = [
+  { href: "/admin/stock", label: "Inventario y stock", icon: Package, adminOnly: false },
+  { href: "/admin/stock/movements", label: "Movimientos", icon: ArrowsLeftRight, adminOnly: false },
+  { href: "/admin/local", label: "Datos del local", icon: Storefront, adminOnly: true },
 ] as const;
 
 export function Sidebar({ userName, role }: { userName: string; role: Role }) {
   const pathname = usePathname();
+  const items = ALL_ITEMS.filter((i) => !i.adminOnly || role === "admin");
 
   // /admin/stock también es prefijo de /admin/stock/movements: el activo es el más específico
   const active = [...items].sort((a, b) => b.href.length - a.href.length).find((i) => pathname === i.href || pathname.startsWith(`${i.href}/`));
@@ -21,10 +23,10 @@ export function Sidebar({ userName, role }: { userName: string; role: Role }) {
   return (
     <aside className="flex flex-col gap-4 rounded-3xl bg-primary p-4 text-white lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:w-72 lg:shrink-0 lg:gap-0 lg:rounded-[var(--radius-card)] lg:px-4 lg:py-8">
       <div className="flex items-center gap-3 lg:mb-10 lg:flex-col lg:text-center">
-        <div className="grid size-11 place-items-center rounded-full bg-white/15 font-serif text-lg font-bold lg:size-20 lg:text-3xl">
+        <div className="grid size-11 place-items-center rounded-full bg-white/15 font-display text-lg font-bold lg:size-20 lg:text-3xl">
           M
         </div>
-        <div className="font-serif text-lg leading-tight tracking-wide">
+        <div className="font-display text-lg leading-tight tracking-wide">
           El Mate
           <span className="block font-sans text-[0.65rem] uppercase tracking-[0.25em] text-white/75">Administración</span>
         </div>

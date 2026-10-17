@@ -34,7 +34,7 @@ export function StockScreen({
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-2xl font-bold">Inventario y stock</h1>
+        <h1 className="font-display text-2xl font-bold">Inventario y stock</h1>
         {isAdmin && (
           <Link href="/admin/stock/new" className={buttonClass("primary")}>
             <Plus size={18} weight="bold" aria-hidden /> Nuevo producto

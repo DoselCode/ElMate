@@ -11,19 +11,26 @@ const units = z
   .min(0, { error: "No puede ser negativo" })
   .max(999_999, { error: "El valor es demasiado grande" });
 
-export const variantSchema = z.object({
-  id: z.uuid().optional(),
-  /** Vacío = lo genera la base (EM-00001). */
-  sku: z.string().trim().max(40, { error: "Máximo 40 caracteres" }),
-  barcode: z.string().trim().max(64, { error: "Máximo 64 caracteres" }),
-  attributes: z.record(z.string(), z.string().trim().max(60, { error: "Máximo 60 caracteres" })),
-  price,
-  cost: price,
-  minStock: units,
-  /** Solo se usa al crear la variante; después el stock se mueve con ingresos y ajustes. */
-  initialStock: units,
-  active: z.boolean(),
-});
+export const variantSchema = z
+  .object({
+    id: z.uuid().optional(),
+    /** Vacío = lo genera la base (EM-00001). */
+    sku: z.string().trim().max(40, { error: "Máximo 40 caracteres" }),
+    barcode: z.string().trim().max(64, { error: "Máximo 64 caracteres" }),
+    attributes: z.record(z.string(), z.string().trim().max(60, { error: "Máximo 60 caracteres" })),
+    price,
+    /** "Precio anterior": si está, la web lo muestra tachado y calcula el % de descuento. */
+    compareAtPrice: price.nullable(),
+    cost: price,
+    minStock: units,
+    /** Solo se usa al crear la variante; después el stock se mueve con ingresos y ajustes. */
+    initialStock: units,
+    active: z.boolean(),
+  })
+  .refine((v) => v.compareAtPrice === null || v.compareAtPrice > v.price, {
+    path: ["compareAtPrice"],
+    error: "Tiene que ser mayor al precio de venta",
+  });
 
 export const productSchema = z
   .object({
@@ -108,6 +115,7 @@ export function toSavePayload(p: ProductData, slug: string) {
       // Solo los ejes vigentes: si se quitó una opción, su valor viejo no viaja
       attributes: Object.fromEntries(p.optionNames.map((n) => [n, (v.attributes[n] ?? "").trim()])),
       price: v.price,
+      compare_at_price: v.compareAtPrice,
       cost: v.cost,
       min_stock: v.minStock,
       active: v.active,

@@ -40,7 +40,7 @@ export function Modal({
     >
       {open && (
         <div className="p-6">
-          <h2 id={titleId} className="mb-4 font-serif text-xl font-bold">
+          <h2 id={titleId} className="mb-4 font-display text-xl font-bold">
             {title}
           </h2>
           {children}

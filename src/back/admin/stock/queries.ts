@@ -135,7 +135,7 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
       .maybeSingle(),
     supabase
       .from("product_variants")
-      .select("id, sku, barcode, attributes, price, min_stock, stock, active")
+      .select("id, sku, barcode, attributes, price, compare_at_price, min_stock, stock, active")
       .eq("product_id", id)
       .order("created_at"),
   ]);
@@ -166,6 +166,7 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
       barcode: v.barcode,
       attributes: (v.attributes ?? {}) as Record<string, string>,
       price: Number(v.price),
+      compareAtPrice: v.compare_at_price === null ? null : Number(v.compare_at_price),
       cost: costs.get(v.id) ?? 0,
       minStock: v.min_stock,
       stock: v.stock,

@@ -8,6 +8,7 @@ const variant = (over: Record<string, unknown> = {}) => ({
   barcode: "",
   attributes: { Color: "Negro" },
   price: 1000,
+  compareAtPrice: null,
   cost: 500,
   minStock: 0,
   initialStock: 0,
@@ -85,6 +86,15 @@ describe("productSchema", () => {
       expect(errs["variants.0.price"]).toMatch(/negativo/);
       expect(errs["variants.0.cost"]).toBeTruthy();
     }
+  });
+
+  it("el precio anterior es opcional pero tiene que superar al precio", () => {
+    expect(productSchema.safeParse(base({ variants: [variant({ compareAtPrice: 1500 })] })).success).toBe(true);
+    const r = productSchema.safeParse(base({ variants: [variant({ compareAtPrice: 1000 })] }));
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrors(r.error)["variants.0.compareAtPrice"]).toMatch(/mayor/);
+    const payload = toSavePayload(productSchema.parse(base({ variants: [variant({ compareAtPrice: 1500 })] })), "x");
+    expect(payload.variants[0].compare_at_price).toBe(1500);
   });
 
   it("limita a 3 opciones y detecta opciones repetidas", () => {

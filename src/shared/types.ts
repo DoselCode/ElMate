@@ -87,6 +87,7 @@ export type VariantForEdit = {
   barcode: string | null;
   attributes: Record<string, string>;
   price: number;
+  compareAtPrice: number | null;
   cost: number;
   minStock: number;
   stock: number;
@@ -104,6 +105,97 @@ export type ProductForEdit = {
   isVisible: boolean;
   badge: string | null;
   variants: VariantForEdit[];
+};
+
+// ---- Web pública (vistas public_* de la base) ----------------------------------------------
+
+/** Producto como se ve en la tienda: la tarjeta usa la variante más barata. */
+export type PublicProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  images: string[];
+  badge: string | null;
+  option_names: string[];
+  created_at: string;
+  category_name: string | null;
+  category_slug: string | null;
+  /** Variante más barata: la que se agrega al carrito desde la tarjeta si es la única. */
+  variant_id: string;
+  price: number;
+  compare_at_price: number | null;
+  discount_pct: number | null;
+  variant_count: number;
+  /** Las variantes tienen precios distintos: la tarjeta muestra "Desde". */
+  has_price_range: boolean;
+  in_stock: boolean;
+};
+
+export type PublicVariant = {
+  id: string;
+  product_id: string;
+  attributes: Record<string, string>;
+  /** "Negro / Grande"; vacío si el producto no tiene opciones. */
+  label: string;
+  price: number;
+  compare_at_price: number | null;
+  image: string | null;
+  in_stock: boolean;
+};
+
+export type PublicCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  sort_order: number;
+  product_count: number;
+};
+
+export type StoreInfo = {
+  name: string;
+  tagline: string | null;
+  logo: string | null;
+  phone: string | null;
+  whatsapp_number: string | null;
+  email: string | null;
+  address: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+  hours_weekdays: string | null;
+  hours_saturday: string | null;
+  hours_sunday: string | null;
+};
+
+export type ShopSort = "destacados" | "precio-asc" | "precio-desc" | "nuevos";
+
+/** Filtros de /tienda (vienen de la URL). */
+export type ShopFilters = {
+  q: string;
+  /** slug de la categoría */
+  category: string;
+  sort: ShopSort;
+  offers: boolean;
+  page: number;
+};
+
+/** Secciones de productos de la home. */
+export type HomeData = { offers: PublicProduct[]; bestSellers: PublicProduct[]; newest: PublicProduct[] };
+
+/** Página de un producto: el producto, sus variantes y relacionados de la misma categoría. */
+export type ProductPageData = { product: PublicProduct; variants: PublicVariant[]; related: PublicProduct[] };
+
+/** Ítem del carrito. Guarda una copia del precio al agregarlo: el pedido final se confirma por WhatsApp. */
+export type CartItem = {
+  variantId: string;
+  productId: string;
+  slug: string;
+  name: string;
+  variantLabel: string;
+  price: number;
+  image: string | null;
+  quantity: number;
 };
 
 // ---- Acciones ------------------------------------------------------------------------------

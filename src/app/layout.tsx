@@ -1,25 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Baloo_2, Nunito } from "next/font/google";
 import "@/front/shared/styles/globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Tipografías del diseño: Nunito (texto) y Baloo 2 (títulos)
+const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"] });
+const baloo = Baloo_2({ variable: "--font-baloo", subsets: ["latin"], weight: ["600", "700", "800"] });
 
 export const metadata: Metadata = {
-  title: { default: "El Mate", template: "%s · El Mate" },
-  description: "Todo para tu ronda de mate.",
+  title: { default: "El Mate · Todo para tu ronda", template: "%s · El Mate" },
+  description: "Mates, termos, bombillas, yerbas y combos. Armá tu pedido y confirmalo por WhatsApp.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="es" className={`${nunito.variable} ${baloo.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
