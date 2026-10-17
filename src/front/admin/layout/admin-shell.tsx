@@ -6,7 +6,10 @@ import { Sidebar } from "./sidebar";
 export function AdminShell({ userName, role, children }: { userName: string; role: Role; children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col gap-4 p-3 lg:flex-row lg:gap-6 lg:p-6">
-      <Sidebar userName={userName} role={role} />
+      {/* Al imprimir un ticket solo sale el contenido */}
+      <div className="contents print:hidden">
+        <Sidebar userName={userName} role={role} />
+      </div>
       <main className="min-w-0 flex-1">{children}</main>
     </div>
   );

@@ -1,6 +1,6 @@
 import "server-only";
+import { guarded } from "@/back/admin/auth/guarded";
 import { requireAdmin, requireStaff } from "@/back/admin/auth/session";
-import { createClient } from "@/back/shared/supabase/server";
 import { PAGE_SIZE, pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
 import type {
   MovementFilters,
@@ -21,19 +21,6 @@ import type {
 
 const MOVEMENT_TYPES: MovementType[] = ["ingreso", "venta", "ajuste", "anulacion"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-type Supabase = Awaited<ReturnType<typeof createClient>>;
-
-/**
- * Corre la consulta a la vez que se valida el permiso, en lugar de esperar uno y después la otra:
- * ahorra un viaje a Supabase por página. Si el permiso falla, el resultado se descarta (y RLS
- * igual impide que la base devuelva datos ajenos).
- */
-async function guarded<T>(check: () => Promise<unknown>, run: (supabase: Supabase) => PromiseLike<T>): Promise<T> {
-  const supabase = await createClient();
-  const [, result] = await Promise.all([check(), run(supabase)]);
-  return result;
-}
 
 const pageRange = (page: number) => {
   const from = (page - 1) * PAGE_SIZE;
@@ -143,13 +130,13 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
     Promise.all([
       supabase
         .from("products")
-        .select("id, name, description, category_id, supplier_id, option_names, images, is_visible, badge")
+        .select("id, name, description, category_id, supplier_id, brand, unit, track_stock, option_names, images, is_visible, badge")
         .eq("id", id)
         .is("archived_at", null)
         .maybeSingle(),
       supabase
         .from("product_variants")
-        .select("id, sku, barcode, attributes, price, compare_at_price, min_stock, stock, active, variant_costs(cost)")
+        .select("id, sku, barcode, attributes, price, compare_at_price, min_stock, stock, active, variant_costs(cost, margin_pct)")
         .eq("product_id", id)
         .order("created_at"),
     ]),
@@ -168,6 +155,9 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
     description: product.description,
     categoryId: product.category_id,
     supplierId: product.supplier_id,
+    brand: product.brand,
+    unit: product.unit,
+    trackStock: product.track_stock,
     optionNames: product.option_names,
     images: product.images,
     isVisible: product.is_visible,
@@ -179,16 +169,23 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
       attributes: (v.attributes ?? {}) as Record<string, string>,
       price: Number(v.price),
       compareAtPrice: v.compare_at_price === null ? null : Number(v.compare_at_price),
-      cost: costOf(v.variant_costs),
-      minStock: v.min_stock,
-      stock: v.stock,
+      cost: costOf(v.variant_costs).cost,
+      marginPct: costOf(v.variant_costs).marginPct,
+      minStock: Number(v.min_stock),
+      stock: Number(v.stock),
       active: v.active,
     })),
   };
 }
 
 /** variant_costs es 1 a 1 con la variante; según el cliente llega como objeto o como lista. */
-function costOf(embedded: unknown): number {
-  const row = (Array.isArray(embedded) ? embedded[0] : embedded) as { cost?: number | string } | null | undefined;
-  return row?.cost === undefined ? 0 : Number(row.cost);
+function costOf(embedded: unknown): { cost: number; marginPct: number | null } {
+  const row = (Array.isArray(embedded) ? embedded[0] : embedded) as
+    | { cost?: number | string; margin_pct?: number | string | null }
+    | null
+    | undefined;
+  return {
+    cost: row?.cost === undefined ? 0 : Number(row.cost),
+    marginPct: row?.margin_pct === undefined || row.margin_pct === null ? null : Number(row.margin_pct),
+  };
 }

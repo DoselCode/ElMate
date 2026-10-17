@@ -156,6 +156,8 @@ const ALL: PublicProduct[] = PRODUCTS.map((p, pi) => {
     badge: p.badge ?? null,
     option_names: p.options ?? [],
     created_at: new Date(NOW - p.daysAgo * 86_400_000).toISOString(),
+    brand: null,
+    unit: "unidad",
     category_name: category.name,
     category_slug: category.slug,
     variant_id: cheapest.id,
@@ -209,5 +211,14 @@ export const demoSource: CatalogSource = {
   },
   async bestSellerIds() {
     return BEST_SELLERS;
+  },
+  async paymentMethods() {
+    return [
+      { name: "Efectivo", adjustment_pct: -20, is_cash: true, sort_order: 1 },
+      { name: "Transferencia", adjustment_pct: -15, is_cash: false, sort_order: 2 },
+      { name: "Débito", adjustment_pct: -15, is_cash: false, sort_order: 3 },
+      { name: "Crédito 3 cuotas", adjustment_pct: -10, is_cash: false, sort_order: 4 },
+      { name: "Crédito 6 cuotas", adjustment_pct: 0, is_cash: false, sort_order: 5 },
+    ];
   },
 };

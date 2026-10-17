@@ -156,6 +156,8 @@ function NavDropdown({ link }: { link: NavLink }) {
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const listId = useId();
+  // Con muchas categorías, dos columnas para que el menú no quede larguísimo
+  const twoColumns = (link.children?.length ?? 0) > 6;
 
   useEffect(() => {
     if (!open) return;
@@ -192,7 +194,9 @@ function NavDropdown({ link }: { link: NavLink }) {
       {open && (
         <ul
           id={listId}
-          className="absolute left-1/2 top-full z-50 mt-3 w-56 -translate-x-1/2 rounded-3xl border border-border bg-surface p-2 shadow-[0_16px_40px_rgb(29_42_32/0.12)]"
+          className={`absolute left-1/2 top-full z-50 mt-3 grid -translate-x-1/2 gap-x-1 rounded-3xl border border-border bg-surface p-2 shadow-[0_16px_40px_rgb(29_42_32/0.12)] ${
+            twoColumns ? "w-[26rem] grid-cols-2" : "w-56"
+          }`}
         >
           {link.children?.map((c) => (
             <li key={c.href}>
@@ -205,7 +209,7 @@ function NavDropdown({ link }: { link: NavLink }) {
               </Link>
             </li>
           ))}
-          <li className="mt-1 border-t border-border pt-1">
+          <li className={`mt-1 border-t border-border pt-1 ${twoColumns ? "col-span-2" : ""}`}>
             <Link
               href={link.href}
               onClick={() => setOpen(false)}

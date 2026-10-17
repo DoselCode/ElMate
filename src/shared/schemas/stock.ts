@@ -1,12 +1,13 @@
 import * as z from "zod";
 
+// Hasta 3 decimales (kg). Que sea entero en productos por unidad lo valida la base.
 const quantity = z
-  .number({ error: "Ingresá un número entero" })
-  .int({ error: "Tiene que ser un número entero" });
+  .number({ error: "Ingresá un número" })
+  .refine((n) => Math.abs(n * 1000 - Math.round(n * 1000)) < 1e-6, { error: "Máximo 3 decimales" });
 
 export const stockInSchema = z.object({
   variantId: z.uuid(),
-  quantity: quantity.min(1, { error: "Tiene que ser al menos 1" }).max(100_000, { error: "Cantidad demasiado grande" }),
+  quantity: quantity.gt(0, { error: "Tiene que ser mayor a 0" }).max(100_000, { error: "Cantidad demasiado grande" }),
   /** Costo unitario de esta compra; si se informa, pasa a ser el costo actual. */
   unitCost: z.number({ error: "Ingresá un número" }).min(0, { error: "No puede ser negativo" }).max(999_999_999).nullable(),
   reason: z.string().trim().max(200, { error: "Máximo 200 caracteres" }),

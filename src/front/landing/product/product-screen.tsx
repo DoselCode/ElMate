@@ -7,7 +7,7 @@ import { VariantPicker } from "./variant-picker";
 
 /** /producto/[slug]: fotos, opciones, precio, agregar al carrito y productos relacionados. */
 export function ProductScreen({ data }: { data: ProductPageData }) {
-  const { product, variants, related } = data;
+  const { product, variants, related, paymentMethods } = data;
 
   return (
     <div className="mx-auto max-w-[82rem] px-4 pt-10 sm:px-6">
@@ -36,7 +36,7 @@ export function ProductScreen({ data }: { data: ProductPageData }) {
             <p className="mt-3 inline-block rounded-full bg-primary-soft px-3 py-1 text-sm font-bold text-primary">{product.badge}</p>
           )}
 
-          <VariantPicker product={product} variants={variants} />
+          <VariantPicker product={product} variants={variants} paymentMethods={paymentMethods} />
 
           {product.description && (
             <section className="mt-10 border-t border-border pt-6">

@@ -5,11 +5,16 @@ import { adjustStockAction, registerStockInAction } from "@/back/admin/stock/act
 import { Button } from "@/front/shared/ui/button";
 import { Field, inputClass, inputErrorClass } from "@/front/shared/ui/field";
 import { Modal } from "@/front/shared/ui/modal";
-import { formatMoney, formatSigned } from "@/shared/format";
+import { formatMoney, formatQuantity, parseDecimal } from "@/shared/format";
 import type { StockRow } from "@/shared/types";
 
-/** "12" → 12, "" → NaN (el esquema lo rechaza con un mensaje claro). */
-const num = (s: string) => (s.trim() === "" ? Number.NaN : Number(s));
+/** "12" o "0,25" → número; "" → NaN (el esquema lo rechaza con un mensaje claro). */
+const num = (s: string) => (s.trim() === "" ? Number.NaN : parseDecimal(s));
+/** Evita arrastrar errores de coma flotante (0,1 + 0,2) en las vistas previas. */
+const round3 = (n: number) => Math.round(n * 1000) / 1000;
+/** Cantidad válida para la unidad: entera por unidad, hasta 3 decimales por kg. */
+const validFor = (n: number, unit: StockRow["unit"]) =>
+  Number.isFinite(n) && (unit === "kg" ? Math.abs(n * 1000 - Math.round(n * 1000)) < 1e-6 : Number.isInteger(n));
 
 function VariantHeader({ row }: { row: StockRow }) {
   return (
@@ -17,7 +22,8 @@ function VariantHeader({ row }: { row: StockRow }) {
       <p className="font-semibold">{row.product_name}</p>
       <p className="text-muted">
         {row.variant_label ? `${row.variant_label} · ` : ""}
-        <span className="font-mono">{row.sku}</span> · stock actual <strong className="text-foreground">{row.stock}</strong>
+        <span className="font-mono">{row.sku}</span> · stock actual{" "}
+        <strong className="text-foreground">{formatQuantity(row.stock, row.unit)}</strong>
       </p>
     </div>
   );
@@ -57,7 +63,7 @@ function StockInForm({ row, onClose, onDone }: { row: StockRow; onClose: () => v
   const [pending, startTransition] = useTransition();
 
   const qty = num(quantity);
-  const preview = Number.isInteger(qty) && qty > 0 ? row.stock + qty : null;
+  const preview = validFor(qty, row.unit) && qty > 0 ? round3(row.stock + qty) : null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -75,7 +81,9 @@ function StockInForm({ row, onClose, onDone }: { row: StockRow; onClose: () => v
         setFields(res.fieldErrors ?? {});
         return;
       }
-      onDone(`Ingreso registrado: +${qty} · ${row.product_name}${row.variant_label ? ` (${row.variant_label})` : ""}`);
+      onDone(
+        `Ingreso registrado: ${formatQuantity(qty, row.unit, { signed: true })} · ${row.product_name}${row.variant_label ? ` (${row.variant_label})` : ""}`,
+      );
       onClose();
     });
   }
@@ -83,13 +91,23 @@ function StockInForm({ row, onClose, onDone }: { row: StockRow; onClose: () => v
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <VariantHeader row={row} />
-      <Field label="Cantidad que ingresa" htmlFor="in-qty" error={fields.quantity} hint={preview !== null ? `El stock pasa de ${row.stock} a ${preview}` : undefined}>
+      <Field
+        label={row.unit === "kg" ? "Kilos que ingresan" : "Cantidad que ingresa"}
+        htmlFor="in-qty"
+        error={fields.quantity}
+        hint={
+          preview !== null
+            ? `El stock pasa de ${formatQuantity(row.stock, row.unit)} a ${formatQuantity(preview, row.unit)}`
+            : row.unit === "kg"
+              ? "Con decimales: 2,5"
+              : undefined
+        }
+      >
         <input
           id="in-qty"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          step={1}
+          type="text"
+          inputMode={row.unit === "kg" ? "decimal" : "numeric"}
+          autoComplete="off"
           data-autofocus
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
@@ -99,7 +117,7 @@ function StockInForm({ row, onClose, onDone }: { row: StockRow; onClose: () => v
         />
       </Field>
       <Field
-        label="Costo unitario de esta compra (opcional)"
+        label={row.unit === "kg" ? "Costo por kg de esta compra (opcional)" : "Costo unitario de esta compra (opcional)"}
         htmlFor="in-cost"
         error={fields.unitCost}
         hint={`Si lo completás, reemplaza el costo actual (${formatMoney(row.cost)})`}
@@ -170,8 +188,8 @@ function StockAdjustForm({ row, onClose, onDone }: { row: StockRow; onClose: () 
   const [pending, startTransition] = useTransition();
 
   const n = num(value);
-  const delta = Number.isInteger(n) ? (mode === "count" ? n - row.stock : n) : null;
-  const result = delta !== null ? row.stock + delta : null;
+  const delta = validFor(n, row.unit) ? round3(mode === "count" ? n - row.stock : n) : null;
+  const result = delta !== null ? round3(row.stock + delta) : null;
   const valueKey = mode === "count" ? "counted" : "delta";
 
   function submit(e: React.FormEvent) {
@@ -190,7 +208,11 @@ function StockAdjustForm({ row, onClose, onDone }: { row: StockRow; onClose: () 
         return;
       }
       const label = `${row.product_name}${row.variant_label ? ` (${row.variant_label})` : ""}`;
-      onDone(res.delta === 0 ? `Sin cambios: el stock ya era ${row.stock} · ${label}` : `Stock ajustado ${formatSigned(res.delta)} · ${label}`);
+      onDone(
+        res.delta === 0
+          ? `Sin cambios: el stock ya era ${formatQuantity(row.stock, row.unit)} · ${label}`
+          : `Stock ajustado ${formatQuantity(res.delta, row.unit, { signed: true })} · ${label}`,
+      );
       onClose();
     });
   }
@@ -240,7 +262,7 @@ function StockAdjustForm({ row, onClose, onDone }: { row: StockRow; onClose: () 
           delta !== null && result !== null
             ? delta === 0
               ? "No hay diferencia con el stock actual"
-              : `Diferencia ${formatSigned(delta)} · el stock queda en ${result}${result < 0 ? " (no es posible)" : ""}`
+              : `Diferencia ${formatQuantity(delta, row.unit, { signed: true })} · el stock queda en ${formatQuantity(result, row.unit)}${result < 0 ? " (no es posible)" : ""}`
             : mode === "count"
               ? "Contá lo que hay físicamente y cargá ese número"
               : "Ej: −2 por rotura, +1 por una unidad encontrada"
@@ -248,10 +270,9 @@ function StockAdjustForm({ row, onClose, onDone }: { row: StockRow; onClose: () 
       >
         <input
           id="adj-value"
-          type="number"
-          inputMode="numeric"
-          step={1}
-          min={mode === "count" ? 0 : undefined}
+          type="text"
+          inputMode={row.unit === "kg" ? "decimal" : "numeric"}
+          autoComplete="off"
           data-autofocus
           value={value}
           onChange={(e) => setValue(e.target.value)}

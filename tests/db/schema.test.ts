@@ -49,9 +49,25 @@ const mate = {
   ],
 };
 
+/** Variante por SKU, con stock y mínimo como número (numeric llega como texto). */
 async function variantBySku(sku: string): Promise<Row> {
   const [v] = await rows("select * from public.product_variants where sku = $1", [sku]);
-  return v;
+  return v && { ...v, stock: Number(v.stock), min_stock: Number(v.min_stock) };
+}
+
+async function paymentMethod(name: string): Promise<string> {
+  const [r] = await rows("select id from public.payment_methods where name = $1", [name]);
+  return r.id;
+}
+
+/** Venta como la carga el panel: forma de pago por nombre y descuento manual opcional. */
+async function sell(user: string, session: string, method: string, items: Row[], discount = 0): Promise<Row> {
+  const pm = await paymentMethod(method);
+  const [r] = await as(user, () =>
+    rows("select public.create_sale($1, $2, $3::jsonb, $4) as id", [session, pm, JSON.stringify(items), discount]),
+  );
+  const [sale] = await rows("select * from public.sales where id = $1", [r.id]);
+  return sale;
 }
 
 async function openCash(user: string, opening = 1000): Promise<string> {
@@ -107,7 +123,7 @@ describe("catálogo y stock", () => {
     expect(v.stock).toBe(5);
     expect(Number(v.price)).toBe(10000);
 
-    const moves = await rows("select type, quantity, stock_after, reason from public.stock_movements where variant_id = $1", [v.id]);
+    const moves = await rows("select type, quantity::float, stock_after::float, reason from public.stock_movements where variant_id = $1", [v.id]);
     expect(moves).toEqual([{ type: "ingreso", quantity: 5, stock_after: 5, reason: "Stock inicial" }]);
 
     const costs = await as(adminId, () => rows("select cost from public.variant_costs where variant_id = $1", [v.id]));
@@ -230,7 +246,7 @@ describe("web pública (anon)", () => {
     await expect(as("anon", () => rows("select * from public.variant_costs"))).rejects.toThrow(/permission denied/);
     await expect(as("anon", () => rows("select * from public.sales"))).rejects.toThrow(/permission denied/);
     await expect(as("anon", () => rows("insert into public.public_categories (name, slug) values ('Hack', 'hack')"))).rejects.toThrow(/permission denied/);
-    await expect(as("anon", () => rows("select public.create_sale(gen_random_uuid(), 'efectivo', '[]')"))).rejects.toThrow(/permission denied/);
+    await expect(as("anon", () => rows("select public.create_sale(gen_random_uuid(), gen_random_uuid(), '[]')"))).rejects.toThrow(/permission denied/);
   });
 });
 
@@ -245,17 +261,18 @@ describe("caja y ventas", () => {
 
   it("vende con el precio de lista, descuenta stock y congela el costo", async () => {
     negId = (await variantBySku("MATE-NEG-G")).id; // stock 13, precio 11000, costo 6500
-    const [r] = await as(staffId, () =>
-      rows("select public.create_sale($1, 'efectivo', $2::jsonb) as id", [sessionId, JSON.stringify([{ variant_id: negId, quantity: 2 }])]),
-    );
-    const [sale] = await rows("select * from public.sales where id = $1", [r.id]);
+    const sale = await sell(staffId, sessionId, "Crédito 6 cuotas", [{ variant_id: negId, quantity: 2 }]);
     expect(Number(sale.subtotal)).toBe(22000);
-    expect(Number(sale.total)).toBe(22000);
+    expect(Number(sale.total)).toBe(22000); // 6 cuotas = precio de lista
     expect(sale.status).toBe("pagada");
+    expect(sale.payment_method_name).toBe("Crédito 6 cuotas");
+    expect(sale.payment_is_cash).toBe(false);
     expect(Number(sale.ticket_number)).toBeGreaterThan(0);
     expect((await variantBySku("MATE-NEG-G")).stock).toBe(11);
 
-    const items = await as(staffId, () => rows("select product_name, variant_label, quantity, unit_price from public.sale_items where sale_id = $1", [r.id]));
+    const items = await as(staffId, () =>
+      rows("select product_name, variant_label, quantity::float, unit_price from public.sale_items where sale_id = $1", [sale.id]),
+    );
     expect(items).toEqual([{ product_name: "Mate Imperial", variant_label: "Negro / Grande", quantity: 2, unit_price: "11000.00" }]);
 
     const costs = await as(adminId, () => rows("select unit_cost from public.sale_item_costs"));
@@ -266,24 +283,45 @@ describe("caja y ventas", () => {
     expect(Number((await as(adminId, () => rows("select unit_cost from public.sale_item_costs")))[0].unit_cost)).toBe(6500);
   });
 
-  it("aplica recargo de tarjeta y descuento", async () => {
-    await rows("update public.store_settings set surcharge_tarjeta = 10");
-    const [r] = await as(staffId, () =>
-      rows("select public.create_sale($1, 'tarjeta', $2::jsonb, 1000) as id", [sessionId, JSON.stringify([{ variant_id: negId, quantity: 1 }])]),
-    );
-    const [sale] = await rows("select * from public.sales where id = $1", [r.id]);
-    // (11000 - 1000) * 1.10
-    expect(Number(sale.surcharge_pct)).toBe(10);
-    expect(Number(sale.surcharge_amount)).toBe(1000);
-    expect(Number(sale.total)).toBe(11000);
+  it("cada forma de pago aplica su ajuste sobre el total, después del descuento manual", async () => {
+    // Efectivo -20 %: (11000 - 1000) * 0,8
+    const cash = await sell(staffId, sessionId, "Efectivo", [{ variant_id: negId, quantity: 1 }], 1000);
+    expect(Number(cash.adjustment_pct)).toBe(-20);
+    expect(Number(cash.adjustment_amount)).toBe(-2000);
+    expect(Number(cash.total)).toBe(8000);
+    expect(cash.payment_is_cash).toBe(true);
+
+    // 3 cuotas -10 %
+    const card = await sell(staffId, sessionId, "Crédito 3 cuotas", [{ variant_id: negId, quantity: 1 }]);
+    expect(Number(card.total)).toBe(9900);
+
+    // el ajuste se configura por forma de pago
+    await rows("update public.payment_methods set adjustment_pct = 10 where name = 'Crédito 6 cuotas'");
+    const surcharge = await sell(staffId, sessionId, "Crédito 6 cuotas", [{ variant_id: negId, quantity: 1 }]);
+    expect(Number(surcharge.total)).toBe(12100);
+    await rows("update public.payment_methods set adjustment_pct = 0 where name = 'Crédito 6 cuotas'");
+  });
+
+  it("no acepta formas de pago inactivas o inexistentes", async () => {
+    await rows("update public.payment_methods set active = false where name = 'QR / Mercado Pago'");
+    await expect(sell(staffId, sessionId, "QR / Mercado Pago", [{ variant_id: negId, quantity: 1 }])).rejects.toThrow(/forma de pago/);
+    await rows("update public.payment_methods set active = true where name = 'QR / Mercado Pago'");
+    await expect(
+      as(staffId, () => rows("select public.create_sale($1, gen_random_uuid(), $2::jsonb)", [sessionId, JSON.stringify([{ variant_id: negId, quantity: 1 }])])),
+    ).rejects.toThrow(/forma de pago/);
+  });
+
+  it("solo el admin edita las formas de pago; la web las ve sin datos internos", async () => {
+    await expect(as(staffId, () => rows("update public.payment_methods set adjustment_pct = -50 returning id"))).resolves.toHaveLength(0);
+    const publicMethods = await as("anon", () => rows("select * from public.public_payment_methods order by sort_order"));
+    expect(publicMethods.map((m) => m.name)[0]).toBe("Efectivo");
+    expect(Object.keys(publicMethods[0]).sort()).toEqual(["adjustment_pct", "is_cash", "name", "sort_order"]);
+    await expect(as("anon", () => rows("select * from public.payment_methods"))).rejects.toThrow(/permission denied/);
   });
 
   it("discrimina IVA solo si está configurado", async () => {
     await rows("update public.store_settings set show_vat = true, vat_rate = 21");
-    const [r] = await as(staffId, () =>
-      rows("select public.create_sale($1, 'transferencia', $2::jsonb) as id", [sessionId, JSON.stringify([{ variant_id: negId, quantity: 1 }])]),
-    );
-    const [sale] = await rows("select * from public.sales where id = $1", [r.id]);
+    const sale = await sell(staffId, sessionId, "Crédito 6 cuotas", [{ variant_id: negId, quantity: 1 }]);
     expect(Number(sale.total)).toBe(11000);
     expect(Number(sale.net_amount)).toBe(9090.91);
     expect(Number(sale.vat_amount)).toBeCloseTo(1909.09, 2);
@@ -294,30 +332,61 @@ describe("caja y ventas", () => {
     const termo = await variantBySku("TERMO-1"); // stock 4
     const before = (await rows("select count(*)::int as n from public.sales"))[0].n;
     await expect(
-      as(staffId, () =>
-        rows("select public.create_sale($1, 'efectivo', $2::jsonb)", [
-          sessionId,
-          JSON.stringify([{ variant_id: negId, quantity: 1 }, { variant_id: termo.id, quantity: 5 }]),
-        ]),
-      ),
+      sell(staffId, sessionId, "Efectivo", [
+        { variant_id: negId, quantity: 1 },
+        { variant_id: termo.id, quantity: 5 },
+      ]),
     ).rejects.toThrow(/Stock insuficiente/);
     expect((await rows("select count(*)::int as n from public.sales"))[0].n).toBe(before);
     expect((await variantBySku("TERMO-1")).stock).toBe(4);
   });
 
   it("valida cantidades, descuento, productos inactivos y caja cerrada", async () => {
-    const item = (q: number) => JSON.stringify([{ variant_id: negId, quantity: q }]);
-    await expect(as(staffId, () => rows("select public.create_sale($1, 'efectivo', $2::jsonb)", [sessionId, item(0)]))).rejects.toThrow(/Cantidad inválida/);
-    await expect(as(staffId, () => rows("select public.create_sale($1, 'efectivo', $2::jsonb, 999999)", [sessionId, item(1)]))).rejects.toThrow(/descuento/);
-    await expect(as(staffId, () => rows("select public.create_sale($1, 'efectivo', '[]')", [sessionId]))).rejects.toThrow(/no tiene productos/);
+    const item = (q: number) => [{ variant_id: negId, quantity: q }];
+    await expect(sell(staffId, sessionId, "Efectivo", item(0))).rejects.toThrow(/Cantidad inválida/);
+    await expect(sell(staffId, sessionId, "Efectivo", item(1), 999999)).rejects.toThrow(/descuento/);
+    await expect(sell(staffId, sessionId, "Efectivo", [])).rejects.toThrow(/no tiene productos/);
+    // un producto por unidad no se vende con decimales
+    await expect(sell(staffId, sessionId, "Efectivo", item(1.5))).rejects.toThrow(/por unidad/);
     const inactive = await variantBySku("MATE-MAR-C");
-    await expect(
-      as(staffId, () => rows("select public.create_sale($1, 'efectivo', $2::jsonb)", [sessionId, JSON.stringify([{ variant_id: inactive.id, quantity: 1 }])])),
-    ).rejects.toThrow(/ya no está disponible/);
+    await expect(sell(staffId, sessionId, "Efectivo", [{ variant_id: inactive.id, quantity: 1 }])).rejects.toThrow(/ya no está disponible/);
+  });
+
+  it("vende por kg con decimales (granel)", async () => {
+    await saveProduct(adminId, {
+      name: "Yerba a granel Ajedrez despalada", slug: "granel-ajedrez", unit: "kg",
+      variants: [{ sku: "GRANEL-AJ", price: 12000, cost: 6000, min_stock: 1, initial_stock: 5 }],
+    });
+    const v = await variantBySku("GRANEL-AJ");
+    const sale = await sell(staffId, sessionId, "Crédito 6 cuotas", [{ variant_id: v.id, quantity: 0.25 }]);
+    expect(Number(sale.total)).toBe(3000); // 12000 por kg × 0,25 kg
+    expect((await variantBySku("GRANEL-AJ")).stock).toBe(4.75);
+    const [pp] = await as("anon", () => rows("select unit from public.public_products where slug = 'granel-ajedrez'"));
+    expect(pp.unit).toBe("kg");
+  });
+
+  it("los productos sin control de stock (grabados) se venden sin mover inventario", async () => {
+    await saveProduct(adminId, {
+      name: "Grabado en media virola", slug: "grabado-media-virola", track_stock: false,
+      variants: [{ sku: "GRA-001", price: 8000, cost: 4000 }],
+    });
+    const v = await variantBySku("GRA-001");
+    const sale = await sell(staffId, sessionId, "Crédito 6 cuotas", [{ variant_id: v.id, quantity: 2 }]);
+    expect(Number(sale.total)).toBe(16000);
+    expect(await rows("select 1 from public.stock_movements where variant_id = $1", [v.id])).toHaveLength(0);
+    await expect(as(adminId, () => rows("select public.register_stock_in($1, 5)", [v.id]))).rejects.toThrow(/no lleva control de stock/);
+
+    const [pp] = await as("anon", () => rows("select in_stock from public.public_products where slug = 'grabado-media-virola'"));
+    expect(pp.in_stock).toBe(true); // siempre disponible en la web
+    const [ov] = await as(adminId, () => rows("select low_stock, track_stock from public.stock_overview where sku = 'GRA-001'"));
+    expect(ov).toEqual({ low_stock: false, track_stock: false });
+
+    // anularla no intenta devolver stock
+    await as(adminId, () => rows("select public.void_sale($1, 'Prueba')", [sale.id]));
   });
 
   it("solo el admin anula ventas y el stock vuelve", async () => {
-    const [sale] = await rows("select id from public.sales where payment_method = 'efectivo' limit 1");
+    const [sale] = await rows("select id from public.sales where payment_method_name = 'Crédito 6 cuotas' order by ticket_number limit 1");
     const stockBefore = (await variantBySku("MATE-NEG-G")).stock;
     await expect(as(staffId, () => rows("select public.void_sale($1, 'x')", [sale.id]))).rejects.toThrow(/Permiso denegado/);
     await expect(as(adminId, () => rows("select public.void_sale($1, '')", [sale.id]))).rejects.toThrow(/motivo/);
@@ -331,28 +400,40 @@ describe("caja y ventas", () => {
 
   it("el arqueo suma ventas en efectivo y movimientos, sin contar anuladas", async () => {
     await as(staffId, () => rows("select public.add_cash_movement($1, 'ingreso', 500, 'Cambio')", [sessionId]));
-    await as(staffId, () => rows("select public.add_cash_movement($1, 'egreso', 200, 'Librería')", [sessionId]));
+    await as(staffId, () => rows("select public.add_cash_movement($1, 'egreso', 200, 'Retiro')", [sessionId]));
     await expect(as(staffId, () => rows("select public.add_cash_movement($1, 'egreso', 0, 'x')", [sessionId]))).rejects.toThrow();
 
     const [s] = await as(staffId, () => rows("select * from public.cash_session_summary where session_id = $1", [sessionId]));
-    // la única venta en efectivo (22000) fue anulada
-    expect(Number(s.cash_sales)).toBe(0);
-    expect(Number(s.card_sales)).toBe(11000);
-    expect(Number(s.transfer_sales)).toBe(11000);
-    expect(Number(s.expected_cash)).toBe(1000 + 0 + 500 - 200);
+    // en efectivo solo hubo una venta de 8000
+    expect(Number(s.cash_sales)).toBe(8000);
+    expect(Number(s.expected_cash)).toBe(1000 + 8000 + 500 - 200);
+    // 3 cuotas 9900 + 6 cuotas 12100 + 11000 (IVA) + granel 3000 (la de 22000 y el grabado se anularon)
+    expect(Number(s.other_sales)).toBe(9900 + 12100 + 11000 + 3000);
+
+    const byMethod = await as(staffId, () =>
+      rows("select payment_method_name, sales_count, total::float from public.cash_session_by_method where session_id = $1 order by payment_method_name", [sessionId]),
+    );
+    expect(byMethod).toEqual([
+      { payment_method_name: "Crédito 3 cuotas", sales_count: 1, total: 9900 },
+      { payment_method_name: "Crédito 6 cuotas", sales_count: 3, total: 26100 },
+      { payment_method_name: "Efectivo", sales_count: 1, total: 8000 },
+    ]);
+  });
+
+  it("el historial de ventas muestra vendedor y productos", async () => {
+    const log = await as(staffId, () => rows("select seller_name, item_count, summary, status from public.sales_log order by ticket_number"));
+    expect(log[0]).toMatchObject({ seller_name: "caja", item_count: 1, summary: "Mate Imperial (Negro / Grande)", status: "anulada" });
   });
 
   it("cierra la caja con diferencia y no admite más ventas", async () => {
-    await as(staffId, () => rows("select public.close_cash_session($1, 1250, 1000, 'Faltan 50')", [sessionId]));
+    await as(staffId, () => rows("select public.close_cash_session($1, 9250, 1000, 'Faltan 50')", [sessionId]));
     const [s] = await rows("select status, expected_cash, counted_cash, difference, cash_left from public.cash_sessions where id = $1", [sessionId]);
     expect(s.status).toBe("cerrada");
-    expect(Number(s.expected_cash)).toBe(1300);
+    expect(Number(s.expected_cash)).toBe(9300);
     expect(Number(s.difference)).toBe(-50);
     expect(Number(s.cash_left)).toBe(1000);
 
-    await expect(
-      as(staffId, () => rows("select public.create_sale($1, 'efectivo', $2::jsonb)", [sessionId, JSON.stringify([{ variant_id: negId, quantity: 1 }])])),
-    ).rejects.toThrow(/no está abierta/);
+    await expect(sell(staffId, sessionId, "Efectivo", [{ variant_id: negId, quantity: 1 }])).rejects.toThrow(/no está abierta/);
     await expect(as(staffId, () => rows("select public.close_cash_session($1, 0)", [sessionId]))).rejects.toThrow(/no está abierta/);
     await expect(as(staffId, () => rows("select public.add_cash_movement($1, 'ingreso', 1, 'x')", [sessionId]))).rejects.toThrow(/no está abierta/);
 
@@ -363,6 +444,23 @@ describe("caja y ventas", () => {
   it("no deja dejar en caja más de lo contado", async () => {
     const id = (await rows("select id from public.cash_sessions where status = 'abierta'"))[0].id;
     await expect(as(adminId, () => rows("select public.close_cash_session($1, 100, 500)", [id]))).rejects.toThrow(/no puede superar/);
+  });
+
+  it("ingresos y ganancia por mes: el admin ve todo, el empleado no ve costos ni el historial", async () => {
+    const income = await as(adminId, () => rows("select payment_method_name, total::float from public.income_by_month order by payment_method_name"));
+    expect(income.find((r) => r.payment_method_name === "Efectivo")?.total).toBe(8000);
+
+    const [profit] = await as(adminId, () => rows("select revenue::float, cost::float from public.profit_by_month"));
+    expect(profit.revenue).toBe(8000 + 9900 + 12100 + 11000 + 3000);
+    // costo congelado al vender: el mate se vendió 4 veces después del ingreso a 9999; granel 6000 × 0,25 kg
+    expect(profit.cost).toBe(9999 * 4 + 1500);
+    const [staffProfit] = await as(staffId, () => rows("select cost from public.profit_by_month"));
+    expect(staffProfit.cost).toBeNull();
+
+    await rows("insert into public.income_history (month, cash_amount, other_amount) values ('2026-01-01', 2789660, 4060531)");
+    expect(await as(adminId, () => rows("select * from public.income_history"))).toHaveLength(1);
+    expect(await as(staffId, () => rows("select * from public.income_history"))).toHaveLength(0);
+    await expect(rows("insert into public.income_history (month) values ('2026-02-15')")).rejects.toThrow(/check/i);
   });
 });
 
@@ -382,15 +480,15 @@ describe("panel de stock", () => {
 
   it("el recuento fija el stock real, registra la diferencia y solo lo hace el admin", async () => {
     const v = await variantBySku("TERMO-1"); // stock 4
-    const [r] = await as(adminId, () => rows("select public.count_stock($1, 7, 'Apareció una caja') as delta", [v.id]));
+    const [r] = await as(adminId, () => rows("select public.count_stock($1, 7, 'Apareció una caja')::float as delta", [v.id]));
     expect(r.delta).toBe(3);
     expect((await variantBySku("TERMO-1")).stock).toBe(7);
-    const [m] = await rows("select type, quantity, reason from public.stock_movements where variant_id = $1 order by id desc limit 1", [v.id]);
+    const [m] = await rows("select type, quantity::float, reason from public.stock_movements where variant_id = $1 order by id desc limit 1", [v.id]);
     expect(m).toEqual({ type: "ajuste", quantity: 3, reason: "Recuento (había 4): Apareció una caja" });
 
     // mismo valor: no genera movimiento
     const before = (await rows("select count(*)::int n from public.stock_movements"))[0].n;
-    const [same] = await as(adminId, () => rows("select public.count_stock($1, 7) as delta", [v.id]));
+    const [same] = await as(adminId, () => rows("select public.count_stock($1, 7)::float as delta", [v.id]));
     expect(same.delta).toBe(0);
     expect((await rows("select count(*)::int n from public.stock_movements"))[0].n).toBe(before);
 
@@ -421,7 +519,7 @@ describe("panel de stock", () => {
 
   it("el historial muestra tipo, saldo, motivo, usuario y ticket", async () => {
     const log = await as(staffId, () =>
-      rows("select type, quantity, stock_after, reason, created_by_name, ticket_number from public.stock_movement_log where sku = 'MATE-NEG-G' order by id"),
+      rows("select type, quantity::float, stock_after::float, reason, created_by_name, ticket_number from public.stock_movement_log where sku = 'MATE-NEG-G' order by id"),
     );
     const types = log.map((m) => m.type);
     expect(types).toEqual(expect.arrayContaining(["ingreso", "ajuste", "venta", "anulacion"]));
@@ -485,5 +583,37 @@ describe("web pública: ofertas, categorías y más vendidos", () => {
     expect(best.find((b) => b.rank === 1)?.product_id).toBe(mate.id);
     // anon no puede leer las ventas de las que sale el ranking
     await expect(as("anon", () => rows("select * from public.sale_items"))).rejects.toThrow(/permission denied/);
+  });
+});
+
+describe("lista de precios del local", () => {
+  it("guarda marca, unidad y % de ganancia; la ganancia es solo para el admin", async () => {
+    const id = await saveProduct(adminId, {
+      name: "Yerba Canarias 1 kg", slug: "canarias-1kg", brand: "Canarias",
+      variants: [{ sku: "YER-032", price: 21230, cost: 8492, margin_pct: 50 }],
+    });
+    const [p] = await rows("select brand, unit, track_stock from public.products where id = $1", [id]);
+    expect(p).toEqual({ brand: "Canarias", unit: "unidad", track_stock: true });
+    const v = await variantBySku("YER-032");
+    const [c] = await as(adminId, () => rows("select cost::float, margin_pct::float from public.variant_costs where variant_id = $1", [v.id]));
+    expect(c).toEqual({ cost: 8492, margin_pct: 50 });
+    const [ov] = await as(staffId, () => rows("select brand, margin_pct, cost from public.stock_overview where sku = 'YER-032'"));
+    expect(ov).toEqual({ brand: "Canarias", margin_pct: null, cost: null });
+    await expect(
+      saveProduct(adminId, { name: "Mal", slug: "mal", variants: [{ sku: "MAL-0", price: 1, margin_pct: 100 }] }),
+    ).rejects.toThrow(/check/i);
+  });
+
+  it("el stock por kg acepta decimales en ingresos, ajustes y recuentos", async () => {
+    const v = await variantBySku("GRANEL-AJ"); // 4,75 kg
+    await as(adminId, () => rows("select public.register_stock_in($1, 2.5)", [v.id]));
+    await as(adminId, () => rows("select public.adjust_stock($1, -0.125, 'Merma')", [v.id]));
+    expect((await variantBySku("GRANEL-AJ")).stock).toBe(7.125);
+    await as(adminId, () => rows("select public.count_stock($1, 7)", [v.id]));
+    const [m] = await rows("select reason from public.stock_movements where variant_id = $1 order by id desc limit 1", [v.id]);
+    expect(m.reason).toBe("Recuento (había 7.125)");
+    // por unidad no
+    const mate = await variantBySku("MATE-NEG-G");
+    await expect(as(adminId, () => rows("select public.register_stock_in($1, 0.5)", [mate.id]))).rejects.toThrow(/por unidad/);
   });
 });

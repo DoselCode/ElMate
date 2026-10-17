@@ -1,4 +1,4 @@
-import type { PublicCategory, PublicProduct, PublicVariant, ShopSort, StoreInfo } from "@/shared/types";
+import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, ShopSort, StoreInfo } from "@/shared/types";
 
 /**
  * Consultas básicas del catálogo público. Hay dos implementaciones con el mismo contrato:
@@ -24,6 +24,8 @@ export interface CatalogSource {
   variants(productId: string): Promise<PublicVariant[]>;
   /** ids de los más vendidos, en orden */
   bestSellerIds(): Promise<string[]>;
+  /** Formas de pago activas con su ajuste sobre el precio de lista. */
+  paymentMethods(): Promise<PublicPaymentMethod[]>;
 }
 
 export const EMPTY_STORE: StoreInfo = {

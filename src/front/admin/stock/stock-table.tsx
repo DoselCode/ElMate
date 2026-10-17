@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PencilSimple, PlusCircle, SlidersHorizontal, Package } from "@phosphor-icons/react";
 import { Badge } from "@/front/shared/ui/badge";
-import { formatMoney } from "@/shared/format";
+import { formatMoney, formatQuantity } from "@/shared/format";
 import type { StockRow } from "@/shared/types";
 import { StockAdjustDialog, StockInDialog } from "./stock-dialogs";
 
@@ -21,11 +21,12 @@ function Thumb({ src, alt }: { src: string | null; alt: string }) {
 }
 
 function StockCell({ row }: { row: StockRow }) {
+  if (!row.track_stock) return <Badge tone="neutral">Sin control</Badge>;
   if (row.stock === 0) return <Badge tone="danger">Sin stock</Badge>;
   return (
     <div className="flex items-center gap-2">
-      <span className="font-semibold tabular-nums">{row.stock}</span>
-      {row.low_stock && <Badge tone="warning">Bajo · mín. {row.min_stock}</Badge>}
+      <span className="font-semibold tabular-nums">{formatQuantity(row.stock, row.unit)}</span>
+      {row.low_stock && <Badge tone="warning">Bajo · mín. {formatQuantity(row.min_stock, row.unit)}</Badge>}
     </div>
   );
 }
@@ -82,6 +83,7 @@ export function StockTable({
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{row.product_name}</p>
                       <p className="truncate text-xs text-muted">
+                        {row.brand && <span>{row.brand} · </span>}
                         {row.variant_label && <span>{row.variant_label} · </span>}
                         <span className="font-mono">{row.sku}</span>
                       </p>
@@ -89,7 +91,10 @@ export function StockTable({
                   </div>
                 </td>
                 <td className="px-3 py-3 text-muted">{row.supplier_name ?? "—"}</td>
-                <td className="px-3 py-3 text-right font-semibold tabular-nums">{formatMoney(row.price)}</td>
+                <td className="px-3 py-3 text-right font-semibold tabular-nums">
+                  {formatMoney(row.price)}
+                  {row.unit === "kg" && <span className="text-xs font-normal text-muted"> /kg</span>}
+                </td>
                 {showCost && <td className="px-3 py-3 text-right tabular-nums text-muted">{formatMoney(row.cost)}</td>}
                 <td className="px-3 py-3"><StockCell row={row} /></td>
                 <td className="px-3 py-3">
@@ -104,24 +109,28 @@ export function StockTable({
                 {canManage && (
                   <td className="px-5 py-3">
                     <div className="flex justify-end gap-1">
-                      <button
-                        type="button"
-                        className={btn}
-                        title="Registrar ingreso"
-                        aria-label={`Registrar ingreso de ${row.product_name} ${row.variant_label}`}
-                        onClick={() => setStockIn(row)}
-                      >
-                        <PlusCircle size={20} aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        className={btn}
-                        title="Ajustar stock"
-                        aria-label={`Ajustar stock de ${row.product_name} ${row.variant_label}`}
-                        onClick={() => setAdjust(row)}
-                      >
-                        <SlidersHorizontal size={20} aria-hidden />
-                      </button>
+                      {row.track_stock && (
+                        <>
+                          <button
+                            type="button"
+                            className={btn}
+                            title="Registrar ingreso"
+                            aria-label={`Registrar ingreso de ${row.product_name} ${row.variant_label}`}
+                            onClick={() => setStockIn(row)}
+                          >
+                            <PlusCircle size={20} aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            className={btn}
+                            title="Ajustar stock"
+                            aria-label={`Ajustar stock de ${row.product_name} ${row.variant_label}`}
+                            onClick={() => setAdjust(row)}
+                          >
+                            <SlidersHorizontal size={20} aria-hidden />
+                          </button>
+                        </>
+                      )}
                       <Link
                         href={`/admin/stock/${row.product_id}`}
                         className={btn}

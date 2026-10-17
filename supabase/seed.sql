@@ -13,7 +13,6 @@ insert into public.suppliers (name) values ('Artesanías del Litoral'), ('Distri
 update public.store_settings set
   name = 'El Mate',
   tagline = 'Todo para tu ronda',
-  surcharge_tarjeta = 10,
   show_vat = false;
 
 -- Las funciones de negocio exigen un admin logueado; el seed corre como postgres, así que
