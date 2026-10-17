@@ -90,3 +90,272 @@ body {
 dialog::backdrop {
   background: rgb(18 20 23 / 0.6);
 }
+
+/* =============================================================================================
+   Animaciones de la landing ("el ritual del mate")
+   - Las de scroll usan animaciones CSS atadas al scroll (animation-timeline): sin JavaScript y
+     fluidas. Si el navegador no las soporta, el contenido se ve quieto, normal.
+   - Con "reducir movimiento" activado en el sistema no se anima nada.
+   - Escalonado: cada elemento puede traer --i (0, 1, 2…) en su style.
+   ============================================================================================= */
+.fx-progress {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* ---- Hero, al cargar: la foto se "ceba" desde el mate hacia afuera ---- */
+  .fx-infuse {
+    animation: fx-infuse 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .fx-rise {
+    animation: fx-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(0.2s + var(--i, 0) * 0.12s);
+  }
+  .fx-pop {
+    animation: fx-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 1s both;
+  }
+  .fx-draw path {
+    stroke-dasharray: 200;
+    animation: fx-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) 0.9s both;
+  }
+
+  @supports (animation-timeline: view()) {
+    /* Barra de progreso de lectura en el header */
+    .fx-progress {
+      display: block;
+      transform-origin: left;
+      animation: fx-grow-x linear both;
+      animation-timeline: scroll(root);
+    }
+
+    /* Hero: al bajar, la foto se aleja girando apenas */
+    .fx-hero-out {
+      animation: fx-hero-out linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+
+    /* Títulos de sección: el texto se aclara como el vapor del termo */
+    .fx-steam-title {
+      animation: fx-steam-title linear both;
+      animation-timeline: view();
+      animation-range: entry 20% cover 35%;
+    }
+    .fx-line-l,
+    .fx-line-r {
+      animation: fx-grow-x linear both;
+      animation-timeline: view();
+      animation-range: entry 30% cover 35%;
+    }
+    .fx-line-l {
+      transform-origin: right;
+    }
+    .fx-line-r {
+      transform-origin: left;
+    }
+    .fx-leaf {
+      animation: fx-leaf linear both;
+      animation-timeline: view();
+      animation-range: entry 20% cover 35%;
+    }
+
+    /* Categorías: el panel verde se "llena" de abajo hacia arriba y las tarjetas suben a flote */
+    .fx-pour {
+      view-timeline-name: --pour;
+      animation: fx-pour linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+    .fx-float {
+      animation: fx-float linear both;
+      animation-timeline: --pour;
+      animation-range: cover calc(12% + var(--i, 0) * 4%) cover calc(38% + var(--i, 0) * 4%);
+    }
+
+    /* Ofertas: las tarjetas se reparten como cartas desde un mazo; los beneficios se dan vuelta */
+    .fx-deal {
+      animation: fx-deal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+    .fx-flip {
+      transform-origin: right center;
+      animation: fx-flip linear both;
+      animation-timeline: view();
+      animation-range: entry 20% cover 42%;
+    }
+
+    /* Ritual: las dos fotos arrancan apiladas y se separan a medida que bajás */
+    .fx-split-a,
+    .fx-split-b {
+      animation: fx-split-a linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+    .fx-split-b {
+      animation-name: fx-split-b;
+    }
+    .fx-marker {
+      animation: fx-marker linear both;
+      animation-timeline: view();
+      animation-range: entry 60% cover 45%;
+    }
+
+    /* Grillas de productos: suben como vapor, de a una */
+    .fx-vapor {
+      animation: fx-vapor linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--i, 0) * 8%) cover calc(28% + var(--i, 0) * 4%);
+    }
+
+    /* Promos: entran desde lados opuestos y la ilustración gira como al revolver */
+    .fx-from-left,
+    .fx-from-right {
+      animation: fx-from-left linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+    .fx-from-right {
+      animation-name: fx-from-right;
+    }
+    .fx-stir {
+      animation: fx-stir linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 45%;
+    }
+  }
+}
+
+@keyframes fx-infuse {
+  from {
+    clip-path: circle(0% at 32% 72%);
+    filter: saturate(0.2) brightness(1.1);
+  }
+  to {
+    clip-path: circle(150% at 32% 72%);
+    filter: none;
+  }
+}
+@keyframes fx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.4rem) rotate(1.5deg);
+    filter: blur(6px);
+  }
+}
+@keyframes fx-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-14deg);
+  }
+}
+@keyframes fx-draw {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fx-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes fx-hero-out {
+  to {
+    transform: scale(0.9) rotate(-3deg);
+    opacity: 0.35;
+  }
+}
+@keyframes fx-steam-title {
+  from {
+    opacity: 0;
+    letter-spacing: 0.18em;
+    filter: blur(10px);
+    transform: translateY(0.6rem);
+  }
+}
+@keyframes fx-leaf {
+  from {
+    opacity: 0;
+    transform: rotate(-140deg) scale(0);
+  }
+}
+@keyframes fx-pour {
+  from {
+    clip-path: inset(62% 0 0 0 round 2.5rem);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 2.5rem);
+  }
+}
+@keyframes fx-float {
+  from {
+    opacity: 0;
+    transform: translateY(70%) rotate(calc(-7deg + var(--i, 0) * 3.5deg));
+  }
+}
+@keyframes fx-deal {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--i, 0) * -60%)) translateY(3rem) rotate(calc(-12deg + var(--i, 0) * 5deg));
+  }
+}
+@keyframes fx-flip {
+  from {
+    opacity: 0;
+    transform: perspective(1000px) rotateY(75deg);
+  }
+}
+@keyframes fx-split-a {
+  from {
+    transform: translateX(45%) translateY(1rem) rotate(9deg);
+  }
+}
+@keyframes fx-split-b {
+  from {
+    transform: translateX(-45%) translateY(-0.5rem) rotate(-8deg);
+  }
+}
+@keyframes fx-marker {
+  from {
+    background-size: 0% 38%;
+  }
+  to {
+    background-size: 100% 38%;
+  }
+}
+@keyframes fx-vapor {
+  from {
+    opacity: 0;
+    transform: translateY(3.5rem) scale(0.94);
+    filter: blur(8px);
+  }
+}
+@keyframes fx-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-14%) rotate(-2.5deg);
+  }
+}
+@keyframes fx-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(14%) rotate(2.5deg);
+  }
+}
+@keyframes fx-stir {
+  from {
+    opacity: 0;
+    transform: rotate(-110deg) scale(0.5);
+  }
+}
+
+/* Subrayado tipo marcador (se dibuja al scrollear en .fx-marker) */
+.marker {
+  background-image: linear-gradient(var(--primary-soft), var(--primary-soft));
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 100% 38%;
+}
