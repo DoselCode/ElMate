@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Plus, Trash, X } from "@phosphor-icons/react";
+import { Calculator, PencilSimple, Plus, Trash, X } from "@phosphor-icons/react";
 import { archiveProductAction, saveProductAction } from "@/back/admin/stock/actions";
 import { Button, buttonClass } from "@/front/shared/ui/button";
 import { Field, inputClass, TextField } from "@/front/shared/ui/field";
 import { Modal } from "@/front/shared/ui/modal";
+import { formatMoney, formatQuantity, parseDecimal, type Unit } from "@/shared/format";
+import { applyAdjustment, priceFromCost } from "@/shared/pricing";
 import { fieldErrors, productSchema, type ProductInput } from "@/shared/schemas/product";
 import type { Option, ProductForEdit, VariantForEdit } from "@/shared/types";
 import { ImageUploader } from "./image-uploader";
@@ -23,6 +25,10 @@ type VariantDraft = {
   /** Precio anterior (tachado en la web). Vacío = sin oferta. */
   compareAt: string;
   cost: string;
+  /** % de ganancia sobre el precio en efectivo. */
+  margin: string;
+  /** true = el precio se escribe a mano; false = se calcula con costo + ganancia. */
+  manualPrice: boolean;
   minStock: string;
   initialStock: string;
   active: boolean;
@@ -32,7 +38,7 @@ type VariantDraft = {
 
 const OPTION_SUGGESTIONS = ["Color", "Tamaño", "Material", "Talle"];
 
-const num = (s: string) => (s.trim() === "" ? Number.NaN : Number(s));
+const num = (s: string) => (s.trim() === "" ? Number.NaN : parseDecimal(s));
 const newKey = () => crypto.randomUUID();
 const omit = (obj: Record<string, string>, key: string) => Object.fromEntries(Object.entries(obj).filter(([k]) => k !== key));
 
@@ -45,13 +51,17 @@ function emptyVariant(from?: VariantDraft): VariantDraft {
     price: from?.price ?? "",
     compareAt: from?.compareAt ?? "",
     cost: from?.cost ?? "",
+    margin: from?.margin ?? "",
+    manualPrice: from?.manualPrice ?? false,
     minStock: from?.minStock ?? "0",
     initialStock: "0",
     active: true,
   };
 }
 
-function toDraft(v: VariantForEdit): VariantDraft {
+function toDraft(v: VariantForEdit, cashAdjustmentPct: number): VariantDraft {
+  // Si el precio guardado coincide con el calculado, se sigue calculando solo; si no, quedó puesto a mano
+  const auto = v.marginPct === null ? null : priceFromCost(v.cost, v.marginPct, cashAdjustmentPct);
   return {
     key: v.id,
     id: v.id,
@@ -61,6 +71,8 @@ function toDraft(v: VariantForEdit): VariantDraft {
     price: String(v.price),
     compareAt: v.compareAtPrice === null ? "" : String(v.compareAtPrice),
     cost: String(v.cost),
+    margin: v.marginPct === null ? "" : String(v.marginPct),
+    manualPrice: auto === null || Math.abs(auto.listPrice - v.price) > 0.009,
     minStock: String(v.minStock),
     initialStock: "0",
     active: v.active,
@@ -79,14 +91,22 @@ function SectionCard({ title, description, children }: { title: string; descript
   );
 }
 
+/** Precio de lista calculado con costo + ganancia, o null si falta algún dato. */
+function autoPrice(v: VariantDraft, cashAdjustmentPct: number) {
+  return v.manualPrice ? null : priceFromCost(num(v.cost), num(v.margin), cashAdjustmentPct);
+}
+
 export function ProductForm({
   initial,
   categories,
   suppliers,
+  cashAdjustmentPct,
 }: {
   initial?: ProductForEdit;
   categories: Option[];
   suppliers: Option[];
+  /** Ajuste de la forma de pago en efectivo (ej: −20): la ganancia se calcula sobre ese precio. */
+  cashAdjustmentPct: number;
 }) {
   const router = useRouter();
   const isEdit = Boolean(initial);
@@ -95,13 +115,16 @@ export function ProductForm({
   const [description, setDescription] = useState(initial?.description ?? "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [supplierId, setSupplierId] = useState(initial?.supplierId ?? "");
+  const [brand, setBrand] = useState(initial?.brand ?? "");
+  const [unit, setUnit] = useState<Unit>(initial?.unit ?? "unidad");
+  const [trackStock, setTrackStock] = useState(initial?.trackStock ?? true);
   const [badge, setBadge] = useState(initial?.badge ?? "");
   const [isVisible, setIsVisible] = useState(initial?.isVisible ?? true);
   const [images, setImages] = useState<string[]>(initial?.images ?? []);
   const [optionNames, setOptionNames] = useState<string[]>(initial?.optionNames ?? []);
   const [optionDraft, setOptionDraft] = useState("");
   const [variants, setVariants] = useState<VariantDraft[]>(
-    initial?.variants.length ? initial.variants.map(toDraft) : [emptyVariant()],
+    initial?.variants.length ? initial.variants.map((v) => toDraft(v, cashAdjustmentPct)) : [emptyVariant()],
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -149,6 +172,9 @@ export function ProductForm({
       description,
       categoryId: categoryId || null,
       supplierId: supplierId || null,
+      brand,
+      unit,
+      trackStock,
       optionNames,
       images,
       isVisible,
@@ -158,9 +184,10 @@ export function ProductForm({
         sku: v.sku,
         barcode: v.barcode,
         attributes: v.attributes,
-        price: num(v.price),
+        price: autoPrice(v, cashAdjustmentPct)?.listPrice ?? num(v.price),
         compareAtPrice: v.compareAt.trim() === "" ? null : num(v.compareAt),
         cost: v.cost.trim() === "" ? 0 : num(v.cost),
+        marginPct: v.margin.trim() === "" ? null : num(v.margin),
         minStock: v.minStock.trim() === "" ? 0 : num(v.minStock),
         initialStock: v.initialStock.trim() === "" ? 0 : num(v.initialStock),
         active: v.active,
@@ -253,6 +280,35 @@ export function ProductForm({
               ))}
             </select>
           </Field>
+          <TextField
+            id="brand"
+            label="Marca"
+            value={brand}
+            maxLength={80}
+            placeholder="Ej: Canarias, Waterdog"
+            error={err("brand")}
+            onChange={(e) => setBrand(e.target.value)}
+          />
+          <Field label="Se vende por" htmlFor="unit" hint={unit === "kg" ? "Cantidades con decimales: 0,25 kg" : undefined}>
+            <select id="unit" value={unit} onChange={(e) => setUnit(e.target.value as Unit)} className={inputClass}>
+              <option value="unidad">Unidad</option>
+              <option value="kg">Kilo (a granel)</option>
+            </select>
+          </Field>
+          <label className="flex items-start gap-2.5 text-sm font-medium md:col-span-2">
+            <input
+              type="checkbox"
+              checked={trackStock}
+              onChange={(e) => setTrackStock(e.target.checked)}
+              className="mt-0.5 size-4 accent-primary"
+            />
+            <span>
+              Lleva control de stock
+              <span className="block text-xs font-normal text-muted">
+                Destildalo para servicios como los grabados: se venden sin descontar inventario.
+              </span>
+            </span>
+          </label>
           <Field label="Descripción" htmlFor="description" error={err("description")} className="md:col-span-2">
             <textarea
               id="description"
@@ -422,15 +478,37 @@ export function ProductForm({
                     onChange={(e) => patchVariant(v.key, { barcode: e.target.value })}
                   />
                   <TextField
-                    id={`${idp}-price`}
-                    label="Precio de venta *"
+                    id={`${idp}-cost`}
+                    label={unit === "kg" ? "Costo por kg" : "Costo"}
                     type="number"
                     inputMode="decimal"
                     min={0}
                     step="0.01"
-                    value={v.price}
+                    value={v.cost}
+                    error={err(`${p}.cost`)}
+                    onChange={(e) => patchVariant(v.key, { cost: e.target.value })}
+                  />
+                  <TextField
+                    id={`${idp}-margin`}
+                    label="Ganancia %"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={99.99}
+                    step="0.01"
+                    value={v.margin}
+                    placeholder="Ej: 50"
+                    hint="Sobre el precio en efectivo"
+                    error={err(`${p}.marginPct`)}
+                    onChange={(e) => patchVariant(v.key, { margin: e.target.value })}
+                  />
+                  <PriceField
+                    idp={idp}
+                    draft={v}
+                    unit={unit}
+                    cashAdjustmentPct={cashAdjustmentPct}
                     error={err(`${p}.price`)}
-                    onChange={(e) => patchVariant(v.key, { price: e.target.value })}
+                    onChange={(patch) => patchVariant(v.key, patch)}
                   />
                   <TextField
                     id={`${idp}-compare`}
@@ -444,48 +522,36 @@ export function ProductForm({
                     error={err(`${p}.compareAtPrice`)}
                     onChange={(e) => patchVariant(v.key, { compareAt: e.target.value })}
                   />
-                  <TextField
-                    id={`${idp}-cost`}
-                    label="Costo"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.01"
-                    value={v.cost}
-                    error={err(`${p}.cost`)}
-                    onChange={(e) => patchVariant(v.key, { cost: e.target.value })}
-                  />
-                  <TextField
-                    id={`${idp}-min`}
-                    label="Stock mínimo"
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    step={1}
-                    value={v.minStock}
-                    hint="Avisa cuando baja de este número"
-                    error={err(`${p}.minStock`)}
-                    onChange={(e) => patchVariant(v.key, { minStock: e.target.value })}
-                  />
-                  {v.id ? (
-                    <div>
-                      <p className="mb-1.5 text-sm font-medium">Stock actual</p>
-                      <p className="py-2.5 text-sm font-semibold tabular-nums">{v.currentStock}</p>
-                      <p className="text-xs text-muted">Se modifica con Ingreso o Ajuste en el inventario</p>
-                    </div>
-                  ) : (
+                  {trackStock && (
                     <TextField
-                      id={`${idp}-initial`}
-                      label="Stock inicial"
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      step={1}
-                      value={v.initialStock}
-                      error={err(`${p}.initialStock`)}
-                      onChange={(e) => patchVariant(v.key, { initialStock: e.target.value })}
+                      id={`${idp}-min`}
+                      label={unit === "kg" ? "Stock mínimo (kg)" : "Stock mínimo"}
+                      inputMode="decimal"
+                      value={v.minStock}
+                      hint="Avisa cuando baja de este número"
+                      error={err(`${p}.minStock`)}
+                      onChange={(e) => patchVariant(v.key, { minStock: e.target.value })}
                     />
                   )}
+                  {trackStock &&
+                    (v.id ? (
+                      <div>
+                        <p className="mb-1.5 text-sm font-medium">Stock actual</p>
+                        <p className="py-2.5 text-sm font-semibold tabular-nums">
+                          {v.currentStock !== undefined ? formatQuantity(v.currentStock, unit) : "—"}
+                        </p>
+                        <p className="text-xs text-muted">Se modifica con Ingreso o Ajuste en el inventario</p>
+                      </div>
+                    ) : (
+                      <TextField
+                        id={`${idp}-initial`}
+                        label={unit === "kg" ? "Stock inicial (kg)" : "Stock inicial"}
+                        inputMode="decimal"
+                        value={v.initialStock}
+                        error={err(`${p}.initialStock`)}
+                        onChange={(e) => patchVariant(v.key, { initialStock: e.target.value })}
+                      />
+                    ))}
                   <label className="col-span-2 flex items-center gap-2.5 self-end pb-2.5 text-sm font-medium">
                     <input
                       type="checkbox"
@@ -549,5 +615,78 @@ export function ProductForm({
         </div>
       </Modal>
     </form>
+  );
+}
+
+/**
+ * Precio de lista: se calcula solo con costo + ganancia (como la lista del local) o se escribe a mano.
+ * Debajo muestra cuánto sale en efectivo.
+ */
+function PriceField({
+  idp,
+  draft,
+  unit,
+  cashAdjustmentPct,
+  error,
+  onChange,
+}: {
+  idp: string;
+  draft: VariantDraft;
+  unit: Unit;
+  cashAdjustmentPct: number;
+  error?: string;
+  onChange: (patch: Partial<VariantDraft>) => void;
+}) {
+  const auto = autoPrice(draft, cashAdjustmentPct);
+  const list = auto?.listPrice ?? num(draft.price);
+  const cash = Number.isFinite(list) ? (auto?.cashPrice ?? applyAdjustment(list, cashAdjustmentPct)) : null;
+  const label = unit === "kg" ? "Precio de lista por kg *" : "Precio de lista *";
+  const toggle =
+    "mt-1 inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-primary hover:underline underline-offset-2";
+
+  if (!draft.manualPrice) {
+    return (
+      <div>
+        <p id={`${idp}-price-label`} className="mb-1.5 text-sm font-medium">{label}</p>
+        <p
+          aria-labelledby={`${idp}-price-label`}
+          aria-invalid={Boolean(error) || undefined}
+          className={`rounded-xl border px-3.5 py-2.5 text-sm font-bold tabular-nums ${
+            auto ? "border-border bg-primary-soft/40" : "border-dashed border-border-strong text-muted"
+          }`}
+        >
+          {auto ? formatMoney(auto.listPrice) : "Cargá costo y ganancia"}
+        </p>
+        {cash !== null && auto && <p className="mt-1 text-xs text-muted">Efectivo: {formatMoney(cash)}</p>}
+        {error && !auto && <p role="alert" className="mt-1 text-xs font-medium text-danger">{error}</p>}
+        <button
+          type="button"
+          className={toggle}
+          onClick={() => onChange({ manualPrice: true, price: auto ? String(auto.listPrice) : draft.price })}
+        >
+          <PencilSimple size={12} weight="bold" aria-hidden /> Poner a mano
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <TextField
+        id={`${idp}-price`}
+        label={label}
+        type="number"
+        inputMode="decimal"
+        min={0}
+        step="0.01"
+        value={draft.price}
+        error={error}
+        hint={cash !== null && Number.isFinite(cash) ? `Efectivo: ${formatMoney(cash)}` : undefined}
+        onChange={(e) => onChange({ price: e.target.value })}
+      />
+      <button type="button" className={toggle} onClick={() => onChange({ manualPrice: false })}>
+        <Calculator size={12} weight="bold" aria-hidden /> Calcular con la ganancia
+      </button>
+    </div>
   );
 }

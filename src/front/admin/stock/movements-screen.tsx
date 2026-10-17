@@ -5,7 +5,7 @@ import { EmptyState, LoadError } from "@/front/shared/ui/empty-state";
 import { inputClass } from "@/front/shared/ui/field";
 import { FilterField } from "@/front/shared/ui/filter-field";
 import { Pagination } from "@/front/shared/ui/pagination";
-import { formatDateTime, formatSigned } from "@/shared/format";
+import { formatDateTime, formatQuantity } from "@/shared/format";
 import { PAGE_SIZE } from "@/shared/query";
 import type { MovementFilters, MovementRow, MovementType, Paged } from "@/shared/types";
 
@@ -100,9 +100,9 @@ function MovementsTable({ rows }: { rows: MovementRow[] }) {
                 <Badge tone={TYPES[m.type].tone}>{TYPES[m.type].label}</Badge>
               </td>
               <td className={`px-3 py-3 text-right font-semibold tabular-nums ${m.quantity > 0 ? "text-success" : "text-danger"}`}>
-                {formatSigned(m.quantity)}
+                {formatQuantity(m.quantity, m.unit, { signed: true })}
               </td>
-              <td className="px-3 py-3 text-right tabular-nums">{m.stock_after}</td>
+              <td className="px-3 py-3 text-right tabular-nums">{formatQuantity(m.stock_after, m.unit)}</td>
               <td className="px-3 py-3 text-muted">
                 {m.ticket_number ? `Ticket #${m.ticket_number}` : m.reason || "—"}
                 {m.ticket_number && m.reason ? ` · ${m.reason}` : ""}

@@ -6,11 +6,14 @@ export function Price({
   compareAt,
   from = false,
   size = "md",
+  perKg = false,
 }: {
   price: number;
   compareAt: number | null;
   from?: boolean;
   size?: "md" | "lg";
+  /** Producto a granel: el precio es por kilo. */
+  perKg?: boolean;
 }) {
   return (
     <div className="leading-tight">
@@ -24,6 +27,7 @@ export function Price({
         {from && <span className="mr-1 font-sans text-xs font-semibold text-muted">Desde</span>}
         {compareAt !== null && <span className="sr-only">Ahora </span>}
         {formatMoney(price)}
+        {perKg && <span className="ml-0.5 font-sans text-xs font-semibold text-muted">/kg</span>}
       </p>
     </div>
   );

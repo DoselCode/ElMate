@@ -1,6 +1,6 @@
 import "server-only";
 import { createPublicClient } from "@/back/shared/supabase/public";
-import type { PublicCategory, PublicProduct, PublicVariant, StoreInfo } from "@/shared/types";
+import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, StoreInfo } from "@/shared/types";
 import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
 
 /** Catálogo real: solo lee las vistas public_* (nunca las tablas, que tienen costos y stock exacto). */
@@ -76,5 +76,11 @@ export const supabaseSource: CatalogSource = {
     const { data, error } = await createPublicClient().from("public_best_sellers").select("product_id").order("rank");
     if (error) throw error;
     return (data ?? []).map((r) => r.product_id as string);
+  },
+
+  async paymentMethods() {
+    const { data, error } = await createPublicClient().from("public_payment_methods").select("*").order("sort_order");
+    if (error) throw error;
+    return ((data ?? []) as PublicPaymentMethod[]).map((m) => ({ ...m, adjustment_pct: Number(m.adjustment_pct) }));
   },
 };

@@ -45,7 +45,7 @@ export function ProductCard({
           </Link>
         </h3>
         <div className="mt-auto flex items-end justify-between gap-2 pt-3">
-          <Price price={product.price} compareAt={product.compare_at_price} from={product.has_price_range} />
+          <Price price={product.price} compareAt={product.compare_at_price} from={product.has_price_range} perKg={product.unit === "kg"} />
           <AddToCartButton product={product} />
         </div>
       </div>

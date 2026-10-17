@@ -2,16 +2,25 @@
 
 import { useState } from "react";
 import { CheckCircle, ShoppingCartSimple, XCircle } from "@phosphor-icons/react";
-import type { PublicProduct, PublicVariant } from "@/shared/types";
+import type { PublicPaymentMethod, PublicProduct, PublicVariant } from "@/shared/types";
 import { QuantityStepper } from "../cart/cart-drawer";
 import { useCart } from "../cart/cart-provider";
+import { formatMoney } from "@/shared/format";
 import { DiscountBadge, Price } from "../catalog/price";
 
 /**
  * Elección de variante (una fila de botones por opción: Color, Tamaño…), cantidad y "Agregar al carrito".
  * Un valor se ve tachado si con lo ya elegido no existe esa combinación.
  */
-export function VariantPicker({ product, variants }: { product: PublicProduct; variants: PublicVariant[] }) {
+export function VariantPicker({
+  product,
+  variants,
+  paymentMethods,
+}: {
+  product: PublicProduct;
+  variants: PublicVariant[];
+  paymentMethods: PublicPaymentMethod[];
+}) {
   const { add } = useCart();
   const options = product.option_names;
   const initial = variants.find((v) => v.in_stock) ?? variants[0];
@@ -43,9 +52,10 @@ export function VariantPicker({ product, variants }: { product: PublicProduct; v
   return (
     <div className="mt-6 space-y-6">
       <div className="flex items-center gap-3">
-        <Price price={shown.price} compareAt={shown.compare_at_price} size="lg" />
+        <Price price={shown.price} compareAt={shown.compare_at_price} size="lg" perKg={product.unit === "kg"} />
         {shown.compare_at_price && <DiscountBadge pct={Math.round(100 * (1 - shown.price / shown.compare_at_price))} />}
       </div>
+      <PaymentPrices price={shown.price} methods={paymentMethods} />
 
       {options.map((option) => (
         <fieldset key={option}>
@@ -111,5 +121,30 @@ export function VariantPicker({ product, variants }: { product: PublicProduct; v
         </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Precio según cómo pagás: las formas de pago con el mismo ajuste se agrupan
+ * ("Transferencia o Débito"). Solo si hay alguna con descuento o recargo.
+ */
+function PaymentPrices({ price, methods }: { price: number; methods: PublicPaymentMethod[] }) {
+  if (!methods.some((m) => m.adjustment_pct !== 0)) return null;
+  const groups = new Map<number, string[]>();
+  for (const m of [...methods].sort((a, b) => a.adjustment_pct - b.adjustment_pct)) {
+    groups.set(m.adjustment_pct, [...(groups.get(m.adjustment_pct) ?? []), m.name]);
+  }
+  return (
+    <ul aria-label="Precio según la forma de pago" className="-mt-2 space-y-1 text-sm">
+      {[...groups].map(([pct, names]) => (
+        <li key={pct} className="flex flex-wrap items-baseline gap-x-2">
+          <span className="font-bold tabular-nums">{formatMoney(Math.round(price * (1 + pct / 100) * 100) / 100)}</span>
+          <span className="text-muted">
+            {names.length > 1 ? `${names.slice(0, -1).join(", ")} o ${names[names.length - 1]}` : names[0]}
+            {pct < 0 && <span className="ml-1 font-semibold text-primary">{Math.abs(pct)}% off</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

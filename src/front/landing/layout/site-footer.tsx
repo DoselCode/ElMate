@@ -5,6 +5,9 @@ import { normalizeWhatsappNumber } from "@/shared/whatsapp";
 import { FOOTER_PLACEHOLDER } from "../content";
 import { Logo } from "./logo";
 
+/** El footer muestra las primeras categorías (según el orden del panel); el resto, en la tienda. */
+const FOOTER_CATEGORIES = 5;
+
 /** Completa con datos de ejemplo lo que todavía no se cargó en "Datos del local". */
 function withPlaceholders(info: StoreInfo): StoreInfo {
   const filled = { ...info };
@@ -61,11 +64,18 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
         </div>
 
         <FooterColumn title="Categorías">
-          {categories.map((c) => (
+          {categories.slice(0, FOOTER_CATEGORIES).map((c) => (
             <li key={c.id}>
               <Link href={`/tienda?categoria=${c.slug}`} className="hover:text-primary">{c.name}</Link>
             </li>
           ))}
+          {categories.length > FOOTER_CATEGORIES && (
+            <li>
+              <Link href="/tienda" className="font-semibold text-primary hover:underline underline-offset-2">
+                Ver todas ({categories.length})
+              </Link>
+            </li>
+          )}
         </FooterColumn>
 
         <FooterColumn title="Tienda">

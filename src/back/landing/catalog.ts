@@ -1,16 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
-import type {
-  HomeData,
-  ProductPageData,
-  PublicCategory,
-  PublicProduct,
-  PublicVariant,
-  ShopFilters,
-  ShopSort,
-  StoreInfo,
-} from "@/shared/types";
+import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, ShopFilters, ShopSort, StoreInfo } from "@/shared/types";
 import { demoSource } from "./demo-source";
 import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
 import { supabaseSource } from "./supabase-source";
@@ -91,9 +82,10 @@ export const getProductPage = cache(async (slug: string): Promise<ProductPageDat
   const product = await safe("el producto", null, () => source.productBySlug(slug));
   if (!product) return null;
 
-  const [variants, related] = await Promise.all([
+  const [variants, related, paymentMethods] = await Promise.all([
     safe("las variantes", [] as PublicVariant[], () => source.variants(product.id)),
     products({ category: product.category_slug ?? undefined, excludeId: product.id, sort: "destacados", limit: 4 }),
+    safe("las formas de pago", [] as PublicPaymentMethod[], () => source.paymentMethods()),
   ]);
-  return { product, variants, related: related.rows };
+  return { product, variants, related: related.rows, paymentMethods };
 });

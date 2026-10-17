@@ -10,6 +10,7 @@ const variant = (over: Record<string, unknown> = {}) => ({
   price: 1000,
   compareAtPrice: null,
   cost: 500,
+  marginPct: null,
   minStock: 0,
   initialStock: 0,
   active: true,
@@ -21,6 +22,9 @@ const base = (over: Partial<ProductInput> = {}): ProductInput => ({
   description: "",
   categoryId: null,
   supplierId: null,
+  brand: "",
+  unit: "unidad",
+  trackStock: true,
   optionNames: ["Color"],
   images: [],
   isVisible: true,
@@ -97,6 +101,19 @@ describe("productSchema", () => {
     expect(payload.variants[0].compare_at_price).toBe(1500);
   });
 
+  it("por unidad no acepta decimales; por kg sí, hasta 3", () => {
+    const unidad = productSchema.safeParse(base({ variants: [variant({ minStock: 0.5 })] }));
+    expect(unidad.success).toBe(false);
+    if (!unidad.success) expect(fieldErrors(unidad.error)["variants.0.minStock"]).toMatch(/sin decimales/);
+    expect(productSchema.safeParse(base({ unit: "kg", variants: [variant({ minStock: 0.5, initialStock: 2.125 })] })).success).toBe(true);
+    expect(productSchema.safeParse(base({ unit: "kg", variants: [variant({ initialStock: 0.0001 })] })).success).toBe(false);
+  });
+
+  it("la ganancia es opcional y menor a 100", () => {
+    expect(productSchema.safeParse(base({ variants: [variant({ marginPct: 53 })] })).success).toBe(true);
+    expect(productSchema.safeParse(base({ variants: [variant({ marginPct: 100 })] })).success).toBe(false);
+  });
+
   it("limita a 3 opciones y detecta opciones repetidas", () => {
     expect(productSchema.safeParse(base({ optionNames: ["a", "b", "c", "d"] })).success).toBe(false);
     expect(productSchema.safeParse(base({ optionNames: ["Color", "color"] })).success).toBe(false);
@@ -123,15 +140,25 @@ describe("toSavePayload", () => {
     expect(payload.variants[0]).not.toHaveProperty("initial_stock");
     expect(payload.variants[1]).toMatchObject({ id: null, initial_stock: 4, attributes: { Color: "Rojo" } });
   });
+
+  it("manda marca, unidad y ganancia; sin control de stock no manda stock", () => {
+    const parsed = productSchema.parse(
+      base({ brand: " Canarias ", trackStock: false, variants: [variant({ marginPct: 50, minStock: 3, initialStock: 5 })] }),
+    );
+    const payload = toSavePayload(parsed, "x");
+    expect(payload).toMatchObject({ brand: "Canarias", unit: "unidad", track_stock: false });
+    expect(payload.variants[0]).toMatchObject({ margin_pct: 50, min_stock: 0, initial_stock: 0 });
+  });
 });
 
 describe("stock schemas", () => {
   const id = "11111111-1111-4111-8111-111111111111";
 
-  it("el ingreso exige cantidad entera positiva", () => {
+  it("el ingreso exige cantidad positiva con hasta 3 decimales", () => {
     expect(stockInSchema.safeParse({ variantId: id, quantity: 5, unitCost: null, reason: "" }).success).toBe(true);
     expect(stockInSchema.safeParse({ variantId: id, quantity: 0, unitCost: null, reason: "" }).success).toBe(false);
-    expect(stockInSchema.safeParse({ variantId: id, quantity: 1.5, unitCost: null, reason: "" }).success).toBe(false);
+    expect(stockInSchema.safeParse({ variantId: id, quantity: 1.5, unitCost: null, reason: "" }).success).toBe(true);
+    expect(stockInSchema.safeParse({ variantId: id, quantity: 1.0005, unitCost: null, reason: "" }).success).toBe(false);
     expect(stockInSchema.safeParse({ variantId: id, quantity: 1, unitCost: -3, reason: "" }).success).toBe(false);
   });
 
