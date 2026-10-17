@@ -91,6 +91,79 @@ dialog::backdrop {
   background: rgb(18 20 23 / 0.6);
 }
 
+/* ---- Carrito: entra deslizando con desaceleración suave y sale rápido hacia la derecha ----
+   Transiciones nativas de <dialog> (@starting-style + allow-discrete): sin JavaScript.
+   Al cerrar se usan los valores del estado cerrado (más corto); al abrir, los de [open]. */
+.cart-drawer {
+  translate: 100% 0;
+  transition:
+    translate 0.32s cubic-bezier(0.55, 0, 0.75, 0),
+    display 0.32s allow-discrete,
+    overlay 0.32s allow-discrete;
+}
+.cart-drawer[open] {
+  translate: 0 0;
+  transition:
+    translate 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    display 0.55s allow-discrete,
+    overlay 0.55s allow-discrete;
+}
+@starting-style {
+  .cart-drawer[open] {
+    translate: 100% 0;
+  }
+}
+.cart-drawer::backdrop {
+  background: rgb(18 20 23 / 0);
+  backdrop-filter: blur(0);
+  transition:
+    background-color 0.32s,
+    backdrop-filter 0.32s,
+    display 0.32s allow-discrete,
+    overlay 0.32s allow-discrete;
+}
+.cart-drawer[open]::backdrop {
+  background: rgb(18 20 23 / 0.45);
+  backdrop-filter: blur(3px);
+}
+@starting-style {
+  .cart-drawer[open]::backdrop {
+    background: rgb(18 20 23 / 0);
+    backdrop-filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Los productos se reparten como cartas, uno tras otro, y el total sube desde abajo */
+  .cart-drawer[open] .cart-item {
+    animation: cart-item-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(0.18s + var(--i, 0) * 0.06s);
+  }
+  .cart-drawer[open] .cart-foot {
+    animation: cart-foot-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  }
+  .cart-drawer[open] .cart-close {
+    animation: cart-close-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
+  }
+}
+@keyframes cart-item-in {
+  from {
+    opacity: 0;
+    transform: translateX(3rem) rotate(3deg);
+  }
+}
+@keyframes cart-foot-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes cart-close-in {
+  from {
+    opacity: 0;
+    transform: rotate(-180deg) scale(0.4);
+  }
+}
+
 /* =============================================================================================
    Animaciones de la landing ("el ritual del mate")
    - Las de scroll usan animaciones CSS atadas al scroll (animation-timeline): sin JavaScript y

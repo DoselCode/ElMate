@@ -38,7 +38,7 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
       onClick={(e) => {
         if (e.target === ref.current) cart.close(); // clic en el fondo
       }}
-      className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-background p-0 text-foreground shadow-2xl"
+      className="cart-drawer m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-background p-0 text-foreground shadow-2xl"
     >
       <div className="flex h-full flex-col">
         <header className="flex items-center justify-between border-b border-border bg-surface px-5 py-4">
@@ -49,14 +49,14 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
             type="button"
             onClick={cart.close}
             aria-label="Cerrar el carrito"
-            className="grid size-10 cursor-pointer place-items-center rounded-full hover:bg-primary-soft"
+            className="cart-close grid size-10 cursor-pointer place-items-center rounded-full hover:bg-primary-soft"
           >
             <X size={20} aria-hidden />
           </button>
         </header>
 
         {cart.items.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+          <div className="cart-item flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
             <ShoppingCart size={44} className="text-muted/60" aria-hidden />
             <p className="font-display text-lg font-bold">Tu carrito está vacío</p>
             <p className="text-sm text-muted">Sumá productos y te armamos el pedido para mandar por WhatsApp.</p>
@@ -71,8 +71,12 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
         ) : (
           <>
             <ul className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
-              {cart.items.map((item) => (
-                <li key={item.variantId} className="flex gap-3 rounded-2xl bg-surface p-3 shadow-sm">
+              {cart.items.map((item, i) => (
+                <li
+                  key={item.variantId}
+                  style={{ "--i": Math.min(i, 8) } as React.CSSProperties}
+                  className="cart-item flex gap-3 rounded-2xl bg-surface p-3 shadow-sm"
+                >
                   <ProductThumb src={item.image} alt="" />
                   <div className="min-w-0 flex-1">
                     <Link
@@ -104,7 +108,7 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
               ))}
             </ul>
 
-            <footer className="space-y-3 border-t border-border bg-surface px-5 py-4">
+            <footer className="cart-foot space-y-3 border-t border-border bg-surface px-5 py-4">
               <div className="flex items-baseline justify-between">
                 <span className="text-sm font-semibold text-muted">Total estimado</span>
                 <span className="font-display text-2xl font-bold tabular-nums">{formatMoney(cart.total)}</span>
