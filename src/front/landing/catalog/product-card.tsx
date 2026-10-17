@@ -4,9 +4,17 @@ import { AddToCartButton } from "./add-to-cart-button";
 import { DiscountBadge, Price } from "./price";
 import { ProductImage } from "./product-image";
 
-export function ProductCard({ product }: { product: PublicProduct }) {
+export function ProductCard({
+  product,
+  className = "",
+  style,
+}: {
+  product: PublicProduct;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <article className="group flex w-full flex-col rounded-[var(--radius-card)] bg-surface p-3 shadow-sm transition-shadow hover:shadow-md">
+    <article style={style} className={`${className} group flex w-full flex-col rounded-[var(--radius-card)] bg-surface p-3 shadow-sm transition-shadow hover:shadow-md`}>
       <Link href={`/producto/${product.slug}`} className="relative block" tabIndex={-1} aria-hidden>
         <ProductImage
           src={product.images[0]}
@@ -45,11 +53,25 @@ export function ProductCard({ product }: { product: PublicProduct }) {
   );
 }
 
-export function ProductGrid({ products, columns = 4 }: { products: PublicProduct[]; columns?: 3 | 4 }) {
+/** `reveal`: las tarjetas aparecen al scrollear, escalonadas por columna (animación en globals.css). */
+export function ProductGrid({
+  products,
+  columns = 4,
+  reveal = false,
+}: {
+  products: PublicProduct[];
+  columns?: 3 | 4;
+  reveal?: boolean;
+}) {
   return (
     <div className={`grid grid-cols-1 gap-5 sm:grid-cols-2 ${columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
-      {products.map((p) => (
-        <ProductCard key={p.id} product={p} />
+      {products.map((p, i) => (
+        <ProductCard
+          key={p.id}
+          product={p}
+          className={reveal ? "fx-vapor" : ""}
+          style={reveal ? ({ "--i": i % columns } as React.CSSProperties) : undefined}
+        />
       ))}
     </div>
   );

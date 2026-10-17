@@ -36,7 +36,9 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
 
   return (
     <header className="sticky top-0 z-40 px-3 pt-3 sm:px-6">
-      <div className="mx-auto max-w-[82rem] rounded-[2rem] bg-surface/95 px-4 py-3 shadow-[0_6px_24px_rgb(29_42_32/0.06)] backdrop-blur sm:px-6">
+      <div className="relative mx-auto max-w-[82rem] rounded-[2rem] bg-surface/95 px-4 py-3 shadow-[0_6px_24px_rgb(29_42_32/0.06)] backdrop-blur sm:px-6">
+        {/* Progreso de lectura: una línea verde que se llena al bajar (solo navegadores que lo soportan) */}
+        <span className="fx-progress pointer-events-none absolute inset-x-8 bottom-0 h-[3px] rounded-full bg-primary/70" aria-hidden />
         <div className="flex items-center justify-between gap-4">
           <Logo name={storeName} />
 

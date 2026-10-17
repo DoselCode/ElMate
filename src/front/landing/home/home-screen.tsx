@@ -48,13 +48,13 @@ export function HomeScreen({ data, categories }: { data: HomeData; categories: P
       {data.bestSellers.length > 0 && (
         <section className={`${container} mt-24`}>
           <SectionHeading {...SECTIONS.bestSellers} />
-          <ProductGrid products={data.bestSellers} />
+          <ProductGrid products={data.bestSellers} reveal />
         </section>
       )}
       {data.newest.length > 0 && (
         <section className={`${container} mt-24`}>
           <SectionHeading {...SECTIONS.newest} />
-          <ProductGrid products={data.newest} />
+          <ProductGrid products={data.newest} reveal />
         </section>
       )}
       <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
@@ -72,25 +72,25 @@ function Hero() {
       />
       <div className={`${container} grid items-center gap-12 pt-8 lg:grid-cols-[minmax(0,34rem)_1fr] lg:gap-16 lg:pt-8`}>
         {/* La foto no pasa del alto de la pantalla: al cargar se ve entera, con el cartel de WhatsApp */}
-        <div className="relative w-full max-w-[min(34rem,calc(100svh-11rem))] max-lg:mx-auto">
-          <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-[#f3e9dc] shadow-[0_20px_50px_rgb(43_106_62/0.08)]">
+        <div className="fx-hero-out relative w-full max-w-[min(34rem,calc(100svh-11rem))] max-lg:mx-auto">
+          <div className="fx-infuse relative aspect-square overflow-hidden rounded-[2rem] bg-[#f3e9dc] shadow-[0_20px_50px_rgb(43_106_62/0.08)]">
             <Image src={HERO.image} alt={HERO.imageAlt} fill priority sizes="(min-width: 1024px) 544px, 92vw" className="object-cover" />
           </div>
-          <p className="absolute -bottom-5 left-6 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold shadow-md">
+          <p className="fx-pop absolute -bottom-5 left-6 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold shadow-md">
             <WhatsappLogo size={18} weight="fill" className="text-primary" aria-hidden />
             {HERO.badge}
           </p>
         </div>
 
         <div className="lg:pl-4">
-          <p className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-4 py-1.5 text-sm font-bold text-primary">
+          <p className="fx-rise inline-flex items-center gap-2 rounded-full bg-primary-soft px-4 py-1.5 text-sm font-bold text-primary">
             <Leaf size={16} weight="bold" aria-hidden /> {HERO.eyebrow}
           </p>
-          <h1 className="mt-6 max-w-xl font-display text-4xl font-extrabold leading-[1.15] text-foreground sm:text-5xl lg:text-[3.15rem]">
+          <h1 style={{ "--i": 1 } as React.CSSProperties} className="fx-rise mt-6 max-w-xl font-display text-4xl font-extrabold leading-[1.15] text-foreground sm:text-5xl lg:text-[3.15rem]">
             {HERO.titleStart} <span className="text-primary">{HERO.titleHighlight}</span> {HERO.titleEnd}
           </h1>
-          <p className="mt-6 max-w-xl leading-relaxed text-muted lg:text-[1.05rem]">{HERO.text}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <p style={{ "--i": 2 } as React.CSSProperties} className="fx-rise mt-6 max-w-xl leading-relaxed text-muted lg:text-[1.05rem]">{HERO.text}</p>
+          <div style={{ "--i": 3 } as React.CSSProperties} className="fx-rise mt-8 flex flex-wrap gap-3">
             <Link href="/tienda" className={btnPrimary}>
               Ver tienda <ArrowRight size={18} weight="bold" aria-hidden />
             </Link>
@@ -98,7 +98,7 @@ function Hero() {
               Ver productos
             </Link>
           </div>
-          <svg className="mt-9 h-7 w-40 text-primary/60" viewBox="0 0 150 24" fill="none" aria-hidden>
+          <svg className="fx-draw mt-9 h-7 w-40 text-primary/60" viewBox="0 0 150 24" fill="none" aria-hidden>
             <path d="M2 14c16-12 34-12 52 0s38 12 56 0 28-10 38-4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
           </svg>
         </div>
@@ -111,7 +111,7 @@ function Categories({ categories }: { categories: PublicCategory[] }) {
   if (categories.length === 0) return null;
   return (
     <section className={`${container} mt-20`}>
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-primary px-5 pb-12 pt-14 sm:px-12">
+      <div className="fx-pour relative overflow-hidden rounded-[2.5rem] bg-primary px-5 pb-12 pt-14 sm:px-12">
         <span className="pointer-events-none absolute -left-20 -top-20 size-72 rounded-full bg-white/[0.06]" aria-hidden />
         <span className="pointer-events-none absolute -bottom-28 -right-20 size-80 rounded-full bg-white/[0.06]" aria-hidden />
         <div className="relative">
@@ -161,12 +161,12 @@ function Offers({ heading, products }: { heading: SectionHeadingProps; products:
     <section id="ofertas" className={`${container} mt-24 scroll-mt-28`}>
       {products.length > 0 && <SectionHeading {...heading} />}
       <div className="flex flex-wrap justify-center gap-6">
-        {products.map((p) => (
-          <div key={p.id} className={`flex ${item}`}>
+        {products.map((p, i) => (
+          <div key={p.id} style={{ "--i": i } as React.CSSProperties} className={`fx-deal flex ${item}`}>
             <ProductCard product={p} />
           </div>
         ))}
-        <div className={`flex ${item}`}>
+        <div className={`fx-flip flex ${item}`}>
           <BenefitsCard />
         </div>
       </div>
@@ -185,10 +185,10 @@ function Ritual({ combosHref }: { combosHref: string }) {
       />
       <div className="grid items-center gap-12 py-6 lg:grid-cols-2">
         <div className="flex items-center justify-center gap-3 px-2 sm:gap-4" aria-hidden>
-          <div className={`${photo} -rotate-[5deg] translate-y-3`}>
+          <div className={`${photo} fx-split-a -rotate-[5deg] translate-y-3`}>
             <Image src="/landing/ritual-yerba.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
           </div>
-          <div className={`${photo} rotate-[3deg]`}>
+          <div className={`${photo} fx-split-b rotate-[3deg]`}>
             <Image src="/landing/ritual-termos.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
           </div>
         </div>
@@ -196,7 +196,7 @@ function Ritual({ combosHref }: { combosHref: string }) {
           <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.6rem] sm:leading-[1.2]">
             {SECTIONS.ritual.title}
             <br />
-            {SECTIONS.ritual.titleBreak}
+            <span className="marker fx-marker">{SECTIONS.ritual.titleBreak}</span>
           </h2>
           <p className="mt-5 max-w-[29rem] text-[1.05rem] leading-relaxed text-muted">{SECTIONS.ritual.text}</p>
           <Link href={combosHref} className={`${btnPrimary} mt-8`}>
@@ -213,12 +213,13 @@ function Promos({ bombillasHref, combosHref }: { bombillasHref: string; combosHr
     <section className={`${container} mt-24 grid gap-6 lg:grid-cols-2`}>
       <PromoCard
         dark
+        className="fx-from-left"
         {...SECTIONS.promoBombillas}
         href={bombillasHref}
         cta="Ver bombillas"
         image="/landing/promo-bombillas.svg"
       />
-      <PromoCard {...SECTIONS.promoCombos} href={combosHref} cta="Ver combos" image="/landing/promo-combos.svg" />
+      <PromoCard className="fx-from-right" {...SECTIONS.promoCombos} href={combosHref} cta="Ver combos" image="/landing/promo-combos.svg" />
     </section>
   );
 }
@@ -231,6 +232,7 @@ function PromoCard({
   cta,
   image,
   dark = false,
+  className = "",
 }: {
   title: string;
   text: string;
@@ -238,10 +240,11 @@ function PromoCard({
   cta: string;
   image: string;
   dark?: boolean;
+  className?: string;
 }) {
   return (
     <div
-      className={`flex flex-col-reverse items-center gap-6 rounded-[2rem] p-8 text-center sm:flex-row sm:p-10 sm:text-left ${
+      className={`${className} flex flex-col-reverse items-center gap-6 rounded-[2rem] p-8 text-center sm:flex-row sm:p-10 sm:text-left ${
         dark ? "bg-primary-deep text-white" : "bg-[#f1e7d8] text-foreground"
       }`}
     >
@@ -257,7 +260,7 @@ function PromoCard({
           {cta} <CaretRight size={16} weight="bold" aria-hidden />
         </Link>
       </div>
-      <Image src={image} alt="" width={240} height={240} unoptimized className="size-40 shrink-0 sm:size-44" />
+      <Image src={image} alt="" width={240} height={240} unoptimized className="fx-stir size-40 shrink-0 sm:size-44" />
     </div>
   );
 }

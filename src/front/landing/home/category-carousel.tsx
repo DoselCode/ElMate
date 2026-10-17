@@ -45,8 +45,8 @@ export function CategoryCarousel({ categories }: { categories: PublicCategory[] 
         className="scrollbar-none -mx-1 flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-1"
         aria-label="Categorías"
       >
-        {categories.map((c) => (
-          <li key={c.id} className="shrink-0 basis-[72%] snap-start sm:basis-[calc((100%-2.5rem)/3)] lg:basis-[calc((100%-3.75rem)/4)]">
+        {categories.map((c, i) => (
+          <li key={c.id} style={{ "--i": i } as React.CSSProperties} className="fx-float shrink-0 basis-[72%] snap-start sm:basis-[calc((100%-2.5rem)/3)] lg:basis-[calc((100%-3.75rem)/4)]">
             <Link
               href={`/tienda?categoria=${c.slug}`}
               className="flex h-full flex-col items-center rounded-3xl bg-surface px-5 pb-6 pt-5 text-center transition-transform hover:-translate-y-1"
