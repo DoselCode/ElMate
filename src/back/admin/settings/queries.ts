@@ -5,9 +5,12 @@ import type { StoreSettingsInput } from "@/shared/schemas/settings";
 
 /** Datos del local para el formulario de "Datos del local". Solo admin. */
 export async function getStoreSettings(): Promise<StoreSettingsInput> {
-  await requireAdmin();
   const supabase = await createClient();
-  const { data } = await supabase.from("store_settings").select("*").eq("id", 1).maybeSingle();
+  // La lectura va en paralelo con el chequeo de admin (RLS igual protege la tabla): un viaje menos
+  const [, { data }] = await Promise.all([
+    requireAdmin(),
+    supabase.from("store_settings").select("*").eq("id", 1).maybeSingle(),
+  ]);
   const s = data ?? {};
   const text = (v: unknown) => (typeof v === "string" ? v : "");
   return {

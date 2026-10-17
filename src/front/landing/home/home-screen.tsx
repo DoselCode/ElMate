@@ -15,7 +15,7 @@ import type { HomeData, PublicCategory, PublicProduct } from "@/shared/types";
 import { ProductCard, ProductGrid } from "../catalog/product-card";
 import { BENEFITS, HERO, SECTIONS } from "../content";
 import { CategoryCarousel } from "./category-carousel";
-import { SectionHeading } from "./section-heading";
+import { SectionHeading, type SectionHeadingProps } from "./section-heading";
 
 const container = "mx-auto max-w-[82rem] px-4 sm:px-6";
 const btnPrimary =
@@ -29,12 +29,21 @@ function categoryHref(categories: PublicCategory[], keyword: string) {
   return c ? `/tienda?categoria=${c.slug}` : "/tienda";
 }
 
+function uniqueProducts(products: PublicProduct[]) {
+  return products.filter((p, i) => products.findIndex((q) => q.id === p.id) === i);
+}
+
 export function HomeScreen({ data, categories }: { data: HomeData; categories: PublicCategory[] }) {
   return (
     <>
       <Hero />
       <Categories categories={categories} />
-      <Offers offers={data.offers} />
+      {/* Sin productos en oferta se muestran destacados, para que la sección no quede vacía */}
+      {data.offers.length > 0 ? (
+        <Offers heading={SECTIONS.offers} products={data.offers.slice(0, 3)} />
+      ) : (
+        <Offers heading={SECTIONS.featured} products={uniqueProducts([...data.bestSellers, ...data.newest]).slice(0, 3)} />
+      )}
       <Ritual combosHref={categoryHref(categories, "combo")} />
       {data.bestSellers.length > 0 && (
         <section className={`${container} mt-24`}>
@@ -61,10 +70,11 @@ function Hero() {
         className="pointer-events-none absolute -left-48 -top-56 -z-10 size-[46rem] rounded-full bg-primary-soft/80 blur-3xl"
         aria-hidden
       />
-      <div className={`${container} grid items-center gap-12 pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-12`}>
-        <div className="relative">
+      <div className={`${container} grid items-center gap-12 pt-8 lg:grid-cols-[minmax(0,34rem)_1fr] lg:gap-16 lg:pt-8`}>
+        {/* La foto no pasa del alto de la pantalla: al cargar se ve entera, con el cartel de WhatsApp */}
+        <div className="relative w-full max-w-[min(34rem,calc(100svh-11rem))] max-lg:mx-auto">
           <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-[#f3e9dc] shadow-[0_20px_50px_rgb(43_106_62/0.08)]">
-            <Image src={HERO.image} alt={HERO.imageAlt} fill priority sizes="(min-width: 1024px) 620px, 92vw" className="object-cover" />
+            <Image src={HERO.image} alt={HERO.imageAlt} fill priority sizes="(min-width: 1024px) 544px, 92vw" className="object-cover" />
           </div>
           <p className="absolute -bottom-5 left-6 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold shadow-md">
             <WhatsappLogo size={18} weight="fill" className="text-primary" aria-hidden />
@@ -118,7 +128,7 @@ const BENEFIT_ICONS = { cart: ShoppingCartSimple, whatsapp: WhatsappLogo, chat: 
 
 function BenefitsCard() {
   return (
-    <div id="como-comprar" className="flex scroll-mt-28 flex-col rounded-[var(--radius-card)] bg-primary p-6 text-white">
+    <div id="como-comprar" className="flex w-full scroll-mt-28 flex-col rounded-[var(--radius-card)] bg-primary p-6 text-white">
       <h3 className="font-display text-[1.4rem] font-bold leading-tight">{BENEFITS.title}</h3>
       <ul className="mt-5 grid grid-cols-2 gap-3">
         {BENEFITS.items.map(({ icon, text }) => {
@@ -144,43 +154,52 @@ function BenefitsCard() {
   );
 }
 
-function Offers({ offers }: { offers: PublicProduct[] }) {
+/** Hasta 3 productos y la tarjeta de beneficios, en 4 columnas iguales (centradas si hay menos). */
+function Offers({ heading, products }: { heading: SectionHeadingProps; products: PublicProduct[] }) {
+  const item = "w-full sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]";
   return (
     <section id="ofertas" className={`${container} mt-24 scroll-mt-28`}>
-      {offers.length > 0 && <SectionHeading {...SECTIONS.offers} />}
-      <div className={`grid gap-6 sm:grid-cols-2 ${offers.length > 0 ? "lg:grid-cols-4" : "mx-auto max-w-sm"}`}>
-        {offers.map((p) => (
-          <ProductCard key={p.id} product={p} />
+      {products.length > 0 && <SectionHeading {...heading} />}
+      <div className="flex flex-wrap justify-center gap-6">
+        {products.map((p) => (
+          <div key={p.id} className={`flex ${item}`}>
+            <ProductCard product={p} />
+          </div>
         ))}
-        <BenefitsCard />
+        <div className={`flex ${item}`}>
+          <BenefitsCard />
+        </div>
       </div>
     </section>
   );
 }
 
 function Ritual({ combosHref }: { combosHref: string }) {
+  const photo = "relative aspect-square w-1/2 max-w-60 overflow-hidden rounded-[1.75rem] bg-[#f3e6d3] shadow-[0_14px_30px_rgb(120_84_40/0.12)]";
   return (
     <section className={`${container} relative isolate mt-24`}>
-      {/* Mancha cálida difusa detrás del texto, como en el diseño */}
-      <span className="pointer-events-none absolute -top-10 right-0 -z-10 size-[30rem] rounded-full bg-[#f1e4d3] blur-3xl" aria-hidden />
+      {/* Recuadro cálido difuso arriba a la derecha, como en el diseño */}
+      <span
+        className="pointer-events-none absolute -top-8 right-4 -z-10 size-72 rounded-[3rem] bg-gradient-to-bl from-[#f3e4d0] via-[#f6ecdf]/50 to-transparent blur-lg sm:right-6"
+        aria-hidden
+      />
       <div className="grid items-center gap-12 py-6 lg:grid-cols-2">
-        <div className="relative mx-auto flex h-72 w-full max-w-md items-center justify-center sm:h-80" aria-hidden>
-          {/* Dos encuadres de la misma foto: el mate y el termo */}
-          <div className="absolute left-2 top-10 size-48 -rotate-6 overflow-hidden rounded-3xl shadow-md sm:size-56">
-            <Image src={HERO.image} alt="" fill sizes="400px" className="origin-[22%_78%] scale-[1.7] object-cover" />
+        <div className="flex items-center justify-center gap-3 px-2 sm:gap-4" aria-hidden>
+          <div className={`${photo} -rotate-[5deg] translate-y-3`}>
+            <Image src="/landing/ritual-yerba.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
           </div>
-          <div className="absolute right-2 top-2 size-48 rotate-3 overflow-hidden rounded-3xl shadow-md sm:size-56">
-            <Image src={HERO.image} alt="" fill sizes="400px" className="origin-[78%_30%] scale-[1.6] object-cover" />
+          <div className={`${photo} rotate-[3deg]`}>
+            <Image src="/landing/ritual-termos.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
           </div>
         </div>
         <div className="px-2">
-          <h2 className="font-display text-3xl font-bold leading-tight sm:text-4xl">
+          <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.6rem] sm:leading-[1.2]">
             {SECTIONS.ritual.title}
             <br />
             {SECTIONS.ritual.titleBreak}
           </h2>
-          <p className="mt-4 max-w-md text-lg leading-relaxed text-muted">{SECTIONS.ritual.text}</p>
-          <Link href={combosHref} className={`${btnPrimary} mt-7`}>
+          <p className="mt-5 max-w-[29rem] text-[1.05rem] leading-relaxed text-muted">{SECTIONS.ritual.text}</p>
+          <Link href={combosHref} className={`${btnPrimary} mt-8`}>
             <Gift size={18} weight="bold" aria-hidden /> Ver combos
           </Link>
         </div>
@@ -192,26 +211,53 @@ function Ritual({ combosHref }: { combosHref: string }) {
 function Promos({ bombillasHref, combosHref }: { bombillasHref: string; combosHref: string }) {
   return (
     <section className={`${container} mt-24 grid gap-6 lg:grid-cols-2`}>
-      <div className="rounded-[2rem] bg-primary-deep p-8 text-white sm:px-10 sm:py-12">
-        <h2 className="max-w-[18rem] font-display text-2xl font-bold leading-tight sm:text-[1.75rem]">{SECTIONS.promoBombillas.title}</h2>
-        <p className="mt-3 max-w-[19rem] text-white/85">{SECTIONS.promoBombillas.text}</p>
-        <Link
-          href={bombillasHref}
-          className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-background px-5 py-2.5 font-bold text-primary-deep transition-colors hover:bg-white"
-        >
-          Ver bombillas <CaretRight size={16} weight="bold" aria-hidden />
-        </Link>
-      </div>
-      <div className="rounded-[2rem] p-8 sm:px-10 sm:py-12">
-        <h2 className="max-w-[17rem] font-display text-2xl font-bold leading-tight sm:text-[1.75rem]">{SECTIONS.promoCombos.title}</h2>
-        <p className="mt-3 max-w-[19rem] text-muted">{SECTIONS.promoCombos.text}</p>
-        <Link
-          href={combosHref}
-          className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-primary-deep px-5 py-2.5 font-bold text-white transition-colors hover:bg-primary"
-        >
-          Ver combos <CaretRight size={16} weight="bold" aria-hidden />
-        </Link>
-      </div>
+      <PromoCard
+        dark
+        {...SECTIONS.promoBombillas}
+        href={bombillasHref}
+        cta="Ver bombillas"
+        image="/landing/promo-bombillas.svg"
+      />
+      <PromoCard {...SECTIONS.promoCombos} href={combosHref} cta="Ver combos" image="/landing/promo-combos.svg" />
     </section>
+  );
+}
+
+/** Tarjeta de promo: texto a la izquierda e ilustración a la derecha (SVG livianos en public/landing). */
+function PromoCard({
+  title,
+  text,
+  href,
+  cta,
+  image,
+  dark = false,
+}: {
+  title: string;
+  text: string;
+  href: string;
+  cta: string;
+  image: string;
+  dark?: boolean;
+}) {
+  return (
+    <div
+      className={`flex flex-col-reverse items-center gap-6 rounded-[2rem] p-8 text-center sm:flex-row sm:p-10 sm:text-left ${
+        dark ? "bg-primary-deep text-white" : "bg-[#f1e7d8] text-foreground"
+      }`}
+    >
+      <div className="flex-1">
+        <h2 className="font-display text-2xl font-bold leading-tight sm:text-[1.75rem]">{title}</h2>
+        <p className={`mt-3 ${dark ? "text-white/85" : "text-muted"}`}>{text}</p>
+        <Link
+          href={href}
+          className={`mt-6 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 font-bold transition-colors ${
+            dark ? "bg-background text-primary-deep hover:bg-white" : "bg-primary-deep text-white hover:bg-primary"
+          }`}
+        >
+          {cta} <CaretRight size={16} weight="bold" aria-hidden />
+        </Link>
+      </div>
+      <Image src={image} alt="" width={240} height={240} unoptimized className="size-40 shrink-0 sm:size-44" />
+    </div>
   );
 }

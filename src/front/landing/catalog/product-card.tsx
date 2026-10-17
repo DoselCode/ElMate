@@ -6,7 +6,7 @@ import { ProductImage } from "./product-image";
 
 export function ProductCard({ product }: { product: PublicProduct }) {
   return (
-    <article className="group flex flex-col rounded-[var(--radius-card)] bg-surface p-3 shadow-sm transition-shadow hover:shadow-md">
+    <article className="group flex w-full flex-col rounded-[var(--radius-card)] bg-surface p-3 shadow-sm transition-shadow hover:shadow-md">
       <Link href={`/producto/${product.slug}`} className="relative block" tabIndex={-1} aria-hidden>
         <ProductImage
           src={product.images[0]}

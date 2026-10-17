@@ -1,6 +1,7 @@
 /**
  * Textos fijos de la web pública. Están juntos para poder editarlos sin tocar los componentes.
- * Los datos del local (WhatsApp, dirección, redes, horarios) NO van acá: se cargan desde el panel.
+ * Los datos del local (WhatsApp, dirección, redes, horarios) se cargan desde el panel ("Datos del local");
+ * FOOTER_PLACEHOLDER solo completa el footer mientras esos datos estén vacíos.
  *
  * Revisar con el cliente: los beneficios describen cómo se compra; no prometen envíos ni plazos.
  */
@@ -30,6 +31,8 @@ export const BENEFITS = {
 export const SECTIONS = {
   categories: { title: "Categorías de productos", text: "Elegí por dónde empezar tu ronda: cada categoría tiene lo mejor del mundo matero." },
   offers: { eyebrow: "Ofertas", title: "Productos con descuento", text: "Precios de ronda especial." },
+  // Reemplaza a "Ofertas" mientras no haya productos con precio anterior cargado
+  featured: { eyebrow: "Destacados", title: "Productos destacados", text: "Lo que más sale para armar tu ronda." },
   ritual: {
     title: "El ritual del mate,",
     titleBreak: "más rico que nunca.",
@@ -43,3 +46,19 @@ export const SECTIONS = {
   },
   promoCombos: { title: "Combos materos: ahorrá comprando todo junto", text: "Armá tu kit completo y empezá a cebar como un experto." },
 };
+
+/**
+ * Datos de ejemplo para el footer: se muestran solo en los campos que todavía no se cargaron en "Datos del local".
+ * El WhatsApp no tiene ejemplo a propósito: es adonde llegan los pedidos.
+ */
+export const FOOTER_PLACEHOLDER = {
+  tagline: "Tu tienda matera de confianza: mates artesanales, termos, bombillas y las mejores yerbas.",
+  address: "Av. Siempre Verde 1234, Local 7 — Buenos Aires",
+  phone: "+54 11 5555-1234",
+  email: "hola@elmate.com.ar",
+  instagram_url: "https://www.instagram.com/",
+  facebook_url: "https://www.facebook.com/",
+  hours_weekdays: "9 a 19 h",
+  hours_saturday: "9 a 13 h",
+  hours_sunday: null,
+} as const;

@@ -51,6 +51,14 @@
   --radius-card: 1.5rem;
 }
 
+/* Escala general: en pantallas grandes todo lo medido en rem se ve un 12,5 % más chico.
+   En celular queda en 16px para que se lea bien y los campos no hagan zoom. */
+@media (min-width: 64rem) {
+  html {
+    font-size: 87.5%;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

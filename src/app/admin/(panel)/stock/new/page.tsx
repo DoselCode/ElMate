@@ -6,7 +6,6 @@ import { ProductForm } from "@/front/admin/stock/product-form";
 export const metadata: Metadata = { title: "Nuevo producto" };
 
 export default async function NewProductPage() {
-  await requireAdmin();
-  const { categories, suppliers } = await getCatalogOptions();
+  const [, { categories, suppliers }] = await Promise.all([requireAdmin(), getCatalogOptions()]);
   return <ProductForm categories={categories} suppliers={suppliers} />;
 }

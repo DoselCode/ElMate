@@ -2,10 +2,21 @@ import Link from "next/link";
 import { Clock, EnvelopeSimple, FacebookLogo, InstagramLogo, MapPin, Phone, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
 import type { PublicCategory, StoreInfo } from "@/shared/types";
 import { normalizeWhatsappNumber } from "@/shared/whatsapp";
+import { FOOTER_PLACEHOLDER } from "../content";
 import { Logo } from "./logo";
 
-/** Pie de página. Los datos de contacto salen de "Datos del local" (panel); lo que no esté cargado no se muestra. */
-export function SiteFooter({ store, categories }: { store: StoreInfo; categories: PublicCategory[] }) {
+/** Completa con datos de ejemplo lo que todavía no se cargó en "Datos del local". */
+function withPlaceholders(info: StoreInfo): StoreInfo {
+  const filled = { ...info };
+  for (const [key, value] of Object.entries(FOOTER_PLACEHOLDER) as [keyof typeof FOOTER_PLACEHOLDER, string | null][]) {
+    if (!filled[key]?.trim()) filled[key] = value;
+  }
+  return filled;
+}
+
+/** Pie de página. Los datos de contacto salen de "Datos del local" (panel); lo vacío se completa con datos de ejemplo. */
+export function SiteFooter({ store: info, categories }: { store: StoreInfo; categories: PublicCategory[] }) {
+  const store = withPlaceholders(info);
   const whatsapp = normalizeWhatsappNumber(store.whatsapp_number);
   const hours = [
     store.hours_weekdays && `Lun a Vie: ${store.hours_weekdays}`,
@@ -28,7 +39,7 @@ export function SiteFooter({ store, categories }: { store: StoreInfo; categories
         <div>
           <Logo name={store.name} />
           <p className="mt-4 text-sm leading-relaxed text-muted">
-            {store.tagline ?? "Tu tienda matera: mates, termos, bombillas, yerbas y combos."}
+            {store.tagline}
           </p>
           {socials.length > 0 && (
             <ul className="mt-5 flex gap-2">

@@ -1,7 +1,9 @@
 import { Leaf } from "@phosphor-icons/react/dist/ssr";
 
 /** Encabezado de sección del diseño: "— 🍃 OFERTAS —", título y bajada centrados. */
-export function SectionHeading({ eyebrow, title, text, light = false }: { eyebrow?: string; title: string; text?: string; light?: boolean }) {
+export type SectionHeadingProps = { eyebrow?: string; title: string; text?: string; light?: boolean };
+
+export function SectionHeading({ eyebrow, title, text, light = false }: SectionHeadingProps) {
   return (
     <div className="mx-auto mb-10 max-w-2xl text-center">
       {eyebrow && (

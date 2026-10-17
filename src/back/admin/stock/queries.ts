@@ -22,6 +22,19 @@ import type {
 const MOVEMENT_TYPES: MovementType[] = ["ingreso", "venta", "ajuste", "anulacion"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Corre la consulta a la vez que se valida el permiso, en lugar de esperar uno y después la otra:
+ * ahorra un viaje a Supabase por página. Si el permiso falla, el resultado se descarta (y RLS
+ * igual impide que la base devuelva datos ajenos).
+ */
+async function guarded<T>(check: () => Promise<unknown>, run: (supabase: Supabase) => PromiseLike<T>): Promise<T> {
+  const supabase = await createClient();
+  const [, result] = await Promise.all([check(), run(supabase)]);
+  return result;
+}
+
 const pageRange = (page: number) => {
   const from = (page - 1) * PAGE_SIZE;
   return [from, from + PAGE_SIZE - 1] as const;
@@ -54,101 +67,100 @@ export function parseMovementFilters(sp: SearchParams): MovementFilters {
 
 /** Variantes del inventario según los filtros, paginadas. El costo llega null si no es admin. */
 export async function getStockList(f: StockFilters): Promise<Paged<StockRow>> {
-  await requireStaff();
-  const supabase = await createClient();
+  return guarded(requireStaff, async (supabase) => {
+    let query = supabase.from("stock_overview").select("*", { count: "exact" });
+    if (f.q) query = query.or(`product_name.ilike.%${f.q}%,sku.ilike.%${f.q}%,barcode.eq.${f.q}`);
+    if (f.supplier) query = query.eq("supplier_id", f.supplier);
+    if (f.category) query = query.eq("category_id", f.category);
+    if (f.status === "low") query = query.eq("low_stock", true);
+    if (f.status === "out") query = query.eq("stock", 0);
+    if (!f.showInactive) query = query.eq("active", true);
 
-  let query = supabase.from("stock_overview").select("*", { count: "exact" });
-  if (f.q) query = query.or(`product_name.ilike.%${f.q}%,sku.ilike.%${f.q}%,barcode.eq.${f.q}`);
-  if (f.supplier) query = query.eq("supplier_id", f.supplier);
-  if (f.category) query = query.eq("category_id", f.category);
-  if (f.status === "low") query = query.eq("low_stock", true);
-  if (f.status === "out") query = query.eq("stock", 0);
-  if (!f.showInactive) query = query.eq("active", true);
+    const { data, count, error } = await query
+      .order("product_name")
+      .order("variant_label")
+      .range(...pageRange(f.page));
 
-  const { data, count, error } = await query
-    .order("product_name")
-    .order("variant_label")
-    .range(...pageRange(f.page));
-
-  return { rows: (data ?? []) as StockRow[], total: count ?? 0, error: Boolean(error) };
+    return { rows: (data ?? []) as StockRow[], total: count ?? 0, error: Boolean(error) };
+  });
 }
 
 /** Totales de las tarjetas de resumen (solo variantes activas). */
 export async function getStockSummary(): Promise<StockSummary> {
-  await requireStaff();
-  const supabase = await createClient();
-  // head:true cuenta sin traer filas
-  const activeCount = () =>
-    supabase.from("stock_overview").select("variant_id", { count: "exact", head: true }).eq("active", true);
+  return guarded(requireStaff, async (supabase) => {
+    // head:true cuenta sin traer filas
+    const activeCount = () =>
+      supabase.from("stock_overview").select("variant_id", { count: "exact", head: true }).eq("active", true);
 
-  const [total, low, out] = await Promise.all([
-    activeCount(),
-    activeCount().eq("low_stock", true).gt("stock", 0),
-    activeCount().eq("stock", 0),
-  ]);
-  return { total: total.count ?? 0, low: low.count ?? 0, out: out.count ?? 0 };
+    const [total, low, out] = await Promise.all([
+      activeCount(),
+      activeCount().eq("low_stock", true).gt("stock", 0),
+      activeCount().eq("stock", 0),
+    ]);
+    return { total: total.count ?? 0, low: low.count ?? 0, out: out.count ?? 0 };
+  });
 }
 
 /** Categorías y proveedores activos, para filtros y para el formulario de producto. */
 export async function getCatalogOptions(): Promise<{ categories: Option[]; suppliers: Option[] }> {
-  await requireStaff();
-  const supabase = await createClient();
-  const [categories, suppliers] = await Promise.all([
-    supabase.from("categories").select("id, name").order("sort_order").order("name"),
-    supabase.from("suppliers").select("id, name").eq("active", true).order("name"),
-  ]);
-  return { categories: (categories.data ?? []) as Option[], suppliers: (suppliers.data ?? []) as Option[] };
+  return guarded(requireStaff, async (supabase) => {
+    const [categories, suppliers] = await Promise.all([
+      supabase.from("categories").select("id, name").order("sort_order").order("name"),
+      supabase.from("suppliers").select("id, name").eq("active", true).order("name"),
+    ]);
+    return { categories: (categories.data ?? []) as Option[], suppliers: (suppliers.data ?? []) as Option[] };
+  });
 }
 
 // ---- Movimientos ---------------------------------------------------------------------------
 
 export async function getMovements(f: MovementFilters): Promise<Paged<MovementRow>> {
-  await requireStaff();
-  const supabase = await createClient();
+  return guarded(requireStaff, async (supabase) => {
+    let query = supabase.from("stock_movement_log").select("*", { count: "exact" });
+    if (f.q) query = query.or(`product_name.ilike.%${f.q}%,sku.ilike.%${f.q}%`);
+    if (f.type) query = query.eq("type", f.type);
 
-  let query = supabase.from("stock_movement_log").select("*", { count: "exact" });
-  if (f.q) query = query.or(`product_name.ilike.%${f.q}%,sku.ilike.%${f.q}%`);
-  if (f.type) query = query.eq("type", f.type);
+    const { data, count, error } = await query
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(...pageRange(f.page));
 
-  const { data, count, error } = await query
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false })
-    .range(...pageRange(f.page));
-
-  return { rows: (data ?? []) as MovementRow[], total: count ?? 0, error: Boolean(error) };
+    return { rows: (data ?? []) as MovementRow[], total: count ?? 0, error: Boolean(error) };
+  });
 }
 
 // ---- Producto para editar ------------------------------------------------------------------
 
 /** Producto con sus variantes y costos, o null si no existe / está archivado. Solo admin. */
 export async function getProductForEdit(id: string): Promise<ProductForEdit | null> {
-  await requireAdmin();
-  if (!UUID.test(id)) return null;
-  const supabase = await createClient();
+  if (!UUID.test(id)) {
+    await requireAdmin();
+    return null;
+  }
 
-  const [productRes, variantsRes] = await Promise.all([
-    supabase
-      .from("products")
-      .select("id, name, description, category_id, supplier_id, option_names, images, is_visible, badge")
-      .eq("id", id)
-      .is("archived_at", null)
-      .maybeSingle(),
-    supabase
-      .from("product_variants")
-      .select("id, sku, barcode, attributes, price, compare_at_price, min_stock, stock, active")
-      .eq("product_id", id)
-      .order("created_at"),
-  ]);
+  // Producto y variantes (con su costo embebido) en paralelo con el chequeo de admin: un solo viaje
+  const [productRes, variantsRes] = await guarded(requireAdmin, (supabase) =>
+    Promise.all([
+      supabase
+        .from("products")
+        .select("id, name, description, category_id, supplier_id, option_names, images, is_visible, badge")
+        .eq("id", id)
+        .is("archived_at", null)
+        .maybeSingle(),
+      supabase
+        .from("product_variants")
+        .select("id, sku, barcode, attributes, price, compare_at_price, min_stock, stock, active, variant_costs(cost)")
+        .eq("product_id", id)
+        .order("created_at"),
+    ]),
+  );
 
   const product = productRes.data;
   if (!product) return null;
 
+  // Sin variantes por un error de lectura, guardar el formulario las desactivaría: mejor fallar acá
+  if (variantsRes.error) throw new Error("No se pudieron leer las variantes del producto");
   const variants = variantsRes.data ?? [];
-  const { data: costRows } = await supabase
-    .from("variant_costs")
-    .select("variant_id, cost")
-    .in("variant_id", variants.map((v) => v.id));
-  const costs = new Map((costRows ?? []).map((c) => [c.variant_id, Number(c.cost)]));
 
   return {
     id: product.id,
@@ -167,10 +179,16 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
       attributes: (v.attributes ?? {}) as Record<string, string>,
       price: Number(v.price),
       compareAtPrice: v.compare_at_price === null ? null : Number(v.compare_at_price),
-      cost: costs.get(v.id) ?? 0,
+      cost: costOf(v.variant_costs),
       minStock: v.min_stock,
       stock: v.stock,
       active: v.active,
     })),
   };
+}
+
+/** variant_costs es 1 a 1 con la variante; según el cliente llega como objeto o como lista. */
+function costOf(embedded: unknown): number {
+  const row = (Array.isArray(embedded) ? embedded[0] : embedded) as { cost?: number | string } | null | undefined;
+  return row?.cost === undefined ? 0 : Number(row.cost);
 }

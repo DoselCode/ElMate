@@ -18,9 +18,12 @@ export function SiteShell({
 }) {
   const links: NavLink[] = [
     { href: "/", label: "Inicio" },
-    ...categories.slice(0, 5).map((c) => ({ href: `/tienda?categoria=${c.slug}`, label: c.name })),
-    // En escritorio la tienda está en el botón verde del header (como en el diseño)
-    { href: "/tienda", label: "Tienda", mobileOnly: true },
+    {
+      href: "/tienda",
+      label: "Categorías",
+      children: categories.map((c) => ({ href: `/tienda?categoria=${c.slug}`, label: c.name })),
+    },
+    { href: "/tienda", label: "Tienda" },
     { href: "#contacto", label: "Contacto" },
   ];
 

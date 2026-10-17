@@ -7,11 +7,11 @@ import { param } from "@/shared/query";
 export const metadata: Metadata = { title: "Inventario y stock" };
 
 export default async function StockPage({ searchParams }: PageProps<"/admin/stock">) {
-  const user = await requireStaff();
   const sp = await searchParams;
   const filters = parseStockFilters(sp);
 
-  const [list, summary, { categories, suppliers }] = await Promise.all([
+  const [user, list, summary, { categories, suppliers }] = await Promise.all([
+    requireStaff(),
     getStockList(filters),
     getStockSummary(),
     getCatalogOptions(),
