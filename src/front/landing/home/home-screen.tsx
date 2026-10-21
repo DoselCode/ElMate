@@ -17,7 +17,8 @@ import { BENEFITS, HERO, SECTIONS } from "../content";
 import { CategoryCarousel } from "./category-carousel";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
 
-const container = "mx-auto max-w-[82rem] px-4 sm:px-6";
+// 82rem de contenido (igual que el header) + el padding lateral: el contenido queda alineado con los bordes del header
+const container = "mx-auto max-w-[85rem] px-4 sm:px-6";
 const btnPrimary =
   "inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-bold text-white shadow-sm transition-colors hover:bg-primary-hover";
 const btnOutline =
@@ -70,11 +71,11 @@ function Hero() {
         className="pointer-events-none absolute -left-48 -top-56 -z-10 size-[46rem] rounded-full bg-primary-soft/80 blur-3xl"
         aria-hidden
       />
-      <div className={`${container} grid items-center gap-12 pt-8 lg:grid-cols-[minmax(0,34rem)_1fr] lg:gap-16 lg:pt-8`}>
+      <div className={`${container} grid items-center gap-12 pt-8 lg:grid-cols-[minmax(0,38rem)_1fr] lg:gap-16 lg:pt-10`}>
         {/* La foto no pasa del alto de la pantalla: al cargar se ve entera, con el cartel de WhatsApp */}
-        <div className="fx-hero-out relative w-full max-w-[min(34rem,calc(100svh-11rem))] max-lg:mx-auto">
+        <div className="fx-hero-out relative w-full max-w-[min(38rem,calc(100svh-9rem))] max-lg:mx-auto">
           <div className="fx-infuse relative aspect-square overflow-hidden rounded-[2rem] bg-[#f3e9dc] shadow-[0_20px_50px_rgb(43_106_62/0.08)]">
-            <Image src={HERO.image} alt={HERO.imageAlt} fill priority sizes="(min-width: 1024px) 544px, 92vw" className="object-cover" />
+            <Image src={HERO.image} alt={HERO.imageAlt} fill priority sizes="(min-width: 1024px) 620px, 92vw" className="object-cover" />
           </div>
           <p className="fx-pop absolute -bottom-5 left-6 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold shadow-md">
             <WhatsappLogo size={18} weight="fill" className="text-primary" aria-hidden />

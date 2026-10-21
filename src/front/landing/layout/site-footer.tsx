@@ -38,7 +38,7 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
 
   return (
     <footer id="contacto" className="mt-16 scroll-mt-24 bg-primary-soft">
-      <div className="mx-auto grid max-w-[82rem] gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-[85rem] gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <Logo name={store.name} />
           <p className="mt-4 text-sm leading-relaxed text-muted">

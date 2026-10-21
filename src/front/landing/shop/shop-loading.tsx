@@ -3,7 +3,7 @@ import { LoadingRegion, Skeleton } from "@/front/shared/ui/skeleton";
 /** Esqueleto de la tienda: se muestra al instante mientras llegan los productos. */
 export function ShopLoading() {
   return (
-    <LoadingRegion className="mx-auto max-w-[82rem] px-4 pt-10 sm:px-6">
+    <LoadingRegion className="mx-auto max-w-[85rem] px-4 pt-10 sm:px-6">
       <Skeleton className="h-4 w-32" />
       <Skeleton className="mt-4 h-10 w-48" />
       <div className="mt-6 flex gap-2">

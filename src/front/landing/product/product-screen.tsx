@@ -10,7 +10,7 @@ export function ProductScreen({ data }: { data: ProductPageData }) {
   const { product, variants, related, paymentMethods } = data;
 
   return (
-    <div className="mx-auto max-w-[82rem] px-4 pt-10 sm:px-6">
+    <div className="mx-auto max-w-[85rem] px-4 pt-10 sm:px-6">
       <nav aria-label="Ubicación" className="text-sm text-muted">
         <Link href="/" className="hover:text-primary">Inicio</Link> <span aria-hidden>/</span>{" "}
         {product.category_slug && (

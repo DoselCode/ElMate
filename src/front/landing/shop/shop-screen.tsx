@@ -40,7 +40,7 @@ export function ShopScreen({
   const hasFilters = Boolean(filters.q || filters.category || filters.offers);
 
   return (
-    <div className="mx-auto max-w-[82rem] px-4 pt-10 sm:px-6">
+    <div className="mx-auto max-w-[85rem] px-4 pt-10 sm:px-6">
       <nav aria-label="Ubicación" className="text-sm text-muted">
         <Link href="/" className="hover:text-primary">Inicio</Link> <span aria-hidden>/</span> <span>{title}</span>
       </nav>

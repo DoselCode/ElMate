@@ -3,7 +3,7 @@ import { LoadingRegion, Skeleton } from "@/front/shared/ui/skeleton";
 /** Esqueleto de la ficha de producto. */
 export function ProductLoading() {
   return (
-    <LoadingRegion className="mx-auto max-w-[82rem] px-4 pt-10 sm:px-6">
+    <LoadingRegion className="mx-auto max-w-[85rem] px-4 pt-10 sm:px-6">
       <Skeleton className="h-4 w-56" />
       <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-14">
         <Skeleton className="aspect-square w-full rounded-[2rem]" />
