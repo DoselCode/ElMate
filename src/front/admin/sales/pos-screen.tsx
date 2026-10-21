@@ -4,15 +4,29 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useTransition } from "react";
-import { CheckCircle, MagnifyingGlass, Minus, Package, Plus, Receipt, Trash, Warning } from "@phosphor-icons/react";
+import { CheckCircle, MagnifyingGlass, Minus, Package, Plus, Receipt, Tag, Trash, Warning } from "@phosphor-icons/react";
 import { createSaleAction } from "@/back/admin/sales/actions";
 import { Button, buttonClass } from "@/front/shared/ui/button";
 import { inputClass } from "@/front/shared/ui/field";
 import { formatMoney, formatQuantity, parseDecimal } from "@/shared/format";
 import type { PaymentMethod, SellableItem } from "@/shared/types";
 
-/** Línea del carrito de venta. La cantidad se guarda como texto (lo que tipea quien vende). */
-type Line = { item: SellableItem; qty: string };
+type DiscountType = "pct" | "amount";
+
+/** Línea del carrito de venta. Cantidad y descuento se guardan como texto (lo que tipea quien vende). */
+type Line = { item: SellableItem; qty: string; discountType: DiscountType; discount: string; showDiscount: boolean };
+
+/**
+ * Descuento como lo calcula la base (create_sale): en % sobre el importe o en monto fijo,
+ * nunca más que el importe. null = valor inválido; 0 = sin descuento.
+ */
+function discountOf(base: number, type: DiscountType, text: string): number | null {
+  if (text.trim() === "") return 0;
+  const v = parseDecimal(text);
+  if (!Number.isFinite(v) || v < 0) return null;
+  if (type === "pct") return v > 100 ? null : cents((base * v) / 100);
+  return v > base ? null : v;
+}
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 const normalize = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -36,6 +50,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
   const [query, setQuery] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
   const [discount, setDiscount] = useState("");
+  const [discountType, setDiscountType] = useState<DiscountType>("amount");
   const [methodId, setMethodId] = useState(methods.find((m) => m.is_cash)?.id ?? methods[0]?.id ?? "");
   const [customer, setCustomer] = useState("");
   const [notes, setNotes] = useState("");
@@ -64,7 +79,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
         return ls.map((l) => (l === found ? { ...l, qty: String((parseDecimal(l.qty) || 0) + 1) } : l));
       }
       if (found) return ls; // por kg: se edita el peso en la línea
-      return [...ls, { item, qty: item.unit === "kg" ? "" : "1" }];
+      return [...ls, { item, qty: item.unit === "kg" ? "" : "1", discountType: "pct", discount: "", showDiscount: false }];
     });
     setQuery("");
     searchRef.current?.focus();
@@ -84,15 +99,20 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
   const parsedLines = lines.map((l) => {
     const qty = parseDecimal(l.qty);
     const ok = validQty(qty, l.item.unit);
-    return { ...l, qtyNumber: qty, ok, lineTotal: ok ? cents(l.item.price * qty) : 0 };
+    const gross = ok ? cents(l.item.price * qty) : 0;
+    const lineDiscount = discountOf(gross, l.discountType, l.discount);
+    return { ...l, qtyNumber: qty, ok, gross, lineDiscount, lineTotal: cents(gross - (lineDiscount ?? 0)) };
   });
   const subtotal = cents(parsedLines.reduce((s, l) => s + l.lineTotal, 0));
-  const discountNumber = discount.trim() === "" ? 0 : parseDecimal(discount);
-  const discountOk = Number.isFinite(discountNumber) && discountNumber >= 0 && discountNumber <= subtotal;
-  const base = cents(subtotal - (discountOk ? discountNumber : 0));
+  const discountAmount = discountOf(subtotal, discountType, discount);
+  const discountOk = discountAmount !== null;
+  const base = cents(subtotal - (discountAmount ?? 0));
   const method = methods.find((m) => m.id === methodId);
   const { adjustment, total } = totalFor(base, method);
-  const canCharge = cashOpen && lines.length > 0 && parsedLines.every((l) => l.ok) && discountOk && Boolean(method);
+  const canCharge =
+    cashOpen && lines.length > 0 && parsedLines.every((l) => l.ok && l.lineDiscount !== null) && discountOk && Boolean(method);
+  const setLine = (variantId: string, patch: Partial<Line>) =>
+    setLines((ls) => ls.map((x) => (x.item.variant_id === variantId ? { ...x, ...patch } : x)));
 
   function charge() {
     if (!canCharge) return;
@@ -100,8 +120,12 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
     startTransition(async () => {
       const res = await createSaleAction({
         paymentMethodId: methodId,
-        items: parsedLines.map((l) => ({ variantId: l.item.variant_id, quantity: l.qtyNumber })),
-        discount: discountOk ? discountNumber : 0,
+        items: parsedLines.map((l) => ({
+          variantId: l.item.variant_id,
+          quantity: l.qtyNumber,
+          discount: l.lineDiscount ? { type: l.discountType, value: parseDecimal(l.discount) } : null,
+        })),
+        discount: { type: discountType, value: discountAmount ? parseDecimal(discount) : 0 },
         customer,
         notes,
       });
@@ -112,6 +136,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
       setDone({ saleId: res.saleId, ticketNumber: res.ticketNumber, total });
       setLines([]);
       setDiscount("");
+      setDiscountType("amount");
       setCustomer("");
       setNotes("");
       router.refresh(); // stock actualizado para la próxima venta
@@ -220,10 +245,10 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
               {parsedLines.map((l) => {
                 const over = l.item.track_stock && l.ok && l.qtyNumber > l.item.stock;
                 const id = `qty-${l.item.variant_id}`;
-                const setQty = (qty: string) =>
-                  setLines((ls) => ls.map((x) => (x.item.variant_id === l.item.variant_id ? { ...x, qty } : x)));
+                const setQty = (qty: string) => setLine(l.item.variant_id, { qty });
                 return (
-                  <li key={l.item.variant_id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-surface p-3 shadow-sm sm:flex-nowrap">
+                  <li key={l.item.variant_id} className="rounded-2xl bg-surface p-3 shadow-sm">
+                    <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
                     <Thumb src={l.item.image} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">
@@ -276,7 +301,24 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
                         </button>
                       )}
                     </div>
-                    <p className="w-24 text-right text-sm font-bold tabular-nums">{l.ok ? formatMoney(l.lineTotal) : "—"}</p>
+                    <div className="w-24 text-right">
+                      {l.lineDiscount ? (
+                        <p className="text-xs text-muted line-through tabular-nums">{formatMoney(l.gross)}</p>
+                      ) : null}
+                      <p className="text-sm font-bold tabular-nums">{l.ok ? formatMoney(l.lineTotal) : "—"}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLine(l.item.variant_id, { showDiscount: !l.showDiscount })}
+                      aria-label={`Descuento para ${l.item.product_name}`}
+                      aria-expanded={l.showDiscount}
+                      title="Descuento"
+                      className={`grid size-8 cursor-pointer place-items-center rounded-full hover:bg-primary-soft hover:text-primary ${
+                        l.lineDiscount ? "bg-primary-soft text-primary" : "text-muted"
+                      }`}
+                    >
+                      <Tag size={16} aria-hidden />
+                    </button>
                     <button
                       type="button"
                       onClick={() => setLines((ls) => ls.filter((x) => x.item.variant_id !== l.item.variant_id))}
@@ -285,6 +327,27 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
                     >
                       <Trash size={16} aria-hidden />
                     </button>
+                    </div>
+                    {l.showDiscount && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-dashed border-border pt-2 pl-[3.25rem] text-sm">
+                        <span className="text-muted">Descuento</span>
+                        <DiscountInput
+                          id={`disc-${l.item.variant_id}`}
+                          label={`Descuento para ${l.item.product_name}`}
+                          type={l.discountType}
+                          value={l.discount}
+                          invalid={l.lineDiscount === null}
+                          onChange={(discountType, value) => setLine(l.item.variant_id, { discountType, discount: value })}
+                        />
+                        {l.lineDiscount === null ? (
+                          <span role="alert" className="text-xs font-medium text-danger">
+                            {l.discountType === "pct" ? "Entre 0 y 100 %" : "No puede superar el importe"}
+                          </span>
+                        ) : l.lineDiscount > 0 ? (
+                          <span className="text-xs text-muted tabular-nums">−{formatMoney(l.lineDiscount)}</span>
+                        ) : null}
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -296,23 +359,33 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
         <aside aria-label="Cobro" className="space-y-4 rounded-[var(--radius-card)] bg-surface p-5 shadow-sm lg:sticky lg:top-6">
           <dl className="space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-muted">Subtotal (lista)</dt>
+              <dt className="text-muted">Subtotal</dt>
               <dd className="font-semibold tabular-nums">{formatMoney(subtotal)}</dd>
             </div>
           </dl>
 
           <div>
-            <label htmlFor="pos-discount" className="mb-1 block text-xs font-bold uppercase tracking-wide text-muted">Descuento ($)</label>
-            <input
-              id="pos-discount"
-              inputMode="decimal"
-              value={discount}
-              placeholder="0"
-              onChange={(e) => setDiscount(e.target.value)}
-              aria-invalid={!discountOk}
-              className={`${inputClass} ${discountOk ? "" : "border-danger"}`}
-            />
-            {!discountOk && <p role="alert" className="mt-1 text-xs font-medium text-danger">No puede superar el subtotal</p>}
+            <p id="pos-discount-label" className="mb-1 text-xs font-bold uppercase tracking-wide text-muted">Descuento sobre el total</p>
+            <div className="flex items-center gap-2">
+              <DiscountInput
+                id="pos-discount"
+                label="Descuento sobre el total"
+                type={discountType}
+                value={discount}
+                invalid={!discountOk}
+                wide
+                onChange={(type, value) => {
+                  setDiscountType(type);
+                  setDiscount(value);
+                }}
+              />
+              {discountAmount ? <span className="text-sm text-muted tabular-nums">−{formatMoney(discountAmount)}</span> : null}
+            </div>
+            {!discountOk && (
+              <p role="alert" className="mt-1 text-xs font-medium text-danger">
+                {discountType === "pct" ? "Entre 0 y 100 %" : "No puede superar el subtotal"}
+              </p>
+            )}
           </div>
 
           <fieldset>
@@ -409,4 +482,55 @@ function Thumb({ src }: { src: string | null }) {
     );
   }
   return <Image src={src} alt="" width={40} height={40} className="size-10 shrink-0 rounded-xl object-cover" />;
+}
+
+/** Campo de descuento con selector % / $ (por línea o sobre el total). */
+function DiscountInput({
+  id,
+  label,
+  type,
+  value,
+  invalid,
+  wide = false,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  type: DiscountType;
+  value: string;
+  invalid: boolean;
+  wide?: boolean;
+  onChange: (type: DiscountType, value: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <label htmlFor={id} className="sr-only">{label} ({type === "pct" ? "porcentaje" : "monto en pesos"})</label>
+      <input
+        id={id}
+        inputMode="decimal"
+        value={value}
+        placeholder="0"
+        onChange={(e) => onChange(type, e.target.value)}
+        aria-invalid={invalid}
+        className={`${wide ? "w-28" : "w-20"} rounded-xl border px-2.5 py-1.5 text-right text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+          invalid ? "border-danger" : "border-border-strong"
+        }`}
+      />
+      <div role="group" aria-label={`Tipo de ${label.toLowerCase()}`} className="inline-flex rounded-full bg-background p-0.5">
+        {(["pct", "amount"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            aria-pressed={type === t}
+            onClick={() => onChange(t, value)}
+            className={`min-w-8 cursor-pointer rounded-full px-2 py-1 text-xs font-bold ${
+              type === t ? "bg-primary text-white" : "text-muted hover:text-foreground"
+            }`}
+          >
+            {t === "pct" ? "%" : "$"}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }

@@ -60,11 +60,11 @@ async function paymentMethod(name: string): Promise<string> {
   return r.id;
 }
 
-/** Venta como la carga el panel: forma de pago por nombre y descuento manual opcional. */
-async function sell(user: string, session: string, method: string, items: Row[], discount = 0): Promise<Row> {
+/** Venta como la carga el panel: forma de pago por nombre y descuento general opcional (monto o %). */
+async function sell(user: string, session: string, method: string, items: Row[], discount = 0, discountIsPct = false): Promise<Row> {
   const pm = await paymentMethod(method);
   const [r] = await as(user, () =>
-    rows("select public.create_sale($1, $2, $3::jsonb, $4) as id", [session, pm, JSON.stringify(items), discount]),
+    rows("select public.create_sale($1, $2, $3::jsonb, $4, null, null, $5) as id", [session, pm, JSON.stringify(items), discount, discountIsPct]),
   );
   const [sale] = await rows("select * from public.sales where id = $1", [r.id]);
   return sale;
@@ -300,6 +300,38 @@ describe("caja y ventas", () => {
     const surcharge = await sell(staffId, sessionId, "Crédito 6 cuotas", [{ variant_id: negId, quantity: 1 }]);
     expect(Number(surcharge.total)).toBe(12100);
     await rows("update public.payment_methods set adjustment_pct = 0 where name = 'Crédito 6 cuotas'");
+  });
+
+  it("descuentos por producto (en % o en $) y general en %, antes del ajuste de la forma de pago", async () => {
+    // 2 × 11000 con 10 % → 19800; 1 × 11000 con $1000 → 10000; subtotal 29800
+    const sale = await sell(
+      staffId, sessionId, "Crédito 6 cuotas",
+      [
+        { variant_id: negId, quantity: 2, discount_pct: 10 },
+        { variant_id: negId, quantity: 1, discount_amount: 1000 },
+      ],
+      5, true, // 5 % general → −1490
+    );
+    expect(Number(sale.subtotal)).toBe(29800);
+    expect(Number(sale.discount_pct)).toBe(5);
+    expect(Number(sale.discount_amount)).toBe(1490);
+    expect(Number(sale.total)).toBe(28310);
+    const lines = await rows("select discount_pct::float, discount_amount::float, line_total::float from public.sale_items where sale_id = $1 order by line_total desc", [sale.id]);
+    expect(lines).toEqual([
+      { discount_pct: 10, discount_amount: 2200, line_total: 19800 },
+      { discount_pct: null, discount_amount: 1000, line_total: 10000 },
+    ]);
+    const [log] = await as(staffId, () => rows("select discount_pct::float from public.sales_log where id = $1", [sale.id]));
+    expect(log.discount_pct).toBe(5);
+    await as(adminId, () => rows("select public.void_sale($1, 'Prueba de descuentos')", [sale.id]));
+  });
+
+  it("valida los descuentos", async () => {
+    const one = (extra: Row) => [{ variant_id: negId, quantity: 1, ...extra }];
+    await expect(sell(staffId, sessionId, "Efectivo", one({ discount_pct: 150 }))).rejects.toThrow(/entre 0 y 100/);
+    await expect(sell(staffId, sessionId, "Efectivo", one({ discount_amount: 99999 }))).rejects.toThrow(/mayor al importe/);
+    await expect(sell(staffId, sessionId, "Efectivo", one({ discount_pct: 10, discount_amount: 100 }))).rejects.toThrow(/no los dos/);
+    await expect(sell(staffId, sessionId, "Efectivo", one({}), 120, true)).rejects.toThrow(/entre 0 y 100/);
   });
 
   it("no acepta formas de pago inactivas o inexistentes", async () => {
@@ -615,5 +647,33 @@ describe("lista de precios del local", () => {
     // por unidad no
     const mate = await variantBySku("MATE-NEG-G");
     await expect(as(adminId, () => rows("select public.register_stock_in($1, 0.5)", [mate.id]))).rejects.toThrow(/por unidad/);
+  });
+});
+
+describe("web pública sin precios en $0", () => {
+  it("no publica variantes a $0 ni productos sin ningún precio", async () => {
+    await saveProduct(adminId, {
+      name: "Yerba sin precio", slug: "yerba-sin-precio",
+      variants: [{ sku: "SIN-PRECIO", price: 0 }],
+    });
+    await saveProduct(adminId, {
+      name: "Mate a medio cargar", slug: "mate-medio", option_names: ["Color"],
+      variants: [
+        { sku: "MEDIO-NEGRO", attributes: { Color: "Negro" }, price: 15000, initial_stock: 2 },
+        { sku: "MEDIO-ROJO", attributes: { Color: "Rojo" }, price: 0 },
+      ],
+    });
+    const slugs = (await as("anon", () => rows("select slug from public.public_products"))).map((r) => r.slug);
+    expect(slugs).not.toContain("yerba-sin-precio");
+    expect(slugs).toContain("mate-medio");
+
+    const [medio] = await as("anon", () => rows("select price::float, variant_count, has_price_range from public.public_products where slug = 'mate-medio'"));
+    expect(medio).toEqual({ price: 15000, variant_count: 1, has_price_range: false });
+    const variants = await as("anon", () =>
+      rows("select label from public.public_variants v join public.public_products p on p.id = v.product_id where p.slug = 'mate-medio'"),
+    );
+    expect(variants).toEqual([{ label: "Negro" }]);
+    // en el panel siguen estando
+    expect(await as(adminId, () => rows("select 1 from public.stock_overview where sku = 'SIN-PRECIO'"))).toHaveLength(1);
   });
 });

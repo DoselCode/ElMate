@@ -4,22 +4,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowsLeftRight, CashRegister, ChartLineUp, Package, Receipt, ShoppingCart, SignOut, Storefront } from "@phosphor-icons/react";
 import { signOutAction } from "@/back/admin/auth/actions";
+import { STAGE_2 } from "@/shared/features";
 import type { Role } from "@/shared/types";
 
 /** Secciones del panel. Para agregar una pantalla nueva, sumarla acá. */
+// stage2: secciones de la entrega final (ver shared/features.ts); se ocultan hasta entonces.
 const ALL_ITEMS = [
-  { href: "/admin/ventas/nueva", label: "Nueva venta", icon: ShoppingCart, adminOnly: false },
-  { href: "/admin/caja", label: "Caja", icon: CashRegister, adminOnly: false },
-  { href: "/admin/ventas", label: "Ventas", icon: Receipt, adminOnly: false },
-  { href: "/admin/stock", label: "Inventario y stock", icon: Package, adminOnly: false },
-  { href: "/admin/stock/movements", label: "Movimientos", icon: ArrowsLeftRight, adminOnly: false },
-  { href: "/admin/ingresos", label: "Ingresos", icon: ChartLineUp, adminOnly: true },
-  { href: "/admin/local", label: "Datos del local", icon: Storefront, adminOnly: true },
+  { href: "/admin/ventas/nueva", label: "Nueva venta", icon: ShoppingCart, adminOnly: false, stage2: true },
+  { href: "/admin/caja", label: "Caja", icon: CashRegister, adminOnly: false, stage2: true },
+  { href: "/admin/ventas", label: "Ventas", icon: Receipt, adminOnly: false, stage2: true },
+  { href: "/admin/stock", label: "Inventario y stock", icon: Package, adminOnly: false, stage2: false },
+  { href: "/admin/stock/movements", label: "Movimientos", icon: ArrowsLeftRight, adminOnly: false, stage2: false },
+  { href: "/admin/ingresos", label: "Ingresos", icon: ChartLineUp, adminOnly: true, stage2: true },
+  { href: "/admin/local", label: "Datos del local", icon: Storefront, adminOnly: true, stage2: false },
 ] as const;
 
 export function Sidebar({ userName, role }: { userName: string; role: Role }) {
   const pathname = usePathname();
-  const items = ALL_ITEMS.filter((i) => !i.adminOnly || role === "admin");
+  const items = ALL_ITEMS.filter((i) => (!i.adminOnly || role === "admin") && (!i.stage2 || STAGE_2));
 
   // /admin/stock es prefijo de /admin/stock/movements (y /admin/ventas de /nueva): el activo es el más específico
   const active = [...items].sort((a, b) => b.href.length - a.href.length).find((i) => pathname === i.href || pathname.startsWith(`${i.href}/`));

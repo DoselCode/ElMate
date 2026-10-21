@@ -233,16 +233,17 @@ dialog::backdrop {
     }
 
     /* Categorías: el panel verde se "llena" de abajo hacia arriba y las tarjetas suben a flote */
+    /* Termina mientras el panel entra en pantalla: en pantallas altas ya se ve casi lleno al cargar */
     .fx-pour {
       view-timeline-name: --pour;
       animation: fx-pour linear both;
       animation-timeline: view();
-      animation-range: entry 0% cover 40%;
+      animation-range: entry 0% entry 60%;
     }
     .fx-float {
       animation: fx-float linear both;
       animation-timeline: --pour;
-      animation-range: cover calc(12% + var(--i, 0) * 4%) cover calc(38% + var(--i, 0) * 4%);
+      animation-range: entry calc(15% + var(--i, 0) * 6%) entry calc(55% + var(--i, 0) * 6%);
     }
 
     /* Ofertas: las tarjetas se reparten como cartas desde un mazo; los beneficios se dan vuelta */
@@ -357,7 +358,7 @@ dialog::backdrop {
 }
 @keyframes fx-pour {
   from {
-    clip-path: inset(62% 0 0 0 round 2.5rem);
+    clip-path: inset(45% 0 0 0 round 2.5rem);
   }
   to {
     clip-path: inset(0 0 0 0 round 2.5rem);

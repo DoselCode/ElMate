@@ -71,8 +71,14 @@ export function SaleDetailScreen({ detail, isAdmin }: { detail: SaleDetail; isAd
                 <span>
                   {formatQuantity(i.quantity, i.unit)} × {formatMoney(i.unit_price)}
                 </span>
-                <span className="text-foreground">{formatMoney(i.line_total)}</span>
+                <span className="text-foreground">{formatMoney(i.line_total + i.discount_amount)}</span>
               </p>
+              {i.discount_amount > 0 && (
+                <p className="flex justify-between gap-3 text-muted print:text-foreground">
+                  <span>Descuento{i.discount_pct !== null ? ` ${i.discount_pct} %` : ""}</span>
+                  <span className="text-foreground">−{formatMoney(i.discount_amount)}</span>
+                </p>
+              )}
             </li>
           ))}
         </ul>
@@ -80,7 +86,12 @@ export function SaleDetailScreen({ detail, isAdmin }: { detail: SaleDetail; isAd
         <div className="my-4 border-t border-dashed border-border-strong" />
         <dl className="space-y-1">
           <Row label="Subtotal" value={formatMoney(sale.subtotal)} />
-          {sale.discount_amount > 0 && <Row label="Descuento" value={`−${formatMoney(sale.discount_amount)}`} />}
+          {sale.discount_amount > 0 && (
+            <Row
+              label={sale.discount_pct !== null ? `Descuento ${sale.discount_pct} %` : "Descuento"}
+              value={`−${formatMoney(sale.discount_amount)}`}
+            />
+          )}
           {sale.adjustment_amount !== 0 && (
             <Row label={`${sale.payment_method_name} ${pct(sale.adjustment_pct)}`} value={formatMoney(sale.adjustment_amount)} />
           )}

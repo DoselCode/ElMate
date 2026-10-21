@@ -24,7 +24,11 @@ Stack: Next.js 16 · TypeScript · Tailwind v4 · Supabase (Postgres, Auth, Stor
 - "Precio anterior" por variante en el formulario de producto.
 - **Datos del local** (`/admin/local`): WhatsApp de pedidos, contacto, redes y horarios que muestra la web.
 
-### 3. Ventas, caja e ingresos (`/admin`)
+### 3. Ventas, caja e ingresos (`/admin`) — desarrollado, oculto hasta la entrega final
+
+> Según los presupuestos, estas secciones son de la segunda mitad del proyecto: están ocultas en el panel
+> (ver [ALCANCE.md](ALCANCE.md) y `src/shared/features.ts`). Para verlas: `NEXT_PUBLIC_ELMATE_ETAPA2=1`.
+
 - **Nueva venta** (`/admin/ventas/nueva`): búsqueda instantánea o lector de código de barras (escanear + Enter), cantidades en kg para granel, descuento, total por cada forma de pago y cobro contra la caja abierta.
 - **Caja** (`/admin/caja`): apertura con efectivo inicial (propone lo que quedó al último cierre), arqueo en vivo, retiros e ingresos de efectivo, cierre con diferencia e historial de cierres.
 - **Ventas** (`/admin/ventas`): historial por fecha, forma de pago y estado, con totales del período; ticket imprimible (no válido como factura) y anulación (solo admin).
@@ -70,6 +74,9 @@ Stack: Next.js 16 · TypeScript · Tailwind v4 · Supabase (Postgres, Auth, Stor
 - Las fotos de los productos se cargan desde el panel; mientras no haya, las tarjetas muestran un fondo de marca. La foto del hero sale del diseño de Figma.
 
 ## Próximos pasos
+
+Estado de cada módulo de los presupuestos: [ALCANCE.md](ALCANCE.md).
+
 
 1. Cargar el WhatsApp del local en "Datos del local" (sin eso el carrito no puede enviar pedidos).
 2. Contar el stock de cada producto (Inventario → Ajustar → Recuento) y activar en la web los que se quieran mostrar.

@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { requireAdmin } from "@/back/admin/auth/session";
 import { getIncomeReport, todayAR } from "@/back/admin/sales/queries";
 import { IncomeScreen } from "@/front/admin/sales/income-screen";
 import { param } from "@/shared/query";
+import { STAGE_2 } from "@/shared/features";
 
 export const metadata: Metadata = { title: "Ingresos" };
 
 export default async function IncomePage({ searchParams }: PageProps<"/admin/ingresos">) {
+  if (!STAGE_2) notFound(); // entrega final (shared/features.ts)
   const today = todayAR();
   const requested = Number.parseInt(param(await searchParams, "year"), 10);
   const year = Number.isFinite(requested) && requested >= 2000 && requested <= 2100 ? requested : Number(today.slice(0, 4));
