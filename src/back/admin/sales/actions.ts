@@ -101,8 +101,14 @@ export async function createSaleAction(input: unknown): Promise<ActionResult<{ s
   const { data: saleId, error } = await supabase.rpc("create_sale", {
     p_session_id: sessionId,
     p_payment_method_id: sale.paymentMethodId,
-    p_items: sale.items.map((i) => ({ variant_id: i.variantId, quantity: i.quantity })),
-    p_discount: sale.discount,
+    p_items: sale.items.map((i) => ({
+      variant_id: i.variantId,
+      quantity: i.quantity,
+      ...(i.discount?.type === "pct" ? { discount_pct: i.discount.value } : {}),
+      ...(i.discount?.type === "amount" ? { discount_amount: i.discount.value } : {}),
+    })),
+    p_discount: sale.discount.value,
+    p_discount_is_pct: sale.discount.type === "pct",
     p_customer: sale.customer || null,
     p_notes: sale.notes || null,
   });

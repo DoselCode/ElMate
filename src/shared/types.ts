@@ -173,6 +173,8 @@ export type SaleRow = {
   payment_is_cash: boolean;
   subtotal: number;
   discount_amount: number;
+  /** % del descuento general, si se cargó en porcentaje. */
+  discount_pct: number | null;
   adjustment_pct: number;
   adjustment_amount: number;
   total: number;
@@ -191,6 +193,9 @@ export type SaleItemRow = {
   quantity: number;
   unit: Unit;
   unit_price: number;
+  /** Descuento de la línea: monto y, si se cargó en %, el porcentaje. */
+  discount_pct: number | null;
+  discount_amount: number;
   line_total: number;
 };
 

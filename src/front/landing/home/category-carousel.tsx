@@ -42,17 +42,17 @@ export function CategoryCarousel({ categories }: { categories: PublicCategory[] 
       <ul
         ref={trackRef}
         onScroll={measure}
-        className="scrollbar-none -mx-1 flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-1"
+        className="scrollbar-none -mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-1"
         aria-label="Categorías"
       >
         {categories.map((c, i) => (
-          <li key={c.id} style={{ "--i": i } as React.CSSProperties} className="fx-float shrink-0 basis-[72%] snap-start sm:basis-[calc((100%-2.5rem)/3)] lg:basis-[calc((100%-3.75rem)/4)]">
+          <li key={c.id} style={{ "--i": i } as React.CSSProperties} className="fx-float shrink-0 basis-[44%] snap-start sm:basis-[calc((100%-2rem)/3)] md:basis-[calc((100%-3rem)/4)] lg:basis-[calc((100%-4rem)/5)]">
             <Link
               href={`/tienda?categoria=${c.slug}`}
-              className="flex h-full flex-col items-center rounded-3xl bg-surface px-5 pb-6 pt-5 text-center transition-transform hover:-translate-y-1"
+              className="flex h-full flex-col items-center rounded-3xl bg-surface px-4 pb-4 pt-4 text-center transition-transform hover:-translate-y-1"
             >
-              <ProductImage src={c.image} alt="" sizes="180px" className="aspect-square w-full max-w-40 rounded-2xl" />
-              <span className="mt-5 font-display text-lg font-bold">{c.name}</span>
+              <ProductImage src={c.image} alt="" sizes="120px" className="aspect-square w-full max-w-28 rounded-2xl" />
+              <span className="mt-3 font-display text-base font-bold leading-tight">{c.name}</span>
               <span className="mt-0.5 text-sm text-muted">
                 {c.product_count} {c.product_count === 1 ? "producto" : "productos"}
               </span>
@@ -62,7 +62,7 @@ export function CategoryCarousel({ categories }: { categories: PublicCategory[] 
       </ul>
 
       {pages > 1 && (
-        <div className="mt-6 flex justify-center gap-2">
+        <div className="mt-5 flex justify-center gap-2">
           {Array.from({ length: pages }, (_, i) => (
             <button
               key={i}

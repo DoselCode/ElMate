@@ -155,7 +155,7 @@ export function parseSalesFilters(sp: SearchParams): SalesFilters {
   };
 }
 
-const SALE_NUMBERS: (keyof SaleRow)[] = ["subtotal", "discount_amount", "adjustment_pct", "adjustment_amount", "total"];
+const SALE_NUMBERS: (keyof SaleRow)[] = ["subtotal", "discount_amount", "discount_pct", "adjustment_pct", "adjustment_amount", "total"];
 
 /** Ventas del período, paginadas, más los totales del período (solo pagadas). */
 export async function getSales(f: SalesFilters): Promise<Paged<SaleRow> & { totals: SalesTotals }> {
@@ -207,7 +207,7 @@ export async function getSaleDetail(id: string): Promise<SaleDetail | null> {
     const [saleRes, itemsRes, storeRes] = await Promise.all([
       supabase.from("sales_log").select("*").eq("id", id).maybeSingle(),
       supabase.from("sale_items")
-        .select("product_name, variant_label, sku, quantity, unit_price, line_total, product_variants(products(unit))")
+        .select("product_name, variant_label, sku, quantity, unit_price, discount_pct, discount_amount, line_total, product_variants(products(unit))")
         .eq("sale_id", id).order("product_name"),
       supabase.from("store_settings").select("name, address, phone, legal_name, cuit, tax_condition").eq("id", 1).maybeSingle(),
     ]);
@@ -220,6 +220,8 @@ export async function getSaleDetail(id: string): Promise<SaleDetail | null> {
       quantity: Number(i.quantity),
       unit: unitOf(i.product_variants),
       unit_price: Number(i.unit_price),
+      discount_pct: i.discount_pct === null ? null : Number(i.discount_pct),
+      discount_amount: Number(i.discount_amount),
       line_total: Number(i.line_total),
     }));
     const store: TicketStore = storeRes.data ?? { name: "El Mate", address: null, phone: null, legal_name: null, cuit: null, tax_condition: null };

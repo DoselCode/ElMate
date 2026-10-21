@@ -32,6 +32,11 @@ export const closeCashSchema = z
     error: "No puede ser más de lo contado",
   });
 
+/** Descuento en porcentaje (0–100) o en monto fijo. */
+export const discountSchema = z
+  .object({ type: z.enum(["pct", "amount"]), value: money })
+  .refine((d) => d.type === "amount" || d.value <= 100, { path: ["value"], error: "Entre 0 y 100 %" });
+
 export const saleSchema = z.object({
   paymentMethodId: z.uuid({ error: "Elegí la forma de pago" }),
   items: z
@@ -43,15 +48,19 @@ export const saleSchema = z.object({
           .gt(0, { error: "La cantidad tiene que ser mayor a 0" })
           .max(100_000, { error: "Cantidad demasiado grande" })
           .refine(threeDecimals, { error: "Máximo 3 decimales" }),
+        /** Descuento de esta línea (opcional). */
+        discount: discountSchema.nullable(),
       }),
     )
     .min(1, { error: "Agregá al menos un producto" })
     .max(100, { error: "Máximo 100 productos por venta" }),
-  /** Descuento manual en pesos, antes del ajuste de la forma de pago. */
-  discount: money,
+  /** Descuento general sobre el subtotal, antes del ajuste de la forma de pago. */
+  discount: discountSchema,
   customer: z.string().trim().max(80, { error: "Máximo 80 caracteres" }),
   notes: z.string().trim().max(300, { error: "Máximo 300 caracteres" }),
 });
+
+export type Discount = z.infer<typeof discountSchema>;
 
 export const voidSaleSchema = z.object({
   saleId: z.uuid(),

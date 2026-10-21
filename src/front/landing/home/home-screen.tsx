@@ -111,12 +111,12 @@ function Categories({ categories }: { categories: PublicCategory[] }) {
   if (categories.length === 0) return null;
   return (
     <section className={`${container} mt-20`}>
-      <div className="fx-pour relative overflow-hidden rounded-[2.5rem] bg-primary px-5 pb-12 pt-14 sm:px-12">
+      <div className="fx-pour relative overflow-hidden rounded-[2.5rem] bg-primary px-5 pb-8 pt-9 sm:px-10">
         <span className="pointer-events-none absolute -left-20 -top-20 size-72 rounded-full bg-white/[0.06]" aria-hidden />
         <span className="pointer-events-none absolute -bottom-28 -right-20 size-80 rounded-full bg-white/[0.06]" aria-hidden />
         <div className="relative">
-          <CaretDoubleDown size={20} weight="bold" className="mx-auto mb-2 text-white/70" aria-hidden />
-          <SectionHeading title={SECTIONS.categories.title} text={SECTIONS.categories.text} light />
+          <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-white/70" aria-hidden />
+          <SectionHeading title={SECTIONS.categories.title} text={SECTIONS.categories.text} light compact />
           <CategoryCarousel categories={categories} />
         </div>
       </div>
