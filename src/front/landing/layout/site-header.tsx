@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { CaretDown, List, MagnifyingGlass, ShoppingCartSimple, X } from "@phosphor-icons/react";
 import { useCart } from "../cart/cart-provider";
 import { Logo } from "./logo";
+import { SearchPanel } from "./search-panel";
 
 /** Link del menú. Con `children` se muestra como desplegable (ej. "Categorías"). */
 export type NavLink = { href: string; label: string; children?: { href: string; label: string }[] };
@@ -15,9 +16,8 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
   const cart = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
   const menuId = useId();
-  const searchId = useId();
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
 
   // Al navegar se cierran el menú y el buscador (ajuste en el render, no en un efecto)
   const [lastPath, setLastPath] = useState(pathname);
@@ -27,20 +27,15 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
     setSearchOpen(false);
   }
 
-  useEffect(() => {
-    if (searchOpen) searchRef.current?.focus();
-  }, [searchOpen]);
-
   const iconBtn =
     "relative grid size-11 cursor-pointer place-items-center rounded-full text-foreground transition-colors hover:bg-primary-soft";
 
   return (
     <header className="sticky top-0 z-40 px-3 pt-3 sm:px-6">
       <div className="relative mx-auto max-w-[82rem] rounded-[2rem] bg-surface/95 px-4 py-3 shadow-[0_6px_24px_rgb(29_42_32/0.06)] backdrop-blur sm:px-6">
-        {/* Progreso de lectura: una línea verde que se llena al bajar (solo navegadores que lo soportan) */}
-        <span className="fx-progress pointer-events-none absolute inset-x-8 bottom-0 h-[3px] rounded-full bg-primary/70" aria-hidden />
         <div className="flex items-center justify-between gap-4">
-          <Logo name={storeName} />
+          {/* El anillo del logo se completa a medida que se baja por la página */}
+          <Logo name={storeName} progress />
 
           <nav aria-label="Principal" className="hidden lg:block">
             <ul className="flex items-center gap-1">
@@ -70,8 +65,11 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
               className={iconBtn}
               aria-label="Buscar productos"
               aria-expanded={searchOpen}
-              aria-controls={searchId}
-              onClick={() => setSearchOpen((v) => !v)}
+              data-search-toggle
+              onClick={() => {
+                setMenuOpen(false);
+                setSearchOpen((v) => !v);
+              }}
             >
               <MagnifyingGlass size={22} aria-hidden />
             </button>
@@ -89,32 +87,25 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
               aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
               aria-expanded={menuOpen}
               aria-controls={menuId}
-              onClick={() => setMenuOpen((v) => !v)}
+              onClick={() => {
+                setSearchOpen(false);
+                setMenuOpen((v) => !v);
+              }}
             >
               {menuOpen ? <X size={22} aria-hidden /> : <List size={22} aria-hidden />}
             </button>
           </div>
         </div>
 
-        {searchOpen && (
-          <form id={searchId} action="/tienda" method="get" role="search" className="flex gap-2 border-t border-border pb-1.5 pt-3">
-            <label htmlFor={`${searchId}-q`} className="sr-only">Buscar productos</label>
-            <input
-              ref={searchRef}
-              id={`${searchId}-q`}
-              name="q"
-              type="search"
-              placeholder="Buscar mates, termos, yerbas…"
-              className="min-w-0 flex-1 rounded-full border border-border-strong bg-background px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <button type="submit" className="rounded-full bg-primary px-5 text-sm font-bold text-white hover:bg-primary-hover">
-              Buscar
-            </button>
-          </form>
-        )}
+        {/* Buscador y menú del celular flotan debajo del header (no lo estiran) */}
+        {searchOpen && <SearchPanel onClose={closeSearch} />}
 
         {menuOpen && (
-          <nav id={menuId} aria-label="Principal" className="border-t border-border pb-2 pt-2 lg:hidden">
+          <nav
+            id={menuId}
+            aria-label="Principal"
+            className="search-pop absolute inset-x-0 top-full mt-3 max-h-[calc(100svh-7rem)] overflow-y-auto rounded-[1.75rem] border border-border bg-surface p-2 shadow-[0_24px_60px_rgb(29_42_32/0.16)] lg:hidden"
+          >
             <ul className="grid gap-1">
               {links.map((l) => (
                 <li key={l.label}>
@@ -126,7 +117,7 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
                     {l.label}
                   </Link>
                   {l.children && (
-                    <ul className="ml-4 grid gap-0.5 border-l-2 border-primary-soft pl-2">
+                    <ul className="ml-4 grid grid-cols-2 gap-0.5 border-l-2 border-primary-soft pl-2">
                       {l.children.map((c) => (
                         <li key={c.href}>
                           <Link

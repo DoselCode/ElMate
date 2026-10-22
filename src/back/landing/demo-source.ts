@@ -174,7 +174,7 @@ const BEST_SELLERS = ["p-4", "p-0", "p-1", "p-6"];
 
 function matches(p: PublicProduct, q: ProductQuery) {
   const text = (s: string) => slugify(s).replace(/-/g, " ");
-  if (q.q && !text(p.name).includes(text(q.q))) return false;
+  if (q.q && !text(q.q).split(" ").filter(Boolean).every((w) => text(p.name).includes(w))) return false;
   if (q.category && p.category_slug !== q.category) return false;
   if (q.onlyOffers && p.compare_at_price === null) return false;
   if (q.ids && !q.ids.includes(p.id)) return false;

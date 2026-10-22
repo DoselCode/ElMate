@@ -37,7 +37,8 @@ export const supabaseSource: CatalogSource = {
 
   async products(q: ProductQuery) {
     let query = createPublicClient().from("public_products").select("*", { count: "exact" });
-    if (q.q) query = query.ilike("name", `%${q.q}%`);
+    // Cada palabra tiene que aparecer en el nombre, en cualquier orden ("mate algarrobo")
+    for (const word of (q.q ?? "").split(/\s+/).filter(Boolean)) query = query.ilike("name", `%${word}%`);
     if (q.category) query = query.eq("category_slug", q.category);
     if (q.onlyOffers) query = query.not("compare_at_price", "is", null);
     if (q.ids) query = query.in("id", q.ids);

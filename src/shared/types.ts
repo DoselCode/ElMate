@@ -357,6 +357,19 @@ export type ShopFilters = {
 export type HomeData = { offers: PublicProduct[]; bestSellers: PublicProduct[]; newest: PublicProduct[] };
 
 /** Página de un producto: el producto, sus variantes y relacionados de la misma categoría. */
+/** Resultado del buscador del header (lo mínimo para mostrar la fila). */
+export type SearchResult = {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  price: number;
+  compare_at_price: number | null;
+  has_price_range: boolean;
+  unit: Unit;
+  category_name: string | null;
+};
+
 /** Forma de pago como la ve la web (vista public_payment_methods). */
 export type PublicPaymentMethod = { name: string; adjustment_pct: number; is_cash: boolean; sort_order: number };
 
