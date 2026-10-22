@@ -171,7 +171,7 @@ dialog::backdrop {
    - Con "reducir movimiento" activado en el sistema no se anima nada.
    - Escalonado: cada elemento puede traer --i (0, 1, 2…) en su style.
    ============================================================================================= */
-.fx-progress {
+.fx-ring {
   display: none;
 }
 
@@ -193,11 +193,13 @@ dialog::backdrop {
   }
 
   @supports (animation-timeline: view()) {
-    /* Barra de progreso de lectura en el header */
-    .fx-progress {
+    /* Progreso de lectura: anillo alrededor del logo que se completa al bajar */
+    .fx-ring {
       display: block;
-      transform-origin: left;
-      animation: fx-grow-x linear both;
+    }
+    .fx-ring-fill {
+      stroke-dashoffset: 100;
+      animation: fx-ring linear both;
       animation-timeline: scroll(root);
     }
 
@@ -331,6 +333,18 @@ dialog::backdrop {
     stroke-dashoffset: 0;
   }
 }
+@keyframes fx-ring {
+  /* Arriba de todo no se ve (el extremo redondeado dejaría un punto) */
+  from {
+    opacity: 0;
+  }
+  2% {
+    opacity: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
 @keyframes fx-grow-x {
   from {
     transform: scaleX(0);
@@ -432,4 +446,18 @@ dialog::backdrop {
   background-repeat: no-repeat;
   background-position: 0 88%;
   background-size: 100% 38%;
+}
+
+/* Paneles flotantes del header (buscador, menú del celular): aparecen bajando apenas */
+@media (prefers-reduced-motion: no-preference) {
+  .search-pop {
+    animation: search-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: top right;
+  }
+}
+@keyframes search-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.98);
+  }
 }

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
-import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, ShopFilters, ShopSort, StoreInfo } from "@/shared/types";
+import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, SearchResult, ShopFilters, ShopSort, StoreInfo } from "@/shared/types";
 import { demoSource } from "./demo-source";
 import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
 import { supabaseSource } from "./supabase-source";
@@ -75,6 +75,29 @@ export async function listShopProducts(f: ShopFilters): Promise<{ rows: PublicPr
     limit: SHOP_PAGE_SIZE,
     offset: (f.page - 1) * SHOP_PAGE_SIZE,
   });
+}
+
+export const SEARCH_LIMIT = 6;
+
+/** Búsqueda mientras se escribe (buscador del header): los primeros resultados y el total. */
+export async function searchProducts(text: string): Promise<{ rows: SearchResult[]; total: number }> {
+  const q = safeSearch(text);
+  if (q.length < 2) return { rows: [], total: 0 };
+  const { rows, total } = await products({ q, sort: "destacados", limit: SEARCH_LIMIT });
+  return {
+    total,
+    rows: rows.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      image: p.images[0] ?? null,
+      price: p.price,
+      compare_at_price: p.compare_at_price,
+      has_price_range: p.has_price_range,
+      unit: p.unit,
+      category_name: p.category_name,
+    })),
+  };
 }
 
 // cache(): la metadata y la página piden el mismo producto en una visita
