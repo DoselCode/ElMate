@@ -6,6 +6,8 @@ export const metadata: Metadata = { title: "Movimientos de stock" };
 
 export default async function MovementsPage({ searchParams }: PageProps<"/admin/stock/movements">) {
   const filters = parseMovementFilters(await searchParams);
-  const list = await getMovements(filters);
+  // Sin await: el título y los filtros se ven al instante y la tabla aparece cuando llega
+  const list = getMovements(filters);
+  list.catch(() => {});
   return <MovementsScreen list={list} filters={filters} />;
 }

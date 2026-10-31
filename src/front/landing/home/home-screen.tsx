@@ -12,7 +12,8 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import type { HomeData, PublicCategory, PublicProduct } from "@/shared/types";
 import { ProductCard, ProductGrid } from "../catalog/product-card";
-import { BENEFITS, HERO, SECTIONS } from "../content";
+import type { HomeContent } from "@/shared/home-content";
+import { BENEFITS, HERO } from "../content";
 import { CategoryCarousel } from "./category-carousel";
 import { HeroBrew } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
@@ -34,36 +35,54 @@ function uniqueProducts(products: PublicProduct[]) {
   return products.filter((p, i) => products.findIndex((q) => q.id === p.id) === i);
 }
 
-export function HomeScreen({ data, categories }: { data: HomeData; categories: PublicCategory[] }) {
+/** Título, etiqueta y texto de una sección, con los textos que el usuario cambió desde el panel. */
+const heading = (c: HomeContent, id: string): SectionHeadingProps => ({
+  eyebrow: c.t(`${id}.eyebrow`),
+  title: c.t(`${id}.title`),
+  text: c.t(`${id}.text`),
+});
+
+export function HomeScreen({ data, categories, content }: { data: HomeData; categories: PublicCategory[]; content: HomeContent }) {
+  const featuredIds = new Set(data.featured.map((p) => p.id));
   return (
     <>
-      <Hero />
-      <Categories categories={categories} />
-      {/* Sin productos en oferta se muestran destacados, para que la sección no quede vacía */}
-      {data.offers.length > 0 ? (
-        <Offers heading={SECTIONS.offers} products={data.offers.slice(0, 3)} />
-      ) : (
-        <Offers heading={SECTIONS.featured} products={uniqueProducts([...data.bestSellers, ...data.newest]).slice(0, 3)} />
+      <Hero content={content} />
+      <Categories categories={categories} content={content} />
+      {/* Destacados: los que el usuario marcó en el panel */}
+      {data.featured.length > 0 && (
+        <section id="destacados" className={`${container} mt-24 scroll-mt-28`}>
+          <SectionHeading {...heading(content, "featured")} />
+          <ProductGrid products={data.featured.slice(0, 8)} reveal />
+        </section>
       )}
-      <Ritual combosHref={categoryHref(categories, "combo")} />
+      {/* Sin productos en oferta se muestran los más vendidos y las novedades, para que la sección no quede vacía */}
+      {data.offers.length > 0 ? (
+        <Offers heading={heading(content, "offers")} products={data.offers.slice(0, 3)} />
+      ) : (
+        <Offers
+          heading={heading(content, "featured")}
+          products={uniqueProducts([...data.bestSellers, ...data.newest]).filter((p) => !featuredIds.has(p.id)).slice(0, 3)}
+        />
+      )}
+      <Ritual combosHref={categoryHref(categories, "combo")} content={content} />
       {data.bestSellers.length > 0 && (
         <section className={`${container} mt-24`}>
-          <SectionHeading {...SECTIONS.bestSellers} />
+          <SectionHeading {...heading(content, "bestSellers")} />
           <ProductGrid products={data.bestSellers} reveal />
         </section>
       )}
       {data.newest.length > 0 && (
         <section className={`${container} mt-24`}>
-          <SectionHeading {...SECTIONS.newest} />
+          <SectionHeading {...heading(content, "newest")} />
           <ProductGrid products={data.newest} reveal />
         </section>
       )}
-      <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
+      <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} content={content} />
     </>
   );
 }
 
-function Hero() {
+function Hero({ content }: { content: HomeContent }) {
   return (
     <section className="relative isolate">
       {/* Brillo verde suave detrás de la foto, como en el diseño */}
@@ -79,15 +98,15 @@ function Hero() {
           </div>
           <p className="fx-pop absolute -bottom-5 left-6 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold shadow-md">
             <WhatsappLogo size={18} weight="fill" className="text-primary" aria-hidden />
-            {HERO.badge}
+            {content.t("hero.badge")}
           </p>
         </div>
 
         <div className="lg:pl-4">
           <h1 style={{ "--i": 1 } as React.CSSProperties} className="fx-rise max-w-xl font-display text-4xl font-extrabold leading-[1.15] text-foreground sm:text-5xl lg:text-[3.15rem]">
-            {HERO.titleStart} <span className="text-primary">{HERO.titleHighlight}</span> {HERO.titleEnd}
+            {content.t("hero.titleStart")} <span className="text-primary">{content.t("hero.titleHighlight")}</span> {content.t("hero.titleEnd")}
           </h1>
-          <p style={{ "--i": 2 } as React.CSSProperties} className="fx-rise mt-6 max-w-xl leading-relaxed text-muted lg:text-[1.05rem]">{HERO.text}</p>
+          <p style={{ "--i": 2 } as React.CSSProperties} className="fx-rise mt-6 max-w-xl leading-relaxed text-muted lg:text-[1.05rem]">{content.t("hero.text")}</p>
           <div style={{ "--i": 3 } as React.CSSProperties} className="fx-rise mt-8 flex flex-wrap gap-3">
             {/* prefetch: en producción la tienda ya está cargada cuando se hace clic */}
             <Link href="/tienda" prefetch className={btnPrimary}>
@@ -106,13 +125,13 @@ function Hero() {
   );
 }
 
-function Categories({ categories }: { categories: PublicCategory[] }) {
+function Categories({ categories, content }: { categories: PublicCategory[]; content: HomeContent }) {
   if (categories.length === 0) return null;
   return (
     <section className={`${container} mt-20`}>
       <div className="fx-pour relative px-1 sm:px-6">
         <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
-        <SectionHeading title={SECTIONS.categories.title} text={SECTIONS.categories.text} compact />
+        <SectionHeading title={content.t("categories.title")} text={content.t("categories.text")} compact />
         <CategoryCarousel categories={categories} />
       </div>
     </section>
@@ -169,7 +188,7 @@ function Offers({ heading, products }: { heading: SectionHeadingProps; products:
   );
 }
 
-function Ritual({ combosHref }: { combosHref: string }) {
+function Ritual({ combosHref, content }: { combosHref: string; content: HomeContent }) {
   const photo = "relative aspect-square w-1/2 max-w-60 overflow-hidden rounded-[1.75rem] bg-surface shadow-[0_14px_30px_rgb(11_17_25/0.14)]";
   return (
     <section className={`${container} relative isolate mt-24`}>
@@ -189,11 +208,11 @@ function Ritual({ combosHref }: { combosHref: string }) {
         </div>
         <div className="px-2">
           <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.6rem] sm:leading-[1.2]">
-            {SECTIONS.ritual.title}
+            {content.t("ritual.title")}
             <br />
-            <span className="marker fx-marker">{SECTIONS.ritual.titleBreak}</span>
+            <span className="marker fx-marker">{content.t("ritual.titleBreak")}</span>
           </h2>
-          <p className="mt-5 max-w-[29rem] text-[1.05rem] leading-relaxed text-muted">{SECTIONS.ritual.text}</p>
+          <p className="mt-5 max-w-[29rem] text-[1.05rem] leading-relaxed text-muted">{content.t("ritual.text")}</p>
           <Link href={combosHref} className={`${btnPrimary} mt-8`}>
             <Gift size={18} weight="bold" aria-hidden /> Ver combos
           </Link>
@@ -203,18 +222,23 @@ function Ritual({ combosHref }: { combosHref: string }) {
   );
 }
 
-function Promos({ bombillasHref, combosHref }: { bombillasHref: string; combosHref: string }) {
+function Promos({ bombillasHref, combosHref, content }: { bombillasHref: string; combosHref: string; content: HomeContent }) {
   return (
     <section className={`${container} mt-24 grid gap-6 lg:grid-cols-2`}>
       <PromoCard
         dark
         className="fx-from-left"
-        {...SECTIONS.promoBombillas}
+        title={content.t("promoBombillas.title")}
+        text={content.t("promoBombillas.text")}
         href={bombillasHref}
         cta="Ver bombillas"
         image="/landing/promo-bombillas.svg"
       />
-      <PromoCard className="fx-from-right" {...SECTIONS.promoCombos} href={combosHref} cta="Ver combos" image="/landing/promo-combos.svg" />
+      <PromoCard
+        className="fx-from-right"
+        title={content.t("promoCombos.title")}
+        text={content.t("promoCombos.text")}
+        href={combosHref} cta="Ver combos" image="/landing/promo-combos.svg" />
     </section>
   );
 }

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { TableSkeleton } from "@/front/admin/layout/panel-loading";
 import { Badge } from "@/front/shared/ui/badge";
 import { buttonClass } from "@/front/shared/ui/button";
 import { EmptyState, LoadError } from "@/front/shared/ui/empty-state";
@@ -17,7 +19,7 @@ const TYPES: Record<MovementType, { label: string; tone: "success" | "neutral" |
 };
 
 /** Historial de movimientos de stock. Recibe los datos ya cargados desde back/admin/stock/queries. */
-export function MovementsScreen({ list, filters }: { list: Paged<MovementRow>; filters: MovementFilters }) {
+export function MovementsScreen({ list, filters }: { list: Promise<Paged<MovementRow>>; filters: MovementFilters }) {
   const { q, type, page } = filters;
   const hasFilters = Boolean(q || type);
 
@@ -52,20 +54,42 @@ export function MovementsScreen({ list, filters }: { list: Paged<MovementRow>; f
         )}
       </form>
 
-      {list.error ? (
-        <LoadError text="No se pudo cargar el historial. Probá recargar la página." />
-      ) : list.rows.length === 0 ? (
-        <EmptyState
-          title={hasFilters ? "No hay movimientos con esos filtros" : "Todavía no hay movimientos"}
-          text="Los ingresos, ventas y ajustes de stock van a aparecer acá."
-        />
-      ) : (
-        <>
-          <MovementsTable rows={list.rows} />
-          <Pagination basePath="/admin/stock/movements" page={page} pageSize={PAGE_SIZE} total={list.total} params={{ q, type }} />
-        </>
-      )}
+      {/* key: al cambiar un filtro o de página vuelve a mostrar el esqueleto mientras llegan las filas */}
+      <Suspense key={JSON.stringify(filters)} fallback={<TableSkeleton />}>
+        <MovementsResults list={list} hasFilters={hasFilters} page={page} q={q} type={type} />
+      </Suspense>
     </div>
+  );
+}
+
+async function MovementsResults({
+  list: pending,
+  hasFilters,
+  page,
+  q,
+  type,
+}: {
+  list: Promise<Paged<MovementRow>>;
+  hasFilters: boolean;
+  page: number;
+  q: string;
+  type: MovementFilters["type"];
+}) {
+  const list = await pending;
+  if (list.error) return <LoadError text="No se pudo cargar el historial. Probá recargar la página." />;
+  if (list.rows.length === 0) {
+    return (
+      <EmptyState
+        title={hasFilters ? "No hay movimientos con esos filtros" : "Todavía no hay movimientos"}
+        text="Los ingresos, ventas y ajustes de stock van a aparecer acá."
+      />
+    );
+  }
+  return (
+    <>
+      <MovementsTable rows={list.rows} />
+      <Pagination basePath="/admin/stock/movements" page={page} pageSize={PAGE_SIZE} total={list.total} params={{ q, type }} />
+    </>
   );
 }
 
