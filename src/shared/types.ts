@@ -274,6 +274,9 @@ export type ProductForEdit = {
   images: string[];
   isVisible: boolean;
   badge: string | null;
+  isFeatured: boolean;
+  showInNews: boolean;
+  webOrder: number | null;
   variants: VariantForEdit[];
 };
 
@@ -303,6 +306,10 @@ export type PublicProduct = {
   /** Las variantes tienen precios distintos: la tarjeta muestra "Desde". */
   has_price_range: boolean;
   in_stock: boolean;
+  /** Opciones de la web (se eligen en la edición del producto). */
+  is_featured: boolean;
+  show_in_news: boolean;
+  web_order: number | null;
 };
 
 export type PublicVariant = {
@@ -354,7 +361,7 @@ export type ShopFilters = {
 };
 
 /** Secciones de productos de la home. */
-export type HomeData = { offers: PublicProduct[]; bestSellers: PublicProduct[]; newest: PublicProduct[] };
+export type HomeData = { featured: PublicProduct[]; offers: PublicProduct[]; bestSellers: PublicProduct[]; newest: PublicProduct[] };
 
 /** Página de un producto: el producto, sus variantes y relacionados de la misma categoría. */
 /** Resultado del buscador del header (lo mínimo para mostrar la fila). */

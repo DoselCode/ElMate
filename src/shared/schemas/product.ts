@@ -64,6 +64,16 @@ export const productSchema = z
     images: z.array(z.url({ error: "Imagen inválida" })).max(6, { error: "Máximo 6 imágenes" }),
     isVisible: z.boolean(),
     badge: z.string().trim().max(50, { error: "Máximo 50 caracteres" }),
+    /** Opciones de la web: destacado en la home, aparecer en Novedades y orden manual (menor = primero). */
+    isFeatured: z.boolean().default(false),
+    showInNews: z.boolean().default(true),
+    webOrder: z
+      .number({ error: "Ingresá un número" })
+      .int({ error: "Sin decimales" })
+      .min(0, { error: "Entre 0 y 9999" })
+      .max(9999, { error: "Entre 0 y 9999" })
+      .nullable()
+      .default(null),
     variants: z
       .array(variantSchema)
       .min(1, { error: "Agregá al menos una variante" })
@@ -135,6 +145,9 @@ export function toSavePayload(p: ProductData, slug: string) {
     images: p.images,
     is_visible: p.isVisible,
     badge: p.badge || null,
+    is_featured: p.isFeatured,
+    show_in_news: p.showInNews,
+    web_order: p.webOrder,
     variants: p.variants.map((v) => ({
       id: v.id ?? null,
       sku: v.sku,

@@ -167,6 +167,9 @@ const ALL: PublicProduct[] = PRODUCTS.map((p, pi) => {
     variant_count: variants.length,
     has_price_range: new Set(variants.map((v) => v.price)).size > 1,
     in_stock: variants.some((v) => v.in_stock),
+    is_featured: false,
+    show_in_news: true,
+    web_order: null,
   };
 });
 
@@ -177,6 +180,8 @@ function matches(p: PublicProduct, q: ProductQuery) {
   if (q.q && !text(q.q).split(" ").filter(Boolean).every((w) => text(p.name).includes(w))) return false;
   if (q.category && p.category_slug !== q.category) return false;
   if (q.onlyOffers && p.compare_at_price === null) return false;
+  if (q.featuredOnly && !p.is_featured) return false;
+  if (q.inNewsOnly && !p.show_in_news) return false;
   if (q.ids && !q.ids.includes(p.id)) return false;
   if (q.excludeId && p.id === q.excludeId) return false;
   return true;
@@ -194,6 +199,9 @@ export const demoSource: CatalogSource = {
   async storeInfo() {
     // Sin WhatsApp a propósito: el demo no debe mandar pedidos a un número real
     return { ...EMPTY_STORE, tagline: "Todo para tu ronda de mate" };
+  },
+  async homeTexts() {
+    return {};
   },
   async categories() {
     return CATEGORIES.map((c) => ({ ...c, product_count: ALL.filter((p) => p.category_slug === c.slug).length }));

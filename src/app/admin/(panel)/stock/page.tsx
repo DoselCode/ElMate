@@ -10,12 +10,13 @@ export default async function StockPage({ searchParams }: PageProps<"/admin/stoc
   const sp = await searchParams;
   const filters = parseStockFilters(sp);
 
-  const [user, list, summary, { categories, suppliers }] = await Promise.all([
-    requireStaff(),
-    getStockList(filters),
-    getStockSummary(),
-    getCatalogOptions(),
-  ]);
+  // La tabla y el resumen se piden ya pero no se esperan: StockScreen los muestra apenas llegan
+  const list = getStockList(filters);
+  const summary = getStockSummary();
+  // Si un permiso falla (redirect) antes de mostrarlos, no queda una promesa rechazada sin atender
+  list.catch(() => {});
+  summary.catch(() => {});
+  const [user, { categories, suppliers }] = await Promise.all([requireStaff(), getCatalogOptions()]);
 
   return (
     <StockScreen

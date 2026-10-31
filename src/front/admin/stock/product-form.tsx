@@ -80,14 +80,55 @@ function toDraft(v: VariantForEdit, cashAdjustmentPct: number): VariantDraft {
   };
 }
 
-function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+function SectionCard({
+  title,
+  description,
+  className = "",
+  children,
+}: {
+  title: string;
+  description?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
+    <section className={`rounded-[var(--radius-card)] bg-surface p-5 shadow-sm sm:p-6 ${className}`}>
       <h2 className="font-display text-lg font-bold">{title}</h2>
       {description && <p className="mb-4 mt-0.5 text-sm text-muted">{description}</p>}
       {!description && <div className="mb-4" />}
       {children}
     </section>
+  );
+}
+
+/** Interruptor de las opciones de la web: título, explicación y checkbox. */
+function WebOption({
+  checked,
+  onChange,
+  title,
+  hint,
+  disabled = false,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  title: string;
+  hint: string;
+  disabled?: boolean;
+}) {
+  return (
+    <label className={`flex items-start gap-3 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}>
+      <input
+        type="checkbox"
+        checked={checked && !disabled}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-1 size-4 accent-primary"
+      />
+      <span>
+        <span className="block text-sm font-semibold">{title}</span>
+        <span className="block text-xs text-muted">{hint}</span>
+      </span>
+    </label>
   );
 }
 
@@ -120,6 +161,9 @@ export function ProductForm({
   const [trackStock, setTrackStock] = useState(initial?.trackStock ?? true);
   const [badge, setBadge] = useState(initial?.badge ?? "");
   const [isVisible, setIsVisible] = useState(initial?.isVisible ?? true);
+  const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
+  const [showInNews, setShowInNews] = useState(initial?.showInNews ?? true);
+  const [webOrder, setWebOrder] = useState(initial?.webOrder === null || initial?.webOrder === undefined ? "" : String(initial.webOrder));
   const [images, setImages] = useState<string[]>(initial?.images ?? []);
   const [optionNames, setOptionNames] = useState<string[]>(initial?.optionNames ?? []);
   const [optionDraft, setOptionDraft] = useState("");
@@ -179,6 +223,9 @@ export function ProductForm({
       images,
       isVisible,
       badge,
+      isFeatured,
+      showInNews,
+      webOrder: webOrder.trim() === "" ? null : num(webOrder),
       variants: variants.map((v) => ({
         id: v.id,
         sku: v.sku,
@@ -238,7 +285,7 @@ export function ProductForm({
   const busy = pending || archiving;
 
   return (
-    <form onSubmit={submit} noValidate className="mx-auto max-w-4xl space-y-6 pb-10">
+    <form onSubmit={submit} noValidate className="space-y-6 pb-10">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold">{isEdit ? "Editar producto" : "Nuevo producto"}</h1>
         <Link href="/admin/stock" className={buttonClass("ghost")}>
@@ -252,12 +299,14 @@ export function ProductForm({
         </p>
       )}
 
-      <SectionCard title="Información básica">
-        <div className="grid gap-4 md:grid-cols-2">
+      {/* Una columna en celular y tablet; desde pantallas grandes, datos y variantes a la izquierda y fotos fijas a la derecha */}
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <SectionCard title="Información básica" className="xl:col-start-1">
+        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           <TextField
             id="name"
             label="Nombre *"
-            className="md:col-span-2"
+            className="md:col-span-2 2xl:col-span-3"
             value={name}
             maxLength={150}
             placeholder="Ej: Mate Imperial"
@@ -295,7 +344,7 @@ export function ProductForm({
               <option value="kg">Kilo (a granel)</option>
             </select>
           </Field>
-          <label className="flex items-start gap-2.5 text-sm font-medium md:col-span-2">
+          <label className="flex items-start gap-2.5 text-sm font-medium md:col-span-2 2xl:col-span-3">
             <input
               type="checkbox"
               checked={trackStock}
@@ -309,7 +358,7 @@ export function ProductForm({
               </span>
             </span>
           </label>
-          <Field label="Descripción" htmlFor="description" error={err("description")} className="md:col-span-2">
+          <Field label="Descripción" htmlFor="description" error={err("description")} className="md:col-span-2 2xl:col-span-3">
             <textarea
               id="description"
               rows={4}
@@ -320,32 +369,70 @@ export function ProductForm({
               placeholder="Materiales, medidas, cuidados…"
             />
           </Field>
-          <TextField
-            id="badge"
-            label="Etiqueta (opcional)"
-            value={badge}
-            maxLength={50}
-            placeholder="Ej: Novedad, Más vendido"
-            error={err("badge")}
-            onChange={(e) => setBadge(e.target.value)}
-          />
-          <label className="flex items-center gap-2.5 self-end pb-2.5 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={isVisible}
-              onChange={(e) => setIsVisible(e.target.checked)}
-              className="size-4 accent-primary"
-            />
-            Visible en la tienda web
-          </label>
         </div>
       </SectionCard>
 
-      <SectionCard title="Fotos">
-        <ImageUploader images={images} onChange={setImages} error={err("images")} />
-      </SectionCard>
+      {/* Columna derecha (pantallas grandes): fotos y cómo se muestra el producto en la web */}
+      <div className="space-y-6 xl:sticky xl:top-6 xl:col-start-2 xl:row-span-2 xl:row-start-1">
+        <SectionCard title="Fotos">
+          <ImageUploader images={images} onChange={setImages} error={err("images")} />
+        </SectionCard>
+
+        <SectionCard
+          title="En la web"
+          description="Elegí cómo y dónde aparece este producto en la tienda y en la home."
+        >
+          <div className="space-y-4">
+            <WebOption
+              checked={isVisible}
+              onChange={setIsVisible}
+              title="Visible en la tienda"
+              hint="Si lo destildás, el producto se oculta de la web pero sigue en el inventario."
+            />
+            <WebOption
+              checked={isFeatured}
+              onChange={setIsFeatured}
+              disabled={!isVisible}
+              title="Destacado en la home"
+              hint="Aparece en la sección “Productos destacados” y primero en la tienda. Podés marcar todos los que quieras."
+            />
+            <WebOption
+              checked={showInNews}
+              onChange={setShowInNews}
+              disabled={!isVisible}
+              title="Mostrar en Novedades"
+              hint="Si lo destildás, no sale en la sección de novedades aunque sea de los últimos que cargaste."
+            />
+            <TextField
+              id="badge"
+              label="Etiqueta sobre la foto"
+              value={badge}
+              maxLength={50}
+              placeholder="Ej: Novedad, Más vendido"
+              hint="Un cartelito corto que se ve sobre la imagen del producto."
+              error={err("badge")}
+              onChange={(e) => setBadge(e.target.value)}
+            />
+            <TextField
+              id="web-order"
+              label="Orden en la web"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={9999}
+              step={1}
+              value={webOrder}
+              placeholder="Automático"
+              hint="Número chico = aparece antes (entre los destacados y en la tienda). Vacío = al final."
+              error={err("webOrder")}
+              onChange={(e) => setWebOrder(e.target.value)}
+            />
+          </div>
+        </SectionCard>
+      </div>
 
       <SectionCard
+        className="xl:col-start-1"
         title="Opciones y variantes"
         description="Si el producto viene en varios colores, tamaños o materiales, definí las opciones y cargá una variante por combinación. Cada variante tiene su propio código, precio y stock."
       >
@@ -458,7 +545,7 @@ export function ProductForm({
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-6">
                   <TextField
                     id={`${idp}-sku`}
                     label="Código (SKU)"
@@ -582,6 +669,7 @@ export function ProductForm({
           </p>
         )}
       </SectionCard>
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

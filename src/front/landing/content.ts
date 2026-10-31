@@ -1,17 +1,14 @@
 /**
- * Textos fijos de la web pública. Están juntos para poder editarlos sin tocar los componentes.
+ * Textos fijos de la web pública que no se editan desde el panel. Los de la portada y las secciones de la home
+ * viven en shared/home-content.ts (con su valor por defecto) y se cambian desde "Textos de la web".
  * Los datos del local (WhatsApp, dirección, redes, horarios) se cargan desde el panel ("Datos del local");
  * FOOTER_PLACEHOLDER solo completa el footer mientras esos datos estén vacíos.
  *
  * Revisar con el cliente: los beneficios describen cómo se compra; no prometen envíos ni plazos.
  */
 
+/** Imagen de la portada. Los textos de la home se editan desde el panel (shared/home-content.ts). */
 export const HERO = {
-  titleStart: "El lugar de los",
-  titleHighlight: "materos",
-  titleEnd: "expertos",
-  text: "En nuestra tienda vas a encontrar de todo para tu ronda: mates de calabaza y algarrobo, termos, bombillas de alpaca, las yerbas más ricas y combos armados para regalar.",
-  badge: "Pedí fácil por WhatsApp",
   image: "/landing/hero.jpg",
   imageAlt: "Un termo cebando agua en un mate con bombilla",
 };
@@ -26,25 +23,6 @@ export const BENEFITS = {
     { icon: "store", text: "Retiro o envío a coordinar" },
   ],
 } as const;
-
-export const SECTIONS = {
-  categories: { title: "Categorías de productos", text: "Elegí por dónde empezar tu ronda: cada categoría tiene lo mejor del mundo matero." },
-  offers: { eyebrow: "Ofertas", title: "Productos con descuento", text: "Precios de ronda especial." },
-  // Reemplaza a "Ofertas" mientras no haya productos con precio anterior cargado
-  featured: { eyebrow: "Destacados", title: "Productos destacados", text: "Lo que más sale para armar tu ronda." },
-  ritual: {
-    title: "El ritual del mate,",
-    titleBreak: "más rico que nunca.",
-    text: "Armá tu combo matero: mate, bombilla, termo y yerba juntos, listo para regalar o para estrenar en la próxima ronda.",
-  },
-  bestSellers: { eyebrow: "Lo más vendido", title: "Ofertas especiales", text: "Los favoritos de la comunidad matera, con precio de ronda." },
-  newest: { eyebrow: "Recién llegados", title: "Novedades", text: "Lo último que entró, directo a tu mesa." },
-  promoBombillas: {
-    title: "Bombillas de alpaca, el detalle que cambia el mate",
-    text: "Filtrado perfecto y brillo eterno: las preferidas de los cebadores exigentes.",
-  },
-  promoCombos: { title: "Combos materos: ahorrá comprando todo junto", text: "Armá tu kit completo y empezá a cebar como un experto." },
-};
 
 /**
  * Datos de ejemplo para el footer: se muestran solo en los campos que todavía no se cargaron en "Datos del local".

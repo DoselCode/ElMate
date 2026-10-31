@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Plus } from "@phosphor-icons/react/dist/ssr";
+import { SummarySkeleton, TableSkeleton } from "@/front/admin/layout/panel-loading";
 import { buttonClass } from "@/front/shared/ui/button";
 import { EmptyState, LoadError } from "@/front/shared/ui/empty-state";
 import { inputClass } from "@/front/shared/ui/field";
@@ -9,7 +11,11 @@ import { PAGE_SIZE } from "@/shared/query";
 import type { Option, Paged, StockFilters, StockRow, StockSummary } from "@/shared/types";
 import { StockTable } from "./stock-table";
 
-/** Pantalla de inventario: resumen, filtros y tabla. Recibe todo ya cargado desde back/admin/stock/queries. */
+/**
+ * Pantalla de inventario: resumen, filtros y tabla. El título y los filtros se ven al instante; el
+ * resumen y la tabla llegan como promesas (back/admin/stock/queries) y aparecen apenas están listos,
+ * cada uno por su cuenta, sin esperar al más lento.
+ */
 export function StockScreen({
   list,
   summary,
@@ -19,8 +25,8 @@ export function StockScreen({
   isAdmin,
   saved,
 }: {
-  list: Paged<StockRow>;
-  summary: StockSummary;
+  list: Promise<Paged<StockRow>>;
+  summary: Promise<StockSummary>;
   filters: StockFilters;
   categories: Option[];
   suppliers: Option[];
@@ -48,11 +54,9 @@ export function StockScreen({
         </p>
       )}
 
-      <section aria-label="Resumen" className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SummaryCard label="Variantes activas" value={summary.total} href="/admin/stock" />
-        <SummaryCard label="Stock bajo" value={summary.low} href="/admin/stock?status=low" tone="warning" />
-        <SummaryCard label="Sin stock" value={summary.out} href="/admin/stock?status=out" tone="danger" />
-      </section>
+      <Suspense fallback={<SummarySkeleton />}>
+        <SummaryCards summary={summary} />
+      </Suspense>
 
       <form method="get" action="/admin/stock" className="flex flex-wrap items-end gap-3" role="search">
         <FilterField id="q" label="Buscar" className="min-w-56 flex-1">
@@ -95,26 +99,59 @@ export function StockScreen({
         )}
       </form>
 
-      {list.error ? (
-        <LoadError text="No se pudo cargar el inventario. Probá recargar la página." />
-      ) : list.rows.length === 0 ? (
-        <EmptyState
-          title={hasFilters ? "No hay resultados con esos filtros" : "Todavía no hay productos cargados"}
-          text={
-            hasFilters
-              ? "Probá con otra búsqueda o limpiá los filtros."
-              : isAdmin
-                ? "Creá el primero con el botón “Nuevo producto”."
-                : "Pedile al administrador que cargue los productos."
-          }
-        />
-      ) : (
-        <>
-          <StockTable rows={list.rows} canManage={isAdmin} showCost={isAdmin} />
-          <Pagination basePath="/admin/stock" page={page} pageSize={PAGE_SIZE} total={list.total} params={filterParams} />
-        </>
-      )}
+      {/* key: al cambiar un filtro o de página vuelve a mostrar el esqueleto mientras llegan las filas */}
+      <Suspense key={JSON.stringify(filters)} fallback={<TableSkeleton />}>
+        <StockResults list={list} hasFilters={hasFilters} isAdmin={isAdmin} page={page} filterParams={filterParams} />
+      </Suspense>
     </div>
+  );
+}
+
+async function SummaryCards({ summary }: { summary: Promise<StockSummary> }) {
+  const s = await summary;
+  return (
+    <section aria-label="Resumen" className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <SummaryCard label="Variantes activas" value={s.total} href="/admin/stock" />
+      <SummaryCard label="Stock bajo" value={s.low} href="/admin/stock?status=low" tone="warning" />
+      <SummaryCard label="Sin stock" value={s.out} href="/admin/stock?status=out" tone="danger" />
+    </section>
+  );
+}
+
+async function StockResults({
+  list: pending,
+  hasFilters,
+  isAdmin,
+  page,
+  filterParams,
+}: {
+  list: Promise<Paged<StockRow>>;
+  hasFilters: boolean;
+  isAdmin: boolean;
+  page: number;
+  filterParams: Record<string, string | undefined>;
+}) {
+  const list = await pending;
+  if (list.error) return <LoadError text="No se pudo cargar el inventario. Probá recargar la página." />;
+  if (list.rows.length === 0) {
+    return (
+      <EmptyState
+        title={hasFilters ? "No hay resultados con esos filtros" : "Todavía no hay productos cargados"}
+        text={
+          hasFilters
+            ? "Probá con otra búsqueda o limpiá los filtros."
+            : isAdmin
+              ? "Creá el primero con el botón “Nuevo producto”."
+              : "Pedile al administrador que cargue los productos."
+        }
+      />
+    );
+  }
+  return (
+    <>
+      <StockTable rows={list.rows} canManage={isAdmin} showCost={isAdmin} />
+      <Pagination basePath="/admin/stock" page={page} pageSize={PAGE_SIZE} total={list.total} params={filterParams} />
+    </>
   );
 }
 

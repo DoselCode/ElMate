@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
+import { cleanHomeTexts, homeContent, type HomeContent } from "@/shared/home-content";
 import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, SearchResult, ShopFilters, ShopSort, StoreInfo } from "@/shared/types";
 import { demoSource } from "./demo-source";
 import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
@@ -33,10 +34,16 @@ const products = (q: ProductQuery) => safe("productos", { rows: [], total: 0 }, 
 export const getStoreInfo = cache((): Promise<StoreInfo> => safe("datos del local", EMPTY_STORE, () => source.storeInfo()));
 export const getCategories = cache((): Promise<PublicCategory[]> => safe("categorías", [], () => source.categories()));
 
+/** Textos de la home (los del panel o, donde no hay, los de por defecto). */
+export const getHomeContent = cache(
+  (): Promise<HomeContent> => safe("textos de la home", {}, () => source.homeTexts()).then((t) => homeContent(cleanHomeTexts(t))),
+);
+
 export async function getHomeData(): Promise<HomeData> {
-  const [offers, newest, bestIds] = await Promise.all([
+  const [featured, offers, newest, bestIds] = await Promise.all([
+    products({ featuredOnly: true, sort: "destacados", limit: 8 }),
     products({ onlyOffers: true, sort: "mayor-descuento", limit: 3 }),
-    products({ sort: "nuevos", limit: 4 }),
+    products({ sort: "nuevos", inNewsOnly: true, limit: 4 }),
     safe("más vendidos", [] as string[], () => source.bestSellerIds()),
   ]);
 
@@ -52,7 +59,7 @@ export async function getHomeData(): Promise<HomeData> {
     }
   }
 
-  return { offers: offers.rows, bestSellers: best, newest: newest.rows };
+  return { featured: featured.rows, offers: offers.rows, bestSellers: best, newest: newest.rows };
 }
 
 export function parseShopFilters(sp: SearchParams): ShopFilters {

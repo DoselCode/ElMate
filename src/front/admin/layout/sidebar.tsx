@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowsLeftRight, CashRegister, ChartLineUp, Package, Receipt, ShoppingCart, SignOut, Storefront } from "@phosphor-icons/react";
+import { ArrowsLeftRight, CashRegister, ChartLineUp, Package, Receipt, ShoppingCart, SignOut, Storefront, TextAa } from "@phosphor-icons/react";
 import { signOutAction } from "@/back/admin/auth/actions";
 import { STAGE_2 } from "@/shared/features";
 import type { Role } from "@/shared/types";
@@ -17,6 +17,7 @@ const ALL_ITEMS = [
   { href: "/admin/stock/movements", label: "Movimientos", icon: ArrowsLeftRight, adminOnly: false, stage2: false },
   { href: "/admin/ingresos", label: "Ingresos", icon: ChartLineUp, adminOnly: true, stage2: true },
   { href: "/admin/local", label: "Datos del local", icon: Storefront, adminOnly: true, stage2: false },
+  { href: "/admin/web", label: "Textos de la web", icon: TextAa, adminOnly: true, stage2: false },
 ] as const;
 
 export function Sidebar({ userName, role }: { userName: string; role: Role }) {
