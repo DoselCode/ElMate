@@ -7,14 +7,13 @@
  */
 
 export const HERO = {
-  eyebrow: "Todo para tu rito matero",
   titleStart: "El lugar de los",
   titleHighlight: "materos",
   titleEnd: "expertos",
-  text: "En ElMate vas a encontrar de todo para tu ronda: mates de calabaza y algarrobo, termos, bombillas de alpaca, las yerbas más ricas y combos armados para regalar.",
+  text: "En nuestra tienda vas a encontrar de todo para tu ronda: mates de calabaza y algarrobo, termos, bombillas de alpaca, las yerbas más ricas y combos armados para regalar.",
   badge: "Pedí fácil por WhatsApp",
   image: "/landing/hero.jpg",
-  imageAlt: "Mate de calabaza con bombilla junto a un termo de acero y yerba",
+  imageAlt: "Un termo cebando agua en un mate con bombilla",
 };
 
 // Textos cortos (2 líneas): van en mosaicos chicos de 2×2

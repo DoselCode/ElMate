@@ -101,7 +101,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
     <div
       ref={panelRef}
       role="search"
-      className="search-pop absolute inset-x-0 top-full mt-3 overflow-hidden rounded-[1.75rem] border border-border bg-surface shadow-[0_24px_60px_rgb(29_42_32/0.16)] sm:left-auto sm:w-[30rem]"
+      className="search-pop absolute inset-x-0 top-full mt-3 overflow-hidden rounded-[1.75rem] border border-border bg-surface shadow-[0_24px_60px_rgb(16_21_28/0.16)] sm:left-auto sm:w-[30rem]"
     >
       <div className="flex items-center gap-3 px-5 py-4">
         {state.status === "loading" ? (

@@ -1,29 +1,29 @@
 @import "tailwindcss";
 
 /*
- * Tokens de marca ElMate (Diseño 2 de Figma): verde mate, crema y verde claro.
+ * Tokens de marca ElMate: negro y azul, tomados del Instagram del local (@elmate.cordoba).
  * Los usan la web pública y el panel. Para cambiar la identidad, se cambia solo acá.
- * Contraste verificado: texto blanco sobre primary 6.5:1, muted sobre background 5.5:1, sale 4.6:1.
+ * Contraste verificado: texto blanco sobre primary 6.4:1, muted sobre background 5.4:1, sale 4.6:1.
  */
 :root {
-  --primary: #2b6a3e;
-  --primary-hover: #235834;
-  --primary-deep: #173f28;
-  --primary-soft: #e7f0da;
-  --background: #f8f6ee;
+  --primary: #0b5f9e;
+  --primary-hover: #084d82;
+  --primary-deep: #0b1119;
+  --primary-soft: #e3eef8;
+  --background: #e9edf2;
   --surface: #ffffff;
-  --foreground: #1d2a20;
-  --muted: #5b675c;
-  --border: #e8e4d6;
-  --border-strong: #cfc9b6;
-  --accent: #b4561a;
+  --foreground: #10151c;
+  --muted: #56626f;
+  --border: #e0e5ec;
+  --border-strong: #c5ced9;
+  --accent: #1a7fc7;
   --sale: #d63a3a;
   --danger: #b42318;
   --danger-soft: #fdeceb;
   --warning: #92400e;
   --warning-soft: #fff5e6;
-  --success: #2b6a3e;
-  --success-soft: #e7f0da;
+  --success: #1f7a4d;
+  --success-soft: #e4f4ec;
 }
 
 @theme inline {
@@ -45,9 +45,9 @@
   --color-warning-soft: var(--warning-soft);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
-  /* Nunito para texto, Baloo 2 para títulos (se cargan en app/layout.tsx) */
-  --font-sans: var(--font-nunito), system-ui, sans-serif;
-  --font-display: var(--font-baloo), var(--font-nunito), system-ui, sans-serif;
+  /* Barlow para texto, Barlow Condensed para títulos (se cargan en app/layout.tsx) */
+  --font-sans: var(--font-barlow), system-ui, sans-serif;
+  --font-display: var(--font-barlow-condensed), var(--font-barlow), system-ui, sans-serif;
   --radius-card: 1.5rem;
 }
 
@@ -59,10 +59,23 @@
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* Títulos: condensados y en mayúsculas, como el logo. Solo los encabezados (h1/h2); precios y nombres de tarjeta quedan normales */
+.font-display {
+  letter-spacing: 0.01em;
+}
+h1.font-display,
+h2.font-display {
+  text-transform: uppercase;
 }
 
 /* Foco visible y consistente en toda la app */
@@ -173,6 +186,82 @@ dialog::backdrop {
    ============================================================================================= */
 .fx-ring {
   display: none;
+}
+
+/* ---- Hero: termo cebando el mate (HeroBrew). El estado base es el final: mate cebado, quieto. ---- */
+.brew-stream {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+}
+.brew-wet {
+  opacity: 0.6;
+}
+.brew-ripple {
+  opacity: 0;
+}
+.brew-vapor {
+  opacity: 0.3;
+}
+.brew-termo {
+  transform-origin: 0 0;
+}
+.brew-letter {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Línea de tiempo de 7 s: el termo entra, se inclina, ceba y vuelve; el vapor sigue después */
+  .brew-termo {
+    animation: brew-termo 7s 0.3s both;
+  }
+  .brew-stream {
+    animation: brew-stream 7s 0.3s both;
+  }
+  .brew-wet {
+    animation: brew-wet 7s 0.3s both;
+  }
+  .brew-ripple {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: brew-ripple 0.8s ease-out 3.4s 3 both;
+  }
+  .brew-letter {
+    animation: brew-letter 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) calc(3.5s + var(--k, 0) * 0.16s) both;
+  }
+  .brew-vapor {
+    animation: brew-vapor 3.6s ease-in-out calc(4.8s + var(--d, 0s)) infinite both;
+  }
+  @keyframes brew-termo {
+    0% { opacity: 0; transform: translateX(-28px) rotate(0); animation-timing-function: ease-out; }
+    8% { opacity: 1; transform: translateX(0) rotate(0); }
+    20% { transform: translateX(0) rotate(0); animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1); }
+    38% { opacity: 1; transform: translateX(0) rotate(110deg); }
+    72% { transform: translateX(0) rotate(110deg); animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1); }
+    90%, 100% { opacity: 1; transform: translateX(0) rotate(0); }
+  }
+  @keyframes brew-stream {
+    0%, 38% { stroke-dashoffset: 1; }
+    44%, 68% { stroke-dashoffset: 0; }
+    73%, 100% { stroke-dashoffset: -1; }
+  }
+  @keyframes brew-wet {
+    0%, 44% { opacity: 0; }
+    72%, 100% { opacity: 0.6; }
+  }
+  @keyframes brew-ripple {
+    0% { opacity: 0.9; transform: scale(0.4); }
+    100% { opacity: 0; transform: scale(2.6); }
+  }
+  @keyframes brew-letter {
+    from { opacity: 0; transform: translateY(-34px) scale(0.7, 1.25); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes brew-vapor {
+    0% { opacity: 0; transform: translateY(14px); }
+    35% { opacity: 0.4; }
+    100% { opacity: 0; transform: translateY(-16px); }
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {

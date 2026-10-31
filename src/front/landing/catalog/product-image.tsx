@@ -16,11 +16,11 @@ export function ProductImage({
   className?: string;
 }) {
   return (
-    <div className={`relative overflow-hidden bg-[#f7f5ef] ${className}`}>
+    <div className={`relative overflow-hidden bg-[#f2f5f9] ${className}`}>
       {src ? (
         <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className="object-cover" />
       ) : (
-        <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-[#f8f6f0] to-[#eef3e6]" aria-hidden>
+        <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-[#f6f8fb] to-[#e6eef7]" aria-hidden>
           <Leaf size={44} weight="duotone" className="text-primary/40" />
         </div>
       )}

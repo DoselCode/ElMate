@@ -38,7 +38,7 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
       onClick={(e) => {
         if (e.target === ref.current) cart.close(); // clic en el fondo
       }}
-      className="cart-drawer m-0 ml-auto h-dvh max-h-dvh w-full max-w-md bg-background p-0 text-foreground shadow-2xl"
+      className="cart-drawer m-0 ml-auto h-dvh overflow-hidden max-h-dvh w-full max-w-md bg-background p-0 text-foreground shadow-2xl"
     >
       <div className="flex h-full flex-col">
         <header className="flex items-center justify-between border-b border-border bg-surface px-5 py-4">
@@ -70,7 +70,7 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
           </div>
         ) : (
           <>
-            <ul className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+            <ul className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-5 py-4">
               {cart.items.map((item, i) => (
                 <li
                   key={item.variantId}

@@ -18,16 +18,16 @@ export function Price({
   return (
     <div className="leading-tight">
       {compareAt !== null && (
-        <p className="text-xs text-muted line-through">
+        <p className={`text-muted line-through ${size === "lg" ? "text-base" : "text-xs"}`}>
           <span className="sr-only">Antes </span>
           {formatMoney(compareAt)}
         </p>
       )}
-      <p className={`font-display font-bold tabular-nums text-foreground ${size === "lg" ? "text-3xl" : "text-xl"}`}>
-        {from && <span className="mr-1 font-sans text-xs font-semibold text-muted">Desde</span>}
+      <p className={`font-display font-bold tabular-nums text-foreground ${size === "lg" ? "text-4xl" : "text-xl"}`}>
+        {from && <span className={`mr-1 font-sans font-semibold text-muted ${size === "lg" ? "text-base" : "text-xs"}`}>Desde</span>}
         {compareAt !== null && <span className="sr-only">Ahora </span>}
         {formatMoney(price)}
-        {perKg && <span className="ml-0.5 font-sans text-xs font-semibold text-muted">/kg</span>}
+        {perKg && <span className={`ml-0.5 font-sans font-semibold text-muted ${size === "lg" ? "text-base" : "text-xs"}`}>/kg</span>}
       </p>
     </div>
   );

@@ -2,25 +2,24 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import type { PublicCategory } from "@/shared/types";
-import { ProductImage } from "../catalog/product-image";
+import { CategoryImage } from "../catalog/category-art";
 
 /**
  * Carrusel de categorías del diseño: 4 tarjetas por vista en escritorio, deslizable en celular,
- * con puntitos para cambiar de página. Usa scroll nativo (funciona con touch, rueda y teclado).
+ * con flechas a los costados (solo aparecen si hay más para ver). Usa scroll nativo (touch, rueda y teclado).
  */
 export function CategoryCarousel({ categories }: { categories: PublicCategory[] }) {
   const trackRef = useRef<HTMLUListElement>(null);
-  const [pages, setPages] = useState(1);
-  const [page, setPage] = useState(0);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
 
   const measure = useCallback(() => {
     const el = trackRef.current;
     if (!el) return;
-    // La última página puede estar incompleta (5 tarjetas de a 4 = 2 páginas): se redondea hacia arriba
-    const total = Math.max(1, Math.ceil(el.scrollWidth / el.clientWidth - 0.01));
-    setPages(total);
-    setPage(Math.min(total - 1, Math.ceil(el.scrollLeft / el.clientWidth - 0.01)));
+    setCanPrev(el.scrollLeft > 1);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
   }, []);
 
   useEffect(() => {
@@ -31,14 +30,21 @@ export function CategoryCarousel({ categories }: { categories: PublicCategory[] 
     return () => observer.disconnect();
   }, [measure]);
 
-  const goTo = (i: number) => {
+  const scrollByPage = (dir: 1 | -1) => {
     const el = trackRef.current;
-    if (!el) return;
-    el.scrollTo({ left: Math.min(i * el.clientWidth, el.scrollWidth - el.clientWidth), behavior: "smooth" });
+    el?.scrollBy({ left: dir * el.clientWidth, behavior: "smooth" });
   };
 
+  const arrow =
+    "absolute top-1/2 z-10 grid size-10 -translate-y-1/2 cursor-pointer place-items-center rounded-full border-2 border-white/80 bg-primary-deep text-white shadow-lg transition-transform hover:scale-110 hover:bg-foreground";
+
   return (
-    <div>
+    <div className="relative">
+      {canPrev && (
+        <button type="button" onClick={() => scrollByPage(-1)} aria-label="Ver categorías anteriores" className={`${arrow} -left-4`}>
+          <CaretLeft size={20} weight="bold" aria-hidden />
+        </button>
+      )}
       <ul
         ref={trackRef}
         onScroll={measure}
@@ -49,31 +55,19 @@ export function CategoryCarousel({ categories }: { categories: PublicCategory[] 
           <li key={c.id} style={{ "--i": i } as React.CSSProperties} className="fx-float shrink-0 basis-[44%] snap-start sm:basis-[calc((100%-2rem)/3)] md:basis-[calc((100%-3rem)/4)] lg:basis-[calc((100%-4rem)/5)]">
             <Link
               href={`/tienda?categoria=${c.slug}`}
-              className="flex h-full flex-col items-center rounded-3xl bg-surface px-4 pb-4 pt-4 text-center transition-transform hover:-translate-y-1"
+              className="relative flex h-full flex-col items-center rounded-3xl bg-surface p-3 pb-4 text-center transition-transform hover:-translate-y-1"
             >
-              <ProductImage src={c.image} alt="" sizes="120px" className="aspect-square w-full max-w-28 rounded-2xl" />
-              <span className="mt-3 font-display text-base font-bold leading-tight">{c.name}</span>
-              <span className="mt-0.5 text-sm text-muted">
-                {c.product_count} {c.product_count === 1 ? "producto" : "productos"}
-              </span>
+              <CategoryImage src={c.image} slug={c.slug} sizes="(min-width: 1024px) 220px, 44vw" className="aspect-square w-full rounded-2xl" />
+              <span className="mt-3 font-display text-lg font-bold leading-tight">{c.name}</span>
             </Link>
           </li>
         ))}
       </ul>
 
-      {pages > 1 && (
-        <div className="mt-5 flex justify-center gap-2">
-          {Array.from({ length: pages }, (_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => goTo(i)}
-              aria-label={`Ver categorías, página ${i + 1} de ${pages}`}
-              aria-current={i === page}
-              className={`h-2 cursor-pointer rounded-full transition-all ${i === page ? "w-6 bg-white" : "w-2 bg-white/40 hover:bg-white/70"}`}
-            />
-          ))}
-        </div>
+      {canNext && (
+        <button type="button" onClick={() => scrollByPage(1)} aria-label="Ver más categorías" className={`${arrow} -right-4`}>
+          <CaretRight size={20} weight="bold" aria-hidden />
+        </button>
       )}
     </div>
   );

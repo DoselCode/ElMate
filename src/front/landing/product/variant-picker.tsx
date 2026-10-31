@@ -31,7 +31,7 @@ export function VariantPicker({
   const variant = variants.find((v) => matches(v, selected)) ?? null;
 
   if (!initial) {
-    return <p className="mt-6 rounded-xl bg-warning-soft p-4 text-sm text-warning">Este producto no está disponible por ahora.</p>;
+    return <p className="mt-6 rounded-xl bg-warning-soft p-4 text-base text-warning">Este producto no está disponible por ahora.</p>;
   }
 
   const valuesOf = (option: string) => [...new Set(variants.map((v) => v.attributes[option]).filter(Boolean))];
@@ -59,7 +59,7 @@ export function VariantPicker({
 
       {options.map((option) => (
         <fieldset key={option}>
-          <legend className="mb-2 text-sm font-bold">
+          <legend className="mb-2 text-base font-bold">
             {option}: <span className="font-semibold text-muted">{selected[option]}</span>
           </legend>
           <div className="flex flex-wrap gap-2">
@@ -71,7 +71,7 @@ export function VariantPicker({
                   type="button"
                   onClick={() => choose(option, value)}
                   aria-pressed={active}
-                  className={`cursor-pointer rounded-full border-2 px-4 py-2 text-sm font-bold transition-colors ${
+                  className={`cursor-pointer rounded-full border-2 px-5 py-2.5 text-base font-bold transition-colors ${
                     active
                       ? "border-primary bg-primary text-white"
                       : "border-border-strong bg-surface hover:border-primary hover:text-primary"
@@ -86,11 +86,11 @@ export function VariantPicker({
       ))}
 
       {variant?.in_stock ? (
-        <p className="flex items-center gap-2 text-sm font-bold text-success">
+        <p className="flex items-center gap-2 text-base font-bold text-success">
           <CheckCircle size={18} weight="fill" aria-hidden /> Hay stock
         </p>
       ) : (
-        <p className="flex items-center gap-2 text-sm font-bold text-danger">
+        <p className="flex items-center gap-2 text-base font-bold text-danger">
           <XCircle size={18} weight="fill" aria-hidden /> {variant ? "Sin stock en esta opción" : "Esa combinación no está disponible"}
         </p>
       )}
@@ -135,7 +135,7 @@ function PaymentPrices({ price, methods }: { price: number; methods: PublicPayme
     groups.set(m.adjustment_pct, [...(groups.get(m.adjustment_pct) ?? []), m.name]);
   }
   return (
-    <ul aria-label="Precio según la forma de pago" className="-mt-2 space-y-1 text-sm">
+    <ul aria-label="Precio según la forma de pago" className="-mt-2 space-y-1 text-base">
       {[...groups].map(([pct, names]) => (
         <li key={pct} className="flex flex-wrap items-baseline gap-x-2">
           <span className="font-bold tabular-nums">{formatMoney(Math.round(price * (1 + pct / 100) * 100) / 100)}</span>

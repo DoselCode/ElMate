@@ -40,7 +40,7 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
     <footer id="contacto" className="mt-16 scroll-mt-24 bg-primary-soft">
       <div className="mx-auto grid max-w-[85rem] gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <Logo name={store.name} />
+          <Logo name={store.name} className="h-14 w-52" />
           <p className="mt-4 text-sm leading-relaxed text-muted">
             {store.tagline}
           </p>
@@ -107,7 +107,7 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
         )}
       </div>
       <p className="bg-primary px-6 py-4 text-center text-sm font-semibold text-white">
-        © {new Date().getFullYear()} {store.name} — Todos los derechos reservados. Hecho con yerba y cariño.
+        © {new Date().getFullYear()} {store.name} — Todos los derechos reservados. Hecho por DoselCode.
       </p>
     </footer>
   );

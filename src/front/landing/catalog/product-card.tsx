@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { PublicProduct } from "@/shared/types";
 import { AddToCartButton } from "./add-to-cart-button";
 import { DiscountBadge, Price } from "./price";
-import { ProductImage } from "./product-image";
+import { CategoryImage } from "./category-art";
 
 export function ProductCard({
   product,
@@ -16,9 +16,9 @@ export function ProductCard({
   return (
     <article style={style} className={`${className} group flex w-full flex-col rounded-[var(--radius-card)] bg-surface p-3 shadow-sm transition-shadow hover:shadow-md`}>
       <Link href={`/producto/${product.slug}`} className="relative block" tabIndex={-1} aria-hidden>
-        <ProductImage
+        <CategoryImage
           src={product.images[0]}
-          alt=""
+          slug={product.category_slug ?? product.name}
           sizes="(min-width: 1024px) 280px, (min-width: 640px) 45vw, 90vw"
           className="aspect-[4/3] rounded-2xl"
         />
