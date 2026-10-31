@@ -6,7 +6,6 @@ import {
   CaretRight,
   ChatCircleDots,
   Gift,
-  Leaf,
   ShoppingCartSimple,
   Storefront,
   WhatsappLogo,
@@ -15,6 +14,7 @@ import type { HomeData, PublicCategory, PublicProduct } from "@/shared/types";
 import { ProductCard, ProductGrid } from "../catalog/product-card";
 import { BENEFITS, HERO, SECTIONS } from "../content";
 import { CategoryCarousel } from "./category-carousel";
+import { HeroBrew } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
 
 // 82rem de contenido (igual que el header) + el padding lateral: el contenido queda alineado con los bordes del header
@@ -74,8 +74,8 @@ function Hero() {
       <div className={`${container} grid items-center gap-12 pt-8 lg:grid-cols-[minmax(0,38rem)_1fr] lg:gap-16 lg:pt-10`}>
         {/* La foto no pasa del alto de la pantalla: al cargar se ve entera, con el cartel de WhatsApp */}
         <div className="fx-hero-out relative w-full max-w-[min(38rem,calc(100svh-9rem))] max-lg:mx-auto">
-          <div className="fx-infuse relative aspect-square overflow-hidden rounded-[2rem] bg-[#f3e9dc] shadow-[0_20px_50px_rgb(43_106_62/0.08)]">
-            <Image src={HERO.image} alt={HERO.imageAlt} fill priority sizes="(min-width: 1024px) 620px, 92vw" className="object-cover" />
+          <div className="fx-infuse relative aspect-square overflow-hidden rounded-[2rem] bg-primary-deep shadow-[0_20px_50px_rgb(11_17_25/0.14)]">
+            <HeroBrew label={HERO.imageAlt} />
           </div>
           <p className="fx-pop absolute -bottom-5 left-6 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold shadow-md">
             <WhatsappLogo size={18} weight="fill" className="text-primary" aria-hidden />
@@ -84,15 +84,13 @@ function Hero() {
         </div>
 
         <div className="lg:pl-4">
-          <p className="fx-rise inline-flex items-center gap-2 rounded-full bg-primary-soft px-4 py-1.5 text-sm font-bold text-primary">
-            <Leaf size={16} weight="bold" aria-hidden /> {HERO.eyebrow}
-          </p>
-          <h1 style={{ "--i": 1 } as React.CSSProperties} className="fx-rise mt-6 max-w-xl font-display text-4xl font-extrabold leading-[1.15] text-foreground sm:text-5xl lg:text-[3.15rem]">
+          <h1 style={{ "--i": 1 } as React.CSSProperties} className="fx-rise max-w-xl font-display text-4xl font-extrabold leading-[1.15] text-foreground sm:text-5xl lg:text-[3.15rem]">
             {HERO.titleStart} <span className="text-primary">{HERO.titleHighlight}</span> {HERO.titleEnd}
           </h1>
           <p style={{ "--i": 2 } as React.CSSProperties} className="fx-rise mt-6 max-w-xl leading-relaxed text-muted lg:text-[1.05rem]">{HERO.text}</p>
           <div style={{ "--i": 3 } as React.CSSProperties} className="fx-rise mt-8 flex flex-wrap gap-3">
-            <Link href="/tienda" className={btnPrimary}>
+            {/* prefetch: en producción la tienda ya está cargada cuando se hace clic */}
+            <Link href="/tienda" prefetch className={btnPrimary}>
               Ver tienda <ArrowRight size={18} weight="bold" aria-hidden />
             </Link>
             <Link href="/#ofertas" className={btnOutline}>
@@ -112,14 +110,10 @@ function Categories({ categories }: { categories: PublicCategory[] }) {
   if (categories.length === 0) return null;
   return (
     <section className={`${container} mt-20`}>
-      <div className="fx-pour relative overflow-hidden rounded-[2.5rem] bg-primary px-5 pb-8 pt-9 sm:px-10">
-        <span className="pointer-events-none absolute -left-20 -top-20 size-72 rounded-full bg-white/[0.06]" aria-hidden />
-        <span className="pointer-events-none absolute -bottom-28 -right-20 size-80 rounded-full bg-white/[0.06]" aria-hidden />
-        <div className="relative">
-          <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-white/70" aria-hidden />
-          <SectionHeading title={SECTIONS.categories.title} text={SECTIONS.categories.text} light compact />
-          <CategoryCarousel categories={categories} />
-        </div>
+      <div className="fx-pour relative px-1 sm:px-6">
+        <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
+        <SectionHeading title={SECTIONS.categories.title} text={SECTIONS.categories.text} compact />
+        <CategoryCarousel categories={categories} />
       </div>
     </section>
   );
@@ -176,12 +170,12 @@ function Offers({ heading, products }: { heading: SectionHeadingProps; products:
 }
 
 function Ritual({ combosHref }: { combosHref: string }) {
-  const photo = "relative aspect-square w-1/2 max-w-60 overflow-hidden rounded-[1.75rem] bg-[#f3e6d3] shadow-[0_14px_30px_rgb(120_84_40/0.12)]";
+  const photo = "relative aspect-square w-1/2 max-w-60 overflow-hidden rounded-[1.75rem] bg-surface shadow-[0_14px_30px_rgb(11_17_25/0.14)]";
   return (
     <section className={`${container} relative isolate mt-24`}>
       {/* Recuadro cálido difuso arriba a la derecha, como en el diseño */}
       <span
-        className="pointer-events-none absolute -top-8 right-4 -z-10 size-72 rounded-[3rem] bg-gradient-to-bl from-[#f3e4d0] via-[#f6ecdf]/50 to-transparent blur-lg sm:right-6"
+        className="pointer-events-none absolute -top-8 right-4 -z-10 size-72 rounded-[3rem] bg-gradient-to-bl from-[#dbe9f6] via-[#e8f0f8]/50 to-transparent blur-lg sm:right-6"
         aria-hidden
       />
       <div className="grid items-center gap-12 py-6 lg:grid-cols-2">
@@ -246,7 +240,7 @@ function PromoCard({
   return (
     <div
       className={`${className} flex flex-col-reverse items-center gap-6 rounded-[2rem] p-8 text-center sm:flex-row sm:p-10 sm:text-left ${
-        dark ? "bg-primary-deep text-white" : "bg-[#f1e7d8] text-foreground"
+        dark ? "bg-primary-deep text-white" : "bg-surface text-foreground"
       }`}
     >
       <div className="flex-1">
@@ -255,7 +249,7 @@ function PromoCard({
         <Link
           href={href}
           className={`mt-6 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 font-bold transition-colors ${
-            dark ? "bg-background text-primary-deep hover:bg-white" : "bg-primary-deep text-white hover:bg-primary"
+            dark ? "bg-white text-primary-deep hover:bg-primary-soft" : "bg-primary-deep text-white hover:bg-primary"
           }`}
         >
           {cta} <CaretRight size={16} weight="bold" aria-hidden />

@@ -32,10 +32,10 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
 
   return (
     <header className="sticky top-0 z-40 px-3 pt-3 sm:px-6">
-      <div className="relative mx-auto max-w-[82rem] rounded-[2rem] bg-surface/95 px-4 py-3 shadow-[0_6px_24px_rgb(29_42_32/0.06)] backdrop-blur sm:px-6">
+      <div className="relative mx-auto max-w-[82rem] rounded-[2rem] bg-surface/95 px-4 py-3 shadow-[0_6px_24px_rgb(16_21_28/0.06)] backdrop-blur sm:px-6">
         <div className="flex items-center justify-between gap-4">
           {/* El anillo del logo se completa a medida que se baja por la página */}
-          <Logo name={storeName} progress />
+          <Logo name={storeName} />
 
           <nav aria-label="Principal" className="hidden lg:block">
             <ul className="flex items-center gap-1">
@@ -48,6 +48,7 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
                   <li key={l.href}>
                     <Link
                       href={l.href}
+                      prefetch={l.href.startsWith("/tienda") ? true : undefined}
                       aria-current={pathname === l.href ? "page" : undefined}
                       className="rounded-full px-3 py-2 text-[0.95rem] font-bold text-foreground transition-colors hover:text-primary aria-[current=page]:text-primary xl:px-4"
                     >
@@ -104,7 +105,7 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
           <nav
             id={menuId}
             aria-label="Principal"
-            className="search-pop absolute inset-x-0 top-full mt-3 max-h-[calc(100svh-7rem)] overflow-y-auto rounded-[1.75rem] border border-border bg-surface p-2 shadow-[0_24px_60px_rgb(29_42_32/0.16)] lg:hidden"
+            className="search-pop absolute inset-x-0 top-full mt-3 max-h-[calc(100svh-7rem)] overflow-y-auto rounded-[1.75rem] border border-border bg-surface p-2 shadow-[0_24px_60px_rgb(16_21_28/0.16)] lg:hidden"
           >
             <ul className="grid gap-1">
               {links.map((l) => (
@@ -185,7 +186,7 @@ function NavDropdown({ link }: { link: NavLink }) {
       {open && (
         <ul
           id={listId}
-          className={`absolute left-1/2 top-full z-50 mt-3 grid -translate-x-1/2 gap-x-1 rounded-3xl border border-border bg-surface p-2 shadow-[0_16px_40px_rgb(29_42_32/0.12)] ${
+          className={`absolute left-1/2 top-full z-50 mt-3 grid -translate-x-1/2 gap-x-1 rounded-3xl border border-border bg-surface p-2 shadow-[0_16px_40px_rgb(16_21_28/0.12)] ${
             twoColumns ? "w-[26rem] grid-cols-2" : "w-56"
           }`}
         >
