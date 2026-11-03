@@ -550,3 +550,21 @@ dialog::backdrop {
     transform: translateY(-0.5rem) scale(0.98);
   }
 }
+
+/* Marcas: la fila desfila sola (la lista va duplicada, así el loop no tiene salto); se frena al pasar el mouse */
+.marquee {
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .marquee-track {
+    animation: marquee 32s linear infinite;
+  }
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
