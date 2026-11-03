@@ -55,13 +55,14 @@ export function HomeScreen({ data, categories, content }: { data: HomeData; cate
           <ProductGrid products={data.featured.slice(0, 8)} reveal />
         </section>
       )}
-      {/* Sin productos en oferta se muestran los más vendidos y las novedades, para que la sección no quede vacía */}
+      {/* Sin productos en oferta: si no hay destacados se muestran los más vendidos y las novedades con ese título,
+          para que la sección no quede vacía; si ya hay destacados queda solo la tarjeta de beneficios (sin repetir el título) */}
       {data.offers.length > 0 ? (
         <Offers heading={heading(content, "offers")} products={data.offers.slice(0, 3)} />
       ) : (
         <Offers
           heading={heading(content, "featured")}
-          products={uniqueProducts([...data.bestSellers, ...data.newest]).filter((p) => !featuredIds.has(p.id)).slice(0, 3)}
+          products={featuredIds.size > 0 ? [] : uniqueProducts([...data.bestSellers, ...data.newest]).slice(0, 3)}
         />
       )}
       <Ritual combosHref={categoryHref(categories, "combo")} content={content} />
