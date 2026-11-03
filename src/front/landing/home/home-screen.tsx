@@ -13,7 +13,7 @@ import {
 import type { HomeData, PublicCategory, PublicProduct } from "@/shared/types";
 import { ProductCard, ProductGrid } from "../catalog/product-card";
 import type { HomeContent } from "@/shared/home-content";
-import { BENEFITS, HERO } from "../content";
+import { BENEFITS, BLOG_POSTS, BRANDS, HERO } from "../content";
 import { CategoryCarousel } from "./category-carousel";
 import { HeroBrew } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
@@ -48,21 +48,24 @@ export function HomeScreen({ data, categories, content }: { data: HomeData; cate
     <>
       <Hero content={content} />
       <Categories categories={categories} content={content} />
-      {/* Destacados: los que el usuario marcó en el panel */}
-      {data.featured.length > 0 && (
-        <section id="destacados" className={`${container} mt-24 scroll-mt-28`}>
-          <SectionHeading {...heading(content, "featured")} />
-          <ProductGrid products={data.featured.slice(0, 8)} reveal />
-        </section>
-      )}
-      {/* Sin productos en oferta: si no hay destacados se muestran los más vendidos y las novedades con ese título,
-          para que la sección no quede vacía; si ya hay destacados queda solo la tarjeta de beneficios (sin repetir el título) */}
+      {/* Con ofertas (precio anterior cargado): destacados en su grilla y las ofertas al lado de los beneficios */}
       {data.offers.length > 0 ? (
-        <Offers heading={heading(content, "offers")} products={data.offers.slice(0, 3)} />
+        <>
+          {data.featured.length > 0 && (
+            <section id="destacados" className={`${container} mt-24 scroll-mt-28`}>
+              <SectionHeading {...heading(content, "featured")} />
+              <ProductGrid products={data.featured.slice(0, 8)} reveal />
+            </section>
+          )}
+          <Offers heading={heading(content, "offers")} products={data.offers.slice(0, 3)} />
+        </>
       ) : (
+        /* Sin ofertas: los destacados van al lado de los beneficios (el resto, debajo). Si tampoco hay destacados,
+           se usan los más vendidos y las novedades para que la sección no quede vacía */
         <Offers
           heading={heading(content, "featured")}
-          products={featuredIds.size > 0 ? [] : uniqueProducts([...data.bestSellers, ...data.newest]).slice(0, 3)}
+          products={(featuredIds.size > 0 ? data.featured : uniqueProducts([...data.bestSellers, ...data.newest])).slice(0, 3)}
+          more={data.featured.slice(3, 8)}
         />
       )}
       <Ritual combosHref={categoryHref(categories, "combo")} content={content} />
@@ -72,6 +75,7 @@ export function HomeScreen({ data, categories, content }: { data: HomeData; cate
           <ProductGrid products={data.bestSellers} reveal />
         </section>
       )}
+      <Brands content={content} />
       {data.newest.length > 0 && (
         <section className={`${container} mt-24`}>
           <SectionHeading {...heading(content, "newest")} />
@@ -79,7 +83,65 @@ export function HomeScreen({ data, categories, content }: { data: HomeData; cate
         </section>
       )}
       <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} content={content} />
+      <Blog content={content} />
     </>
+  );
+}
+
+function Brands({ content }: { content: HomeContent }) {
+  return (
+    <section className={`${container} mt-24`}>
+      <SectionHeading {...heading(content, "brands")} />
+      {/* Carrusel que desfila solo: la lista va dos veces seguidas (la copia, oculta para lectores de pantalla) */}
+      <div className="marquee overflow-hidden">
+        <div className="marquee-track flex w-max">
+          {[0, 1].map((copy) => (
+            <ul key={copy} aria-hidden={copy === 1 || undefined} className="flex shrink-0 items-center">
+              {BRANDS.map((brand) => (
+                <li
+                  key={brand}
+                  className="whitespace-nowrap px-8 font-display text-xl font-bold text-muted/45 transition-colors hover:text-primary sm:px-10 sm:text-2xl"
+                >
+                  {brand}
+                </li>
+              ))}
+            </ul>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Blog({ content }: { content: HomeContent }) {
+  return (
+    <section id="blog" className={`${container} mt-24 scroll-mt-28`}>
+      <SectionHeading {...heading(content, "blog")} />
+      <div className="grid gap-6 md:grid-cols-3">
+        {BLOG_POSTS.slice(0, 3).map((post, i) => (
+          <article
+            key={post.slug}
+            style={{ "--i": i } as React.CSSProperties}
+            className="fx-vapor flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-surface shadow-sm"
+          >
+            <div className="relative aspect-[16/10] bg-primary-soft">
+              <Image src={post.image} alt="" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" />
+              <span className="absolute left-4 top-4 rounded-full bg-surface px-3 py-1 text-xs font-bold text-primary">{post.tag}</span>
+            </div>
+            <div className="flex flex-1 flex-col p-6">
+              <h3 className="font-display text-lg font-bold leading-snug">{post.title}</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">{post.excerpt}</p>
+              <Link
+                href={`/blog/${post.slug}`}
+                className="mt-5 inline-flex items-center gap-1.5 self-start rounded-full border-2 border-primary/25 px-4 py-2 text-sm font-bold transition-colors hover:border-primary hover:text-primary"
+              >
+                Leer más <CaretRight size={14} weight="bold" aria-hidden />
+              </Link>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -141,11 +203,17 @@ function Categories({ categories, content }: { categories: PublicCategory[]; con
 
 const BENEFIT_ICONS = { cart: ShoppingCartSimple, whatsapp: WhatsappLogo, chat: ChatCircleDots, store: Storefront };
 
-function BenefitsCard() {
+/** `wide`: sin productos al lado se muestra como franja (título a la izquierda y los 4 beneficios en fila). */
+function BenefitsCard({ wide = false }: { wide?: boolean }) {
   return (
-    <div id="como-comprar" className="flex w-full scroll-mt-28 flex-col rounded-[var(--radius-card)] bg-primary p-6 text-white">
-      <h3 className="font-display text-[1.4rem] font-bold leading-tight">{BENEFITS.title}</h3>
-      <ul className="mt-5 grid grid-cols-2 gap-3">
+    <div
+      id="como-comprar"
+      className={`flex w-full scroll-mt-28 flex-col rounded-[var(--radius-card)] bg-primary p-6 text-white ${
+        wide ? "gap-5 sm:p-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-center lg:gap-8" : ""
+      }`}
+    >
+      <h3 className={`font-display font-bold leading-tight ${wide ? "text-[1.6rem]" : "text-[1.4rem]"}`}>{BENEFITS.title}</h3>
+      <ul className={`grid grid-cols-2 gap-3 ${wide ? "sm:grid-cols-4 lg:row-span-2" : "mt-5"}`}>
         {BENEFITS.items.map(({ icon, text }) => {
           const Icon = BENEFIT_ICONS[icon];
           return (
@@ -161,7 +229,7 @@ function BenefitsCard() {
       </ul>
       <Link
         href="/tienda"
-        className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-white/35 px-5 py-2.5 font-bold transition-colors hover:bg-white hover:text-primary"
+        className={`${wide ? "self-start" : "mt-5"} inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-white/35 px-5 py-2.5 font-bold transition-colors hover:bg-white hover:text-primary`}
       >
         <CaretRight size={16} weight="bold" aria-hidden /> Conocé más
       </Link>
@@ -169,12 +237,25 @@ function BenefitsCard() {
   );
 }
 
-/** Hasta 3 productos y la tarjeta de beneficios, en 4 columnas iguales (centradas si hay menos). */
-function Offers({ heading, products }: { heading: SectionHeadingProps; products: PublicProduct[] }) {
+/**
+ * Hasta 3 productos y la tarjeta de beneficios, en 4 columnas iguales (centradas si hay menos).
+ * `more`: productos que no entran en esa fila (destacados del 4.º en adelante), en grilla debajo.
+ */
+function Offers({ heading, products, more = [] }: { heading: SectionHeadingProps; products: PublicProduct[]; more?: PublicProduct[] }) {
   const item = "w-full sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]";
+  // Sola, la tarjeta angosta quedaba huérfana en el medio: se muestra como franja con una aparición suave
+  if (products.length === 0) {
+    return (
+      <section id="ofertas" className={`${container} mt-24 scroll-mt-28`}>
+        <div className="fx-vapor">
+          <BenefitsCard wide />
+        </div>
+      </section>
+    );
+  }
   return (
     <section id="ofertas" className={`${container} mt-24 scroll-mt-28`}>
-      {products.length > 0 && <SectionHeading {...heading} />}
+      <SectionHeading {...heading} />
       <div className="flex flex-wrap justify-center gap-6">
         {products.map((p, i) => (
           <div key={p.id} style={{ "--i": i } as React.CSSProperties} className={`fx-deal flex ${item}`}>
@@ -185,6 +266,11 @@ function Offers({ heading, products }: { heading: SectionHeadingProps; products:
           <BenefitsCard />
         </div>
       </div>
+      {more.length > 0 && (
+        <div className="mt-6">
+          <ProductGrid products={more} reveal />
+        </div>
+      )}
     </section>
   );
 }

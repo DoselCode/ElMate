@@ -24,6 +24,60 @@ export const BENEFITS = {
   ],
 } as const;
 
+/** Marcas de ejemplo del diseño (fila de "Marcas que nos eligen"). Revisar con el cliente. */
+export const BRANDS = ["Yerbatal", "Matera Sur", "La Calabacera", "Termos Andes", "Bambuco", "Algarrobo & Co."] as const;
+
+export type BlogPost = { slug: string; tag: string; title: string; excerpt: string; image: string; body: string[] };
+
+/** Artículos del blog: la home muestra los 3 primeros y cada uno tiene su página en /blog/[slug]. */
+export const BLOG_POSTS: BlogPost[] = [
+  {
+    slug: "como-curar-tu-mate",
+    tag: "Ritual",
+    title: "Cómo curar tu mate nuevo paso a paso",
+    excerpt: "La curada inicial define el sabor para siempre. Te mostramos el método tradicional en 5 simples pasos.",
+    image: "/landing/ritual-yerba.jpg",
+    body: [
+      "Un mate de calabaza o de madera nuevo necesita una curada antes de usarlo: así se sellan los poros, se va el gusto a madera y la yerba no se amarga.",
+      "1. Llená el mate con yerba usada y humedecida, hasta el borde.",
+      "2. Completá con agua caliente (no hirviendo) y dejalo reposar 24 horas.",
+      "3. Al día siguiente, vacialo y raspá con cuidado la pulpa suelta de las paredes con una cuchara.",
+      "4. Repetí el proceso uno o dos días más, hasta que el agua salga limpia.",
+      "5. Enjuagalo con agua tibia y dejalo secar boca abajo, al aire y lejos del sol.",
+      "Después de cada ronda, vacialo y dejalo secar bien: un mate cuidado dura años.",
+    ],
+  },
+  {
+    slug: "como-elegir-la-yerba",
+    tag: "Yerbas",
+    title: "Cómo elegir la yerba perfecta para tu paladar",
+    excerpt: "Con palo, despalada, suave o barbacuá: te contamos qué diferencia a cada tipo y cuál te conviene.",
+    image: "/landing/hero.jpg",
+    body: [
+      "No hay una yerba mejor que otra: hay una para cada gusto y cada momento del día.",
+      "Con palo: es la más equilibrada. El palo suaviza el sabor y hace que el mate dure más. Ideal para arrancar.",
+      "Despalada: más intensa y amarga, para los que buscan un mate con carácter.",
+      "Suave: estacionada por más tiempo y con menos polvo, cae bien a cualquier hora.",
+      "Barbacuá: secada con humo de leña, tiene un sabor ahumado bien característico.",
+      "Si dudás, empezá por una con palo y probá de a poco las demás. En la tienda tenés todas.",
+    ],
+  },
+  {
+    slug: "como-cebar-un-buen-mate",
+    tag: "Cultura",
+    title: "El rito de la ronda: cómo cebar un buen mate",
+    excerpt: "La temperatura del agua, el orden de la ronda y los detalles que hacen de cada mate una ceremonia.",
+    image: "/landing/ritual-termos.jpg",
+    body: [
+      "Cebar es un arte y también un gesto: el que ceba cuida la ronda.",
+      "Llená tres cuartos del mate con yerba, tapá con la mano, sacudí y dejala inclinada contra una pared.",
+      "Mojá el hueco con un chorrito de agua tibia, esperá unos segundos y recién ahí poné la bombilla, sin moverla después.",
+      "El agua tiene que estar entre 70 y 80 °C: si hierve, quema la yerba y el mate se lava enseguida.",
+      "El primer mate es del cebador. Después, la ronda gira siempre hacia el mismo lado, y el \"gracias\" significa que ya no querés más.",
+    ],
+  },
+];
+
 /**
  * Datos de ejemplo para el footer: se muestran solo en los campos que todavía no se cargaron en "Datos del local".
  * El WhatsApp no tiene ejemplo a propósito: es adonde llegan los pedidos.

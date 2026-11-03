@@ -97,6 +97,22 @@ export const HOME_GROUPS: HomeGroup[] = [
     ],
   },
   {
+    id: "brands",
+    title: "Marcas",
+    description: "La fila de marcas debajo de Lo más vendido. Los nombres de las marcas son de ejemplo.",
+    fields: [
+      { key: "brands.eyebrow", label: "Etiqueta chica", default: "Marcas", max: 30 },
+      { key: "brands.title", label: "Título", default: "Marcas que nos eligen", max: 60 },
+      {
+        key: "brands.text",
+        label: "Texto",
+        default: "Trabajamos con talleres y yerbatales que hacen las cosas bien.",
+        multiline: true,
+        max: 160,
+      },
+    ],
+  },
+  {
     id: "newest",
     title: "Novedades",
     description: "Lo último que cargaste (podés dejar afuera productos desde su edición).",
@@ -124,6 +140,22 @@ export const HOME_GROUPS: HomeGroup[] = [
         key: "promoCombos.text",
         label: "Promo 2: texto",
         default: "Armá tu kit completo y empezá a cebar como un experto.",
+        multiline: true,
+        max: 160,
+      },
+    ],
+  },
+  {
+    id: "blog",
+    title: "Blog",
+    description: "Los últimos artículos, al final de la home.",
+    fields: [
+      { key: "blog.eyebrow", label: "Etiqueta chica", default: "Blog", max: 30 },
+      { key: "blog.title", label: "Título", default: "Últimos artículos", max: 60 },
+      {
+        key: "blog.text",
+        label: "Texto",
+        default: "Trucos, recetas y cultura matera para llevar el rito a otro nivel.",
         multiline: true,
         max: 160,
       },
