@@ -58,50 +58,87 @@ export function HomeTextsForm({ initial }: { initial: HomeTexts }) {
         )}
       </header>
 
-      <div className="grid items-start gap-6 xl:grid-cols-2">
-        {HOME_GROUPS.map((group) => (
-          <section key={group.id} className="rounded-[var(--radius-card)] bg-surface p-5 shadow-sm sm:p-6">
-            <h2 className="font-display text-lg font-bold">{group.title}</h2>
-            <p className="mb-4 mt-0.5 text-sm text-muted">{group.description}</p>
-            <div className="space-y-4">
-              {group.fields.map((f) => {
-                const id = `home-${f.key}`;
-                const isDefault = values[f.key].trim() === f.default;
-                const error = errors[f.key];
-                const common = {
-                  id,
-                  value: values[f.key],
-                  maxLength: f.max,
-                  "aria-invalid": Boolean(error),
-                  "aria-describedby": error ? `${id}-error` : undefined,
-                  className: `${inputClass} ${error ? inputErrorClass : ""}`,
-                  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-                    setValues((v) => ({ ...v, [f.key]: e.target.value })),
-                };
-                return (
-                  <Field key={f.key} label={f.label} htmlFor={id} error={error}>
-                    {f.multiline ? <textarea rows={3} {...common} /> : <input type="text" {...common} />}
-                    <p className="mt-1 flex items-center justify-between gap-2 text-xs text-muted">
-                      <span>{isDefault ? "Texto original" : "Personalizado"}</span>
-                      <span className="flex items-center gap-3">
-                        <span className="tabular-nums">{values[f.key].length}/{f.max}</span>
-                        {!isDefault && (
-                          <button
-                            type="button"
-                            onClick={() => reset([f.key])}
-                            className="inline-flex cursor-pointer items-center gap-1 font-semibold text-primary hover:underline"
-                          >
-                            <ArrowCounterClockwise size={12} aria-hidden /> Restablecer
-                          </button>
-                        )}
-                      </span>
-                    </p>
-                  </Field>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+      {/* Índice con las secciones en el orden de la home; al lado, una card por sección a todo el ancho */}
+      <div className="grid items-start gap-6 xl:grid-cols-[14rem_minmax(0,1fr)]">
+        <nav aria-label="Secciones de la home" className="rounded-[var(--radius-card)] bg-surface p-3 shadow-sm xl:sticky xl:top-6">
+          <ol className="flex gap-1 overflow-x-auto xl:flex-col">
+            {HOME_GROUPS.map((group, i) => {
+              const custom = group.fields.filter((f) => values[f.key].trim() !== f.default).length;
+              return (
+                <li key={group.id} className="shrink-0">
+                  <a
+                    href={`#grupo-${group.id}`}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-primary-soft hover:text-primary"
+                  >
+                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-background text-xs tabular-nums text-muted">
+                      {i + 1}
+                    </span>
+                    <span className="flex-1 whitespace-nowrap">{group.title}</span>
+                    {custom > 0 && (
+                      <span className="size-2 shrink-0 rounded-full bg-primary" title={`${custom} personalizado(s)`} aria-label="Con cambios" />
+                    )}
+                  </a>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+
+        <div className="space-y-6">
+          {HOME_GROUPS.map((group, i) => (
+            <section
+              key={group.id}
+              id={`grupo-${group.id}`}
+              className="scroll-mt-6 rounded-[var(--radius-card)] bg-surface p-5 shadow-sm sm:p-6"
+            >
+              <h2 className="flex items-center gap-2.5 font-display text-lg font-bold">
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary-soft text-sm tabular-nums text-primary">
+                  {i + 1}
+                </span>
+                {group.title}
+              </h2>
+              <p className="mb-5 mt-1 text-sm text-muted">{group.description}</p>
+              {/* Los campos cortos van de a dos; los textos largos ocupan la fila entera */}
+              <div className="grid gap-x-5 gap-y-4 md:grid-cols-2">
+                {group.fields.map((f) => {
+                  const id = `home-${f.key}`;
+                  const isDefault = values[f.key].trim() === f.default;
+                  const error = errors[f.key];
+                  const common = {
+                    id,
+                    value: values[f.key],
+                    maxLength: f.max,
+                    "aria-invalid": Boolean(error),
+                    "aria-describedby": error ? `${id}-error` : undefined,
+                    className: `${inputClass} ${error ? inputErrorClass : ""}`,
+                    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+                      setValues((v) => ({ ...v, [f.key]: e.target.value })),
+                  };
+                  return (
+                    <Field key={f.key} label={f.label} htmlFor={id} error={error} className={f.multiline ? "md:col-span-2" : ""}>
+                      {f.multiline ? <textarea rows={3} {...common} /> : <input type="text" {...common} />}
+                      <p className="mt-1 flex items-center justify-between gap-2 text-xs text-muted">
+                        <span>{isDefault ? "Texto original" : "Personalizado"}</span>
+                        <span className="flex items-center gap-3">
+                          <span className="tabular-nums">{values[f.key].length}/{f.max}</span>
+                          {!isDefault && (
+                            <button
+                              type="button"
+                              onClick={() => reset([f.key])}
+                              className="inline-flex cursor-pointer items-center gap-1 font-semibold text-primary hover:underline"
+                            >
+                              <ArrowCounterClockwise size={12} aria-hidden /> Restablecer
+                            </button>
+                          )}
+                        </span>
+                      </p>
+                    </Field>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-3">
