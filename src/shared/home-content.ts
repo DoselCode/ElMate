@@ -26,15 +26,6 @@ const TEXTS = {
   "ritual.titleBreak": "más rico que nunca.",
   "ritual.text": "Armá tu combo matero: mate, bombilla, termo y yerba juntos, listo para regalar o para estrenar en la próxima ronda.",
 
-  "bestSellers.eyebrow": "Lo más vendido",
-  "bestSellers.title": "Ofertas especiales",
-  "bestSellers.text": "Los favoritos de la comunidad matera, con precio de ronda.",
-
-  "promoBombillas.title": "Bombillas de alpaca, el detalle que cambia el mate",
-  "promoBombillas.text": "Filtrado perfecto y brillo eterno: las preferidas de los cebadores exigentes.",
-  "promoCombos.title": "Combos materos: ahorrá comprando todo junto",
-  "promoCombos.text": "Armá tu kit completo y empezá a cebar como un experto.",
-
   "instagram.eyebrow": "Instagram",
   "instagram.title": "Seguinos en @elmate.cordoba",
   "instagram.text": "Novedades, lanzamientos y regalos materos: lo último que publicamos.",

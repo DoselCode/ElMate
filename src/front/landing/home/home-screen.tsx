@@ -32,7 +32,7 @@ function categoryHref(categories: PublicCategory[], keyword: string) {
 }
 
 /** Título, etiqueta y texto de una sección (ver shared/home-content.ts). */
-const heading = (id: "featured" | "offers" | "bestSellers" | "instagram"): SectionHeadingProps => ({
+const heading = (id: "featured" | "offers" | "instagram"): SectionHeadingProps => ({
   eyebrow: t(`${id}.eyebrow`),
   title: t(`${id}.title`),
   text: t(`${id}.text`),
@@ -55,13 +55,6 @@ export function HomeScreen({ data, categories, promotions }: { data: HomeData; c
         </div>
       </section>
       <Ritual combosHref={categoryHref(categories, "combo")} />
-      {data.bestSellers.length > 0 && (
-        <section className={`${container} mt-24`}>
-          <SectionHeading {...heading("bestSellers")} />
-          <ProductGrid products={data.bestSellers} reveal />
-        </section>
-      )}
-      <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
       <Instagram />
     </>
   );
@@ -272,64 +265,3 @@ function Ritual({ combosHref }: { combosHref: string }) {
   );
 }
 
-function Promos({ bombillasHref, combosHref }: { bombillasHref: string; combosHref: string }) {
-  return (
-    <section className={`${container} mt-24 grid gap-6 lg:grid-cols-2`}>
-      <PromoCard
-        dark
-        className="fx-from-left"
-        title={t("promoBombillas.title")}
-        text={t("promoBombillas.text")}
-        href={bombillasHref}
-        cta="Ver bombillas"
-        image="/landing/promo-bombillas.svg"
-      />
-      <PromoCard
-        className="fx-from-right"
-        title={t("promoCombos.title")}
-        text={t("promoCombos.text")}
-        href={combosHref} cta="Ver combos" image="/landing/promo-combos.svg" />
-    </section>
-  );
-}
-
-/** Tarjeta de promo: texto a la izquierda e ilustración a la derecha (SVG livianos en public/landing). */
-function PromoCard({
-  title,
-  text,
-  href,
-  cta,
-  image,
-  dark = false,
-  className = "",
-}: {
-  title: string;
-  text: string;
-  href: string;
-  cta: string;
-  image: string;
-  dark?: boolean;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`${className} flex flex-col-reverse items-center gap-6 rounded-[2rem] p-8 text-center sm:flex-row sm:p-10 sm:text-left ${
-        dark ? "bg-primary-deep text-white" : "bg-surface text-foreground"
-      }`}
-    >
-      <div className="flex-1">
-        <h2 className="font-display text-2xl font-bold leading-tight sm:text-[1.75rem]">{title}</h2>
-        <p className={`mt-3 ${dark ? "text-white/85" : "text-muted"}`}>{text}</p>
-        <Link
-          href={href}
-          className={`mt-6 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 font-bold transition-colors ${
-            dark ? "bg-white text-primary-deep hover:bg-primary-soft" : "bg-primary-deep text-white hover:bg-primary"
-          }`}
-        >
-          {cta} <CaretRight size={16} weight="bold" aria-hidden />
-        </Link>
-      </div>
-      <Image src={image} alt="" width={240} height={240} unoptimized className="fx-stir size-40 shrink-0 sm:size-44" />
-    </div>
-  );
-}
