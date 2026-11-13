@@ -75,7 +75,7 @@ export function SettingsForm({ initial }: { initial: StoreSettingsInput }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="mx-auto max-w-3xl space-y-6 pb-10">
+    <form onSubmit={submit} noValidate className="space-y-6 pb-10">
       <header>
         <h1 className="font-display text-2xl font-bold">Datos del local</h1>
         <p className="mt-1 text-sm text-muted">Lo que ven los clientes en la web: contacto, redes, horarios y el WhatsApp de pedidos.</p>

@@ -13,7 +13,7 @@ export default async function StoreSettingsPage() {
       <SettingsForm initial={initial} />
       {/* Las formas de pago se usan al vender: se configuran en la entrega final (shared/features.ts) */}
       {STAGE_2 && (
-        <div className="mx-auto max-w-3xl">
+        <div>
           <PaymentMethodsForm initial={methods} />
         </div>
       )}
