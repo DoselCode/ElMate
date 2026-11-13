@@ -32,6 +32,10 @@ const cents = (n: number) => Math.round(n * 100) / 100;
 const normalize = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const MAX_RESULTS = 8;
 
+/** Controla stock y no queda nada: no se puede vender. */
+const outOfStock = (i: SellableItem) => i.track_stock && i.stock <= 0;
+const labelOf = (i: SellableItem) => `${i.product_name}${i.variant_label ? ` · ${i.variant_label}` : ""}`;
+
 function validQty(n: number, unit: SellableItem["unit"]) {
   return Number.isFinite(n) && n > 0 && (unit === "kg" ? Math.abs(n * 1000 - Math.round(n * 1000)) < 1e-6 : Number.isInteger(n));
 }
@@ -55,6 +59,8 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
   const [customer, setCustomer] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string>();
+  /** Aviso al intentar agregar algo sin stock (se muestra bajo el buscador). */
+  const [notice, setNotice] = useState<string>();
   const [done, setDone] = useState<{ saleId: string; ticketNumber: number; total: number } | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -73,12 +79,26 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
   function add(item: SellableItem) {
     setDone(null);
     setError(undefined);
+    // El stock se valida acá, antes de agregar, no recién al cobrar
+    if (outOfStock(item)) {
+      setNotice(`No hay stock de ${labelOf(item)}: no se puede agregar.`);
+      searchRef.current?.focus();
+      return;
+    }
+    const found = lines.find((l) => l.item.variant_id === item.variant_id);
+    if (found && item.unit === "unidad" && item.track_stock && (parseDecimal(found.qty) || 0) + 1 > item.stock) {
+      setNotice(`Solo hay ${formatQuantity(item.stock, item.unit)} de ${labelOf(item)}: ya agregaste todos los que hay.`);
+      setQuery("");
+      searchRef.current?.focus();
+      return;
+    }
+    setNotice(undefined);
     setLines((ls) => {
-      const found = ls.find((l) => l.item.variant_id === item.variant_id);
-      if (found && item.unit === "unidad") {
-        return ls.map((l) => (l === found ? { ...l, qty: String((parseDecimal(l.qty) || 0) + 1) } : l));
+      const existing = ls.find((l) => l.item.variant_id === item.variant_id);
+      if (existing && item.unit === "unidad") {
+        return ls.map((l) => (l === existing ? { ...l, qty: String((parseDecimal(l.qty) || 0) + 1) } : l));
       }
-      if (found) return ls; // por kg: se edita el peso en la línea
+      if (existing) return ls; // por kg: se edita el peso en la línea
       return [...ls, { item, qty: item.unit === "kg" ? "" : "1", discountType: "pct", discount: "", showDiscount: false }];
     });
     setQuery("");
@@ -91,7 +111,8 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
     e.preventDefault();
     const code = query.trim().toUpperCase();
     const exact = items.find((i) => i.barcode === query.trim() || i.sku.toUpperCase() === code);
-    const pick = exact ?? results[0];
+    // Sin código exacto, el primer resultado que tenga stock (si ninguno tiene, el primero: avisa que no hay)
+    const pick = exact ?? results.find((i) => !outOfStock(i)) ?? results[0];
     if (pick) add(pick);
   }
 
@@ -101,7 +122,8 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
     const ok = validQty(qty, l.item.unit);
     const gross = ok ? cents(l.item.price * qty) : 0;
     const lineDiscount = discountOf(gross, l.discountType, l.discount);
-    return { ...l, qtyNumber: qty, ok, gross, lineDiscount, lineTotal: cents(gross - (lineDiscount ?? 0)) };
+    const over = l.item.track_stock && ok && qty > l.item.stock;
+    return { ...l, qtyNumber: qty, ok, over, gross, lineDiscount, lineTotal: cents(gross - (lineDiscount ?? 0)) };
   });
   const subtotal = cents(parsedLines.reduce((s, l) => s + l.lineTotal, 0));
   const discountAmount = discountOf(subtotal, discountType, discount);
@@ -109,8 +131,9 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
   const base = cents(subtotal - (discountAmount ?? 0));
   const method = methods.find((m) => m.id === methodId);
   const { adjustment, total } = totalFor(base, method);
+  const hasOver = parsedLines.some((l) => l.over);
   const canCharge =
-    cashOpen && lines.length > 0 && parsedLines.every((l) => l.ok && l.lineDiscount !== null) && discountOk && Boolean(method);
+    cashOpen && lines.length > 0 && parsedLines.every((l) => l.ok && l.lineDiscount !== null) && !hasOver && discountOk && Boolean(method);
   const setLine = (variantId: string, patch: Partial<Line>) =>
     setLines((ls) => ls.map((x) => (x.item.variant_id === variantId ? { ...x, ...patch } : x)));
 
@@ -187,12 +210,20 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
               autoFocus
               autoComplete="off"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setNotice(undefined);
+              }}
               onKeyDown={onSearchKey}
               placeholder="Buscá por nombre o código, o escaneá el código de barras"
               className={`${inputClass} rounded-2xl py-3.5 pl-12 text-base`}
               aria-controls="pos-results"
             />
+            {notice && (
+              <p role="alert" className="mt-2 flex items-center gap-2 rounded-xl bg-danger-soft px-4 py-2.5 text-sm font-semibold text-danger">
+                <Warning size={18} aria-hidden /> {notice}
+              </p>
+            )}
             {query.trim() && (
               <ul
                 id="pos-results"
@@ -208,7 +239,8 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
                         <button
                           type="button"
                           onClick={() => add(i)}
-                          className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-primary-soft"
+                          disabled={out}
+                          className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left enabled:hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-55"
                         >
                           <Thumb src={i.image} />
                           <span className="min-w-0 flex-1">
@@ -218,13 +250,19 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
                             </span>
                             <span className="block truncate text-xs text-muted">
                               <span className="font-mono">{i.sku}</span>
-                              {i.track_stock ? ` · stock ${formatQuantity(i.stock, i.unit)}` : " · sin control de stock"}
+                              {!i.track_stock ? (
+                                " · sin control de stock"
+                              ) : out ? (
+                                <span className="font-semibold text-danger"> · Sin stock</span>
+                              ) : (
+                                <span className="font-semibold text-success"> · Hay stock: {formatQuantity(i.stock, i.unit)}</span>
+                              )}
                             </span>
                           </span>
                           <span className="text-right">
                             <span className="block text-sm font-bold tabular-nums">{formatMoney(i.price)}</span>
                             {i.unit === "kg" && <span className="block text-xs text-muted">por kg</span>}
-                            {out && <span className="block text-xs font-semibold text-danger">Sin stock</span>}
+                            {out && <span className="block text-xs font-semibold text-danger">No se puede agregar</span>}
                           </span>
                         </button>
                       </li>
@@ -243,7 +281,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
           ) : (
             <ul className="space-y-2">
               {parsedLines.map((l) => {
-                const over = l.item.track_stock && l.ok && l.qtyNumber > l.item.stock;
+                const over = l.over;
                 const id = `qty-${l.item.variant_id}`;
                 const setQty = (qty: string) => setLine(l.item.variant_id, { qty });
                 return (
@@ -293,8 +331,10 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
                       ) : (
                         <button
                           type="button"
-                          className="grid size-8 cursor-pointer place-items-center rounded-full hover:bg-primary-soft"
+                          className="grid size-8 cursor-pointer place-items-center rounded-full hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                           aria-label={`Sumar uno de ${l.item.product_name}`}
+                          title={l.item.track_stock && l.ok && l.qtyNumber >= l.item.stock ? "No hay más stock" : undefined}
+                          disabled={l.item.track_stock && l.ok && l.qtyNumber >= l.item.stock}
                           onClick={() => setQty(String((l.ok ? l.qtyNumber : 0) + 1))}
                         >
                           <Plus size={14} weight="bold" aria-hidden />
@@ -453,6 +493,11 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
             </p>
           </div>
 
+          {hasOver && (
+            <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm font-medium text-danger">
+              Hay productos que superan el stock disponible. Bajá la cantidad para poder cobrar.
+            </p>
+          )}
           {error && <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm font-medium text-danger">{error}</p>}
 
           <Button className="w-full py-3 text-base" disabled={!canCharge || pending} onClick={charge}>
