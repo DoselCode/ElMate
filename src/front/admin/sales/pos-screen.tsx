@@ -30,7 +30,7 @@ function discountOf(base: number, type: DiscountType, text: string): number | nu
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 const normalize = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-const MAX_RESULTS = 8;
+const PAGE_SIZE = 8;
 
 /** Controla stock y no queda nada: no se puede vender. */
 const outOfStock = (i: SellableItem) => i.track_stock && i.stock <= 0;
@@ -52,6 +52,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
   const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [lines, setLines] = useState<Line[]>([]);
   const [discount, setDiscount] = useState("");
   const [discountType, setDiscountType] = useState<DiscountType>("amount");
@@ -65,16 +66,17 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
   const [pending, startTransition] = useTransition();
 
   // ---- búsqueda ---------------------------------------------------------------------------
-  const results = useMemo(() => {
+  const filtered = useMemo(() => {
     const words = normalize(query).split(/\s+/).filter(Boolean);
-    if (!words.length) return [];
-    return items
-      .filter((i) => {
-        const text = normalize(`${i.product_name} ${i.variant_label} ${i.sku} ${i.barcode ?? ""} ${i.brand ?? ""}`);
-        return words.every((w) => text.includes(w));
-      })
-      .slice(0, MAX_RESULTS);
+    if (!words.length) return items;
+    return items.filter((i) => {
+      const text = normalize(`${i.product_name} ${i.variant_label} ${i.sku} ${i.barcode ?? ""} ${i.brand ?? ""}`);
+      return words.every((w) => text.includes(w));
+    });
   }, [items, query]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function add(item: SellableItem) {
     setDone(null);
@@ -112,7 +114,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
     const code = query.trim().toUpperCase();
     const exact = items.find((i) => i.barcode === query.trim() || i.sku.toUpperCase() === code);
     // Sin código exacto, el primer resultado que tenga stock (si ninguno tiene, el primero: avisa que no hay)
-    const pick = exact ?? results.find((i) => !outOfStock(i)) ?? results[0];
+    const pick = exact ?? filtered.find((i) => !outOfStock(i)) ?? filtered[0];
     if (pick) add(pick);
   }
 
@@ -200,76 +202,92 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section aria-label="Productos de la venta" className="space-y-4">
           {/* Buscador */}
-          <div className="relative">
+          <div>
             <label htmlFor="pos-search" className="sr-only">Buscar producto</label>
-            <MagnifyingGlass size={20} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" aria-hidden />
-            <input
-              ref={searchRef}
-              id="pos-search"
-              type="search"
-              autoFocus
-              autoComplete="off"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setNotice(undefined);
-              }}
-              onKeyDown={onSearchKey}
-              placeholder="Buscá por nombre o código, o escaneá el código de barras"
-              className={`${inputClass} rounded-2xl py-3.5 pl-12 text-base`}
-              aria-controls="pos-results"
-            />
+            <div className="relative">
+              <MagnifyingGlass size={20} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" aria-hidden />
+              <input
+                ref={searchRef}
+                id="pos-search"
+                type="search"
+                autoFocus
+                autoComplete="off"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPage(1);
+                  setNotice(undefined);
+                }}
+                onKeyDown={onSearchKey}
+                placeholder="Buscá por nombre o código, o escaneá el código de barras"
+                className={`${inputClass} rounded-2xl py-3.5 pl-12 text-base`}
+                aria-controls="pos-products"
+              />
+            </div>
             {notice && (
               <p role="alert" className="mt-2 flex items-center gap-2 rounded-xl bg-danger-soft px-4 py-2.5 text-sm font-semibold text-danger">
                 <Warning size={18} aria-hidden /> {notice}
               </p>
             )}
-            {query.trim() && (
-              <ul
-                id="pos-results"
-                className="absolute inset-x-0 top-full z-20 mt-2 max-h-96 overflow-y-auto rounded-2xl border border-border bg-surface p-1.5 shadow-xl"
-              >
-                {results.length === 0 ? (
-                  <li className="px-4 py-3 text-sm text-muted">No hay productos con “{query}”.</li>
-                ) : (
-                  results.map((i) => {
-                    const out = i.track_stock && i.stock <= 0;
-                    return (
-                      <li key={i.variant_id}>
-                        <button
-                          type="button"
-                          onClick={() => add(i)}
-                          disabled={out}
-                          className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left enabled:hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-55"
-                        >
-                          <Thumb src={i.image} />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-semibold">
-                              {i.product_name}
-                              {i.variant_label && <span className="font-normal text-muted"> · {i.variant_label}</span>}
-                            </span>
-                            <span className="block truncate text-xs text-muted">
-                              <span className="font-mono">{i.sku}</span>
-                              {!i.track_stock ? (
-                                " · sin control de stock"
-                              ) : out ? (
-                                <span className="font-semibold text-danger"> · Sin stock</span>
-                              ) : (
-                                <span className="font-semibold text-success"> · Hay stock: {formatQuantity(i.stock, i.unit)}</span>
-                              )}
-                            </span>
+          </div>
+
+          {/* Productos: todos, paginados; los que no tienen stock se ven grises y no se pueden agregar */}
+          <div id="pos-products" aria-label="Productos" className="space-y-3">
+            {filtered.length === 0 ? (
+              <p className="rounded-2xl bg-surface px-4 py-6 text-center text-sm text-muted">No hay productos con “{query}”.</p>
+            ) : (
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {pageItems.map((i) => {
+                  const out = outOfStock(i);
+                  return (
+                    <li key={i.variant_id}>
+                      <button
+                        type="button"
+                        onClick={() => add(i)}
+                        disabled={out}
+                        aria-label={out ? `${labelOf(i)}: sin stock` : undefined}
+                        className={`flex h-full w-full items-center gap-3 rounded-2xl p-2.5 text-left shadow-sm transition-colors ${
+                          out
+                            ? "cursor-not-allowed bg-background text-muted opacity-60 grayscale"
+                            : "cursor-pointer bg-surface hover:bg-primary-soft"
+                        }`}
+                      >
+                        <Thumb src={i.image} />
+                        <span className="min-w-0 flex-1">
+                          <span className={`block truncate text-sm font-semibold ${out ? "" : "text-foreground"}`}>
+                            {i.product_name}
+                            {i.variant_label && <span className="font-normal text-muted"> · {i.variant_label}</span>}
                           </span>
-                          <span className="text-right">
-                            <span className="block text-sm font-bold tabular-nums">{formatMoney(i.price)}</span>
-                            {i.unit === "kg" && <span className="block text-xs text-muted">por kg</span>}
-                            {out && <span className="block text-xs font-semibold text-danger">No se puede agregar</span>}
+                          <span className="block truncate text-xs text-muted">
+                            <span className="font-mono">{i.sku}</span>
+                            {out ? " · Sin stock" : i.track_stock ? ` · Stock: ${formatQuantity(i.stock, i.unit)}` : ""}
                           </span>
-                        </button>
-                      </li>
-                    );
-                  })
-                )}
+                        </span>
+                        <span className="text-right">
+                          <span className="block text-sm font-bold tabular-nums">{formatMoney(i.price)}</span>
+                          {i.unit === "kg" && <span className="block text-xs text-muted">por kg</span>}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
+            )}
+
+            {pageCount > 1 && (
+              <nav aria-label="Páginas de productos" className="flex items-center justify-between gap-3 text-sm">
+                <p className="text-muted">
+                  {filtered.length} {filtered.length === 1 ? "producto" : "productos"} · página {currentPage} de {pageCount}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>
+                    Anterior
+                  </Button>
+                  <Button variant="secondary" size="sm" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>
+                    Siguiente
+                  </Button>
+                </div>
+              </nav>
             )}
           </div>
 
@@ -296,7 +314,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
                       <p className="text-xs text-muted">
                         {formatMoney(l.item.price)}
                         {l.item.unit === "kg" ? " por kg" : " c/u"}
-                        {over && <span className="font-semibold text-danger"> · hay {formatQuantity(l.item.stock, l.item.unit)}</span>}
+                        {over && <span className="font-semibold text-danger"> · máximo {formatQuantity(l.item.stock, l.item.unit)}</span>}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
