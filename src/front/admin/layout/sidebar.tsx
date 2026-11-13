@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { ArrowsLeftRight, CashRegister, ChartLineUp, List, Package, Receipt, ShoppingCart, SignOut, Storefront, Tag, X } from "@phosphor-icons/react";
 import { signOutAction } from "@/back/admin/auth/actions";
+import { BrandLetters } from "@/front/landing/layout/brand-letters";
 import { STAGE_2 } from "@/shared/features";
 import type { Role } from "@/shared/types";
 
@@ -82,12 +83,15 @@ export function Sidebar({ userName, role }: { userName: string; role: Role }) {
       </button>
 
       <div className={`flex items-center gap-3 ${collapsed ? "lg:mb-6 lg:mt-12 lg:justify-center" : "lg:mb-10 lg:flex-col lg:text-center"}`}>
+        {/* Logo de ElMate (letras apiladas) sobre una base blanca para que se lea en el menú azul */}
         <div
-          className={`grid place-items-center rounded-full bg-white/15 font-display font-bold ${
-            collapsed ? "size-11 text-lg" : "size-11 text-lg lg:size-20 lg:text-3xl"
+          role="img"
+          aria-label="ElMate"
+          className={`grid shrink-0 place-items-center rounded-2xl bg-white shadow-sm ${
+            collapsed ? "size-11 p-1.5" : "size-12 p-2 lg:size-24 lg:p-3.5"
           }`}
         >
-          M
+          <BrandLetters fill="#1c1c1c" className="h-full w-auto" />
         </div>
         <div className={`font-display text-lg leading-tight tracking-wide ${collapsed ? "lg:hidden" : ""}`}>
           El Mate
