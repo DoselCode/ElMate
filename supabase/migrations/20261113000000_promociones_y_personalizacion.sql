@@ -228,8 +228,8 @@ from public.products p
 left join public.categories c on c.id = p.category_id
 cross join lateral (
   select pv.id as variant_id,
-         case when lp.promo_price < pv.price then lp.promo_price else pv.price end as price,
-         case when lp.promo_price < pv.price then pv.price else pv.compare_at_price end as compare_at_price
+         (case when lp.promo_price < pv.price then lp.promo_price else pv.price end)::numeric(12, 2) as price,
+         (case when lp.promo_price < pv.price then pv.price else pv.compare_at_price end)::numeric(12, 2) as compare_at_price
   from public.product_variants pv
   left join public.live_promo_prices lp on lp.variant_id = pv.id
   where pv.product_id = p.id and pv.active and pv.price > 0
@@ -248,8 +248,8 @@ where p.is_visible and p.archived_at is null;
 
 create or replace view public.public_variants as
 select pv.id, pv.product_id, pv.attributes, public.variant_label(pv.attributes, p.option_names) as label,
-       case when lp.promo_price < pv.price then lp.promo_price else pv.price end as price,
-       case when lp.promo_price < pv.price then pv.price else pv.compare_at_price end as compare_at_price,
+       (case when lp.promo_price < pv.price then lp.promo_price else pv.price end)::numeric(12, 2) as price,
+       (case when lp.promo_price < pv.price then pv.price else pv.compare_at_price end)::numeric(12, 2) as compare_at_price,
        pv.image, (pv.stock > 0 or not p.track_stock) as in_stock
 from public.product_variants pv
 join public.products p on p.id = pv.product_id
