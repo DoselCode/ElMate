@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  CaretDoubleDown,
   CaretRight,
   InstagramLogo,
   PencilSimpleLine,
@@ -13,10 +12,9 @@ import {
   WhatsappLogo,
 } from "@phosphor-icons/react/dist/ssr";
 import type { HomeData, PublicCategory, PublicProduct, PublicPromotion } from "@/shared/types";
-import { ProductCard, ProductGrid } from "../catalog/product-card";
+import { ProductGrid } from "../catalog/product-card";
 import { t } from "@/shared/home-content";
-import { BENEFITS, BLOG_POSTS, HERO, INSTAGRAM_POSTS, INSTAGRAM_URL } from "../content";
-import { CategoryCarousel } from "./category-carousel";
+import { BENEFITS, HERO, INSTAGRAM_POSTS, INSTAGRAM_URL } from "../content";
 import { HeroBrew } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
 
@@ -33,44 +31,23 @@ function categoryHref(categories: PublicCategory[], keyword: string) {
   return c ? `/tienda?categoria=${c.slug}` : "/tienda";
 }
 
-function uniqueProducts(products: PublicProduct[]) {
-  return products.filter((p, i) => products.findIndex((q) => q.id === p.id) === i);
-}
-
 /** Título, etiqueta y texto de una sección (ver shared/home-content.ts). */
-const heading = (id: "featured" | "offers" | "bestSellers" | "newest" | "instagram" | "blog"): SectionHeadingProps => ({
+const heading = (id: "featured" | "offers" | "bestSellers" | "instagram"): SectionHeadingProps => ({
   eyebrow: t(`${id}.eyebrow`),
   title: t(`${id}.title`),
   text: t(`${id}.text`),
 });
 
 export function HomeScreen({ data, categories, promotions }: { data: HomeData; categories: PublicCategory[]; promotions: PublicPromotion[] }) {
-  const featuredIds = new Set(data.featured.map((p) => p.id));
+  // Destacados; si todavía no hay ninguno, los más vendidos para que la sección no quede vacía
+  const highlighted = data.featured.length > 0 ? data.featured : data.bestSellers;
   return (
     <>
       <Hero />
-      <Categories categories={categories} />
+      {/* Las ofertas (productos con precio anterior o en promo) van primero, donde antes estaban las categorías */}
+      <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
       <PromoCards promotions={promotions.filter((p) => p.show_card)} />
-      {/* Con ofertas (precio anterior cargado): destacados en su grilla y las ofertas al lado de los beneficios */}
-      {data.offers.length > 0 ? (
-        <>
-          {data.featured.length > 0 && (
-            <section id="destacados" className={`${container} mt-24 scroll-mt-28`}>
-              <SectionHeading {...heading("featured")} />
-              <ProductGrid products={data.featured.slice(0, 8)} reveal />
-            </section>
-          )}
-          <Offers heading={heading("offers")} products={data.offers.slice(0, 4)} />
-        </>
-      ) : (
-        /* Sin ofertas: los destacados van al lado de los beneficios (el resto, debajo). Si tampoco hay destacados,
-           se usan los más vendidos y las novedades para que la sección no quede vacía */
-        <Offers
-          heading={heading("featured")}
-          products={(featuredIds.size > 0 ? data.featured : uniqueProducts([...data.bestSellers, ...data.newest])).slice(0, 4)}
-          more={data.featured.slice(4, 8)}
-        />
-      )}
+      <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
       <Engraving href={categoryHref(categories, "grabado")} />
       <section className={`${container} mt-24`}>
         <div className="fx-vapor">
@@ -84,15 +61,8 @@ export function HomeScreen({ data, categories, promotions }: { data: HomeData; c
           <ProductGrid products={data.bestSellers} reveal />
         </section>
       )}
-      {data.newest.length > 0 && (
-        <section className={`${container} mt-24`}>
-          <SectionHeading {...heading("newest")} />
-          <ProductGrid products={data.newest} reveal />
-        </section>
-      )}
       <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
       <Instagram />
-      <Blog />
     </>
   );
 }
@@ -180,38 +150,6 @@ function Instagram() {
   );
 }
 
-function Blog() {
-  return (
-    <section id="blog" className={`${container} mt-24 scroll-mt-28`}>
-      <SectionHeading {...heading("blog")} />
-      <div className="grid gap-6 md:grid-cols-3">
-        {BLOG_POSTS.slice(0, 3).map((post, i) => (
-          <article
-            key={post.slug}
-            style={{ "--i": i } as React.CSSProperties}
-            className="fx-vapor flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-surface shadow-sm"
-          >
-            <div className="relative aspect-[16/10] bg-primary-soft">
-              <Image src={post.image} alt="" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" />
-              <span className="absolute left-4 top-4 rounded-full bg-surface px-3 py-1 text-xs font-bold text-primary">{post.tag}</span>
-            </div>
-            <div className="flex flex-1 flex-col p-6">
-              <h3 className="font-display text-lg font-bold leading-snug">{post.title}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">{post.excerpt}</p>
-              <Link
-                href={`/blog/${post.slug}`}
-                className="mt-5 inline-flex items-center gap-1.5 self-start rounded-full border-2 border-primary/25 px-4 py-2 text-sm font-bold transition-colors hover:border-primary hover:text-primary"
-              >
-                Leer más <CaretRight size={14} weight="bold" aria-hidden />
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function Hero() {
   return (
     <section className="relative isolate">
@@ -242,7 +180,7 @@ function Hero() {
             <Link href="/tienda" prefetch className={btnPrimary}>
               Ver tienda <ArrowRight size={18} weight="bold" aria-hidden />
             </Link>
-            <Link href="/#ofertas" className={btnOutline}>
+            <Link href="/#destacados" className={btnOutline}>
               Ver productos
             </Link>
           </div>
@@ -250,19 +188,6 @@ function Hero() {
             <path d="M2 14c16-12 34-12 52 0s38 12 56 0 28-10 38-4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
           </svg>
         </div>
-      </div>
-    </section>
-  );
-}
-
-function Categories({ categories }: { categories: PublicCategory[] }) {
-  if (categories.length === 0) return null;
-  return (
-    <section className={`${container} mt-20`}>
-      <div className="fx-pour relative px-1 sm:px-6">
-        <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
-        <SectionHeading title={t("categories.title")} text={t("categories.text")} compact />
-        <CategoryCarousel categories={categories} />
       </div>
     </section>
   );
@@ -302,28 +227,13 @@ function BenefitsCard() {
   );
 }
 
-/** Hasta 4 productos en una fila. `more`: los que no entran (destacados del 5.º en adelante), en grilla debajo. */
-function Offers({ heading, products, more = [] }: { heading: SectionHeadingProps; products: PublicProduct[]; more?: PublicProduct[] }) {
-  const item = "w-full sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]";
+/** Sección con título y hasta 8 productos en grilla. Sin productos no se muestra. */
+function ProductSection({ id, heading, products }: { id: string; heading: SectionHeadingProps; products: PublicProduct[] }) {
+  if (products.length === 0) return null;
   return (
-    <section id="ofertas" className={`${container} mt-24 scroll-mt-28`}>
-      {products.length > 0 && (
-        <>
-          <SectionHeading {...heading} />
-          <div className="flex flex-wrap justify-center gap-6">
-            {products.map((p, i) => (
-              <div key={p.id} style={{ "--i": i } as React.CSSProperties} className={`fx-deal flex ${item}`}>
-                <ProductCard product={p} />
-              </div>
-            ))}
-          </div>
-          {more.length > 0 && (
-            <div className="mt-6">
-              <ProductGrid products={more} reveal />
-            </div>
-          )}
-        </>
-      )}
+    <section id={id} className={`${container} mt-24 scroll-mt-28`}>
+      <SectionHeading {...heading} />
+      <ProductGrid products={products} reveal />
     </section>
   );
 }

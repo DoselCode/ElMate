@@ -367,7 +367,7 @@ export type ShopFilters = {
 };
 
 /** Secciones de productos de la home. */
-export type HomeData = { featured: PublicProduct[]; offers: PublicProduct[]; bestSellers: PublicProduct[]; newest: PublicProduct[] };
+export type HomeData = { featured: PublicProduct[]; offers: PublicProduct[]; bestSellers: PublicProduct[] };
 
 /** Página de un producto: el producto, sus variantes y relacionados de la misma categoría. */
 /** Resultado del buscador del header (lo mínimo para mostrar la fila). */
