@@ -46,14 +46,9 @@ export function HomeScreen({ data, categories, promotions }: { data: HomeData; c
   return (
     <>
       <Hero />
-      {/* Se alternan secciones de listado (productos, categorías) con las que no lo son (beneficios, ritual, grabado) */}
+      {/* Se alternan secciones de listado (productos, categorías) con las que no lo son (ritual, grabado, promos) */}
       <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
       <PromoCards promotions={promotions.filter((p) => p.show_card)} />
-      <section className={`${container} mt-24`}>
-        <div className="fx-vapor">
-          <BenefitsCard />
-        </div>
-      </section>
       <Categories categories={categories} />
       <Ritual combosHref={categoryHref(categories, "combo")} />
       <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
@@ -191,15 +186,15 @@ function Hero() {
 
 const BENEFIT_ICONS = { cart: ShoppingCartSimple, whatsapp: WhatsappLogo, chat: ChatCircleDots, store: Storefront };
 
-/** Card propia: título a la izquierda y los 4 beneficios en fila. */
+/** Beneficios de comprar: en columna junto a las categorías en escritorio; apilada y en fila en pantallas chicas. */
 function BenefitsCard() {
   return (
     <div
       id="como-comprar"
-      className="flex w-full scroll-mt-28 flex-col gap-5 rounded-[var(--radius-card)] bg-primary p-6 text-white sm:p-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-center lg:gap-8"
+      className="flex w-full scroll-mt-28 flex-col justify-between gap-5 rounded-[var(--radius-card)] bg-primary p-6 text-white sm:p-8 lg:p-6"
     >
-      <h3 className="font-display text-[1.6rem] font-bold leading-tight">{BENEFITS.title}</h3>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:row-span-2">
+      <h3 className="font-display text-[1.5rem] font-bold leading-tight">{BENEFITS.title}</h3>
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
         {BENEFITS.items.map(({ icon, text }) => {
           const Icon = BENEFIT_ICONS[icon];
           return (
@@ -215,7 +210,7 @@ function BenefitsCard() {
       </ul>
       <Link
         href="/tienda"
-        className="self-start inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-white/35 px-5 py-2.5 font-bold transition-colors hover:bg-white hover:text-primary"
+        className="inline-flex items-center justify-center gap-1.5 self-start rounded-full border-2 border-white/35 px-5 py-2.5 font-bold transition-colors hover:bg-white hover:text-primary"
       >
         <CaretRight size={16} weight="bold" aria-hidden /> Conocé más
       </Link>
@@ -223,14 +218,21 @@ function BenefitsCard() {
   );
 }
 
+/** Categorías a la izquierda y la card de beneficios al lado (debajo en pantallas chicas). */
 function Categories({ categories }: { categories: PublicCategory[] }) {
-  if (categories.length === 0) return null;
   return (
     <section id="categorias" className={`${container} mt-24 scroll-mt-28`}>
-      <div className="fx-pour relative px-1 sm:px-6">
-        <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
-        <SectionHeading title={t("categories.title")} text={t("categories.text")} compact />
-        <CategoryCarousel categories={categories} />
+      <div className={categories.length > 0 ? "grid items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]" : ""}>
+        {categories.length > 0 && (
+          <div className="fx-pour relative min-w-0 px-1 sm:px-4">
+            <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
+            <SectionHeading title={t("categories.title")} text={t("categories.text")} compact />
+            <CategoryCarousel categories={categories} />
+          </div>
+        )}
+        <div className="fx-vapor flex">
+          <BenefitsCard />
+        </div>
       </div>
     </section>
   );
