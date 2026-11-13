@@ -46,18 +46,18 @@ export function HomeScreen({ data, categories, promotions }: { data: HomeData; c
   return (
     <>
       <Hero />
-      {/* Las ofertas (productos con precio anterior o en promo) van primero; las categorías vienen después */}
+      {/* Se alternan secciones de listado (productos, categorías) con las que no lo son (beneficios, ritual, grabado) */}
       <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
       <PromoCards promotions={promotions.filter((p) => p.show_card)} />
-      <Categories categories={categories} />
-      <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
-      <Engraving href={categoryHref(categories, "grabado")} />
       <section className={`${container} mt-24`}>
         <div className="fx-vapor">
           <BenefitsCard />
         </div>
       </section>
+      <Categories categories={categories} />
       <Ritual combosHref={categoryHref(categories, "combo")} />
+      <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
+      <Engraving href={categoryHref(categories, "grabado")} />
       <Instagram />
     </>
   );
