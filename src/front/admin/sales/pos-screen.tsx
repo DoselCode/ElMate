@@ -7,6 +7,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { CheckCircle, MagnifyingGlass, Minus, Package, Plus, Receipt, Tag, Trash, Warning } from "@phosphor-icons/react";
 import { createSaleAction } from "@/back/admin/sales/actions";
 import { Button, buttonClass } from "@/front/shared/ui/button";
+import { Modal } from "@/front/shared/ui/modal";
 import { inputClass } from "@/front/shared/ui/field";
 import { formatMoney, formatQuantity, parseDecimal } from "@/shared/format";
 import type { PaymentMethod, SellableItem } from "@/shared/types";
@@ -187,17 +188,41 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
         </div>
       )}
 
-      {done && (
-        <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-success-soft px-5 py-4 text-sm text-success">
-          <p className="flex items-center gap-2 font-semibold">
-            <CheckCircle size={22} weight="fill" aria-hidden />
-            Venta N° {done.ticketNumber} registrada · {formatMoney(done.total)}
-          </p>
-          <Link href={`/admin/ventas/${done.saleId}`} className={buttonClass("secondary", "sm")}>
-            Ver ticket
-          </Link>
-        </div>
-      )}
+      {/* Venta registrada: aviso en un modal, con acceso al ticket */}
+      <Modal
+        open={done !== null}
+        onClose={() => {
+          setDone(null);
+          searchRef.current?.focus();
+        }}
+        title="Venta registrada"
+      >
+        {done && (
+          <div className="space-y-5">
+            <p role="status" className="flex items-center gap-3 rounded-2xl bg-success-soft px-4 py-4 font-semibold text-success">
+              <CheckCircle size={28} weight="fill" aria-hidden className="shrink-0" />
+              <span>
+                Venta N° {done.ticketNumber} registrada · {formatMoney(done.total)}
+              </span>
+            </p>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                variant="secondary"
+                data-autofocus
+                onClick={() => {
+                  setDone(null);
+                  searchRef.current?.focus();
+                }}
+              >
+                Nueva venta
+              </Button>
+              <Link href={`/admin/ventas/${done.saleId}`} className={buttonClass("primary")}>
+                <Receipt size={18} aria-hidden /> Ver ticket
+              </Link>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section aria-label="Productos de la venta" className="space-y-4">
