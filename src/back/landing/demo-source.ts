@@ -169,6 +169,7 @@ const ALL: PublicProduct[] = PRODUCTS.map((p, pi) => {
     in_stock: variants.some((v) => v.in_stock),
     is_featured: false,
     show_in_news: true,
+    customization_label: null,
     web_order: null,
   };
 });
@@ -200,8 +201,11 @@ export const demoSource: CatalogSource = {
     // Sin WhatsApp a propósito: el demo no debe mandar pedidos a un número real
     return { ...EMPTY_STORE, tagline: "Todo para tu ronda de mate" };
   },
-  async homeTexts() {
-    return {};
+  async promotions() {
+    return [];
+  },
+  async promotionProductIds() {
+    return [];
   },
   async categories() {
     return CATEGORIES.map((c) => ({ ...c, product_count: ALL.filter((p) => p.category_slug === c.slug).length }));

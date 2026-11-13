@@ -4,16 +4,18 @@ import {
   ArrowRight,
   CaretDoubleDown,
   CaretRight,
+  InstagramLogo,
+  PencilSimpleLine,
   ChatCircleDots,
   Gift,
   ShoppingCartSimple,
   Storefront,
   WhatsappLogo,
 } from "@phosphor-icons/react/dist/ssr";
-import type { HomeData, PublicCategory, PublicProduct } from "@/shared/types";
+import type { HomeData, PublicCategory, PublicProduct, PublicPromotion } from "@/shared/types";
 import { ProductCard, ProductGrid } from "../catalog/product-card";
-import type { HomeContent } from "@/shared/home-content";
-import { BENEFITS, BLOG_POSTS, BRANDS, HERO } from "../content";
+import { t } from "@/shared/home-content";
+import { BENEFITS, BLOG_POSTS, HERO, INSTAGRAM_POSTS, INSTAGRAM_URL } from "../content";
 import { CategoryCarousel } from "./category-carousel";
 import { HeroBrew } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
@@ -35,88 +37,153 @@ function uniqueProducts(products: PublicProduct[]) {
   return products.filter((p, i) => products.findIndex((q) => q.id === p.id) === i);
 }
 
-/** Título, etiqueta y texto de una sección, con los textos que el usuario cambió desde el panel. */
-const heading = (c: HomeContent, id: string): SectionHeadingProps => ({
-  eyebrow: c.t(`${id}.eyebrow`),
-  title: c.t(`${id}.title`),
-  text: c.t(`${id}.text`),
+/** Título, etiqueta y texto de una sección (ver shared/home-content.ts). */
+const heading = (id: "featured" | "offers" | "bestSellers" | "newest" | "instagram" | "blog"): SectionHeadingProps => ({
+  eyebrow: t(`${id}.eyebrow`),
+  title: t(`${id}.title`),
+  text: t(`${id}.text`),
 });
 
-export function HomeScreen({ data, categories, content }: { data: HomeData; categories: PublicCategory[]; content: HomeContent }) {
+export function HomeScreen({ data, categories, promotions }: { data: HomeData; categories: PublicCategory[]; promotions: PublicPromotion[] }) {
   const featuredIds = new Set(data.featured.map((p) => p.id));
   return (
     <>
-      <Hero content={content} />
-      <Categories categories={categories} content={content} />
+      <Hero />
+      <Categories categories={categories} />
+      <PromoCards promotions={promotions.filter((p) => p.show_card)} />
       {/* Con ofertas (precio anterior cargado): destacados en su grilla y las ofertas al lado de los beneficios */}
       {data.offers.length > 0 ? (
         <>
           {data.featured.length > 0 && (
             <section id="destacados" className={`${container} mt-24 scroll-mt-28`}>
-              <SectionHeading {...heading(content, "featured")} />
+              <SectionHeading {...heading("featured")} />
               <ProductGrid products={data.featured.slice(0, 8)} reveal />
             </section>
           )}
-          <Offers heading={heading(content, "offers")} products={data.offers.slice(0, 3)} />
+          <Offers heading={heading("offers")} products={data.offers.slice(0, 4)} />
         </>
       ) : (
         /* Sin ofertas: los destacados van al lado de los beneficios (el resto, debajo). Si tampoco hay destacados,
            se usan los más vendidos y las novedades para que la sección no quede vacía */
         <Offers
-          heading={heading(content, "featured")}
-          products={(featuredIds.size > 0 ? data.featured : uniqueProducts([...data.bestSellers, ...data.newest])).slice(0, 3)}
-          more={data.featured.slice(3, 8)}
+          heading={heading("featured")}
+          products={(featuredIds.size > 0 ? data.featured : uniqueProducts([...data.bestSellers, ...data.newest])).slice(0, 4)}
+          more={data.featured.slice(4, 8)}
         />
       )}
-      <Ritual combosHref={categoryHref(categories, "combo")} content={content} />
+      <Engraving href={categoryHref(categories, "grabado")} />
+      <section className={`${container} mt-24`}>
+        <div className="fx-vapor">
+          <BenefitsCard />
+        </div>
+      </section>
+      <Ritual combosHref={categoryHref(categories, "combo")} />
       {data.bestSellers.length > 0 && (
         <section className={`${container} mt-24`}>
-          <SectionHeading {...heading(content, "bestSellers")} />
+          <SectionHeading {...heading("bestSellers")} />
           <ProductGrid products={data.bestSellers} reveal />
         </section>
       )}
-      <Brands content={content} />
       {data.newest.length > 0 && (
         <section className={`${container} mt-24`}>
-          <SectionHeading {...heading(content, "newest")} />
+          <SectionHeading {...heading("newest")} />
           <ProductGrid products={data.newest} reveal />
         </section>
       )}
-      <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} content={content} />
-      <Blog content={content} />
+      <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
+      <Instagram />
+      <Blog />
     </>
   );
 }
 
-function Brands({ content }: { content: HomeContent }) {
+const dateFormat = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", timeZone: "America/Argentina/Buenos_Aires" });
+
+/** Cards de promociones vigentes (fecha especial, Cyber Monday…): se cargan en el panel y salen solas entre sus fechas. */
+function PromoCards({ promotions }: { promotions: PublicPromotion[] }) {
+  if (promotions.length === 0) return null;
   return (
-    <section className={`${container} mt-24`}>
-      <SectionHeading {...heading(content, "brands")} />
-      {/* Carrusel que desfila solo: la lista va dos veces seguidas (la copia, oculta para lectores de pantalla) */}
-      <div className="marquee overflow-hidden">
-        <div className="marquee-track flex w-max">
-          {[0, 1].map((copy) => (
-            <ul key={copy} aria-hidden={copy === 1 || undefined} className="flex shrink-0 items-center">
-              {BRANDS.map((brand) => (
-                <li
-                  key={brand}
-                  className="whitespace-nowrap px-8 font-display text-xl font-bold text-muted/45 transition-colors hover:text-primary sm:px-10 sm:text-2xl"
-                >
-                  {brand}
-                </li>
-              ))}
-            </ul>
-          ))}
+    <section id="promociones" className={`${container} mt-12 grid scroll-mt-28 gap-6 ${promotions.length > 1 ? "lg:grid-cols-2" : ""}`}>
+      {promotions.slice(0, 2).map((promo, i) => (
+        <article
+          key={promo.id}
+          style={{ "--i": i } as React.CSSProperties}
+          className="fx-vapor flex flex-col items-start gap-4 rounded-[2rem] bg-primary-deep p-8 text-white sm:p-10"
+        >
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-bold">
+            <Gift size={16} weight="bold" aria-hidden />
+            {promo.ends_at ? `Hasta el ${dateFormat.format(new Date(promo.ends_at))}` : "Promo vigente"}
+          </p>
+          <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.2rem]">{promo.card_title || promo.name}</h2>
+          {(promo.card_text || promo.description) && <p className="max-w-xl text-white/85">{promo.card_text || promo.description}</p>}
+          <Link
+            href={`/tienda?promo=${promo.slug}`}
+            className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-primary-deep transition-colors hover:bg-primary-soft"
+          >
+            {promo.card_cta || "Ver promo"} <ArrowRight size={18} weight="bold" aria-hidden />
+          </Link>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+/** Invitación al grabado personalizado: lleva a los productos que se pueden grabar. */
+function Engraving({ href }: { href: string }) {
+  return (
+    <section id="grabado" className={`${container} mt-24 scroll-mt-28`}>
+      <div className="fx-vapor grid items-center gap-8 rounded-[2rem] bg-surface p-8 sm:p-12 lg:grid-cols-[auto_1fr_auto]">
+        <span className="grid size-20 place-items-center rounded-full bg-primary-soft text-primary" aria-hidden>
+          <PencilSimpleLine size={40} weight="duotone" />
+        </span>
+        <div>
+          <p className="text-sm font-extrabold uppercase tracking-[0.15em] text-primary">{t("engraving.eyebrow")}</p>
+          <h2 className="mt-2 font-display text-2xl font-bold leading-tight sm:text-[2rem]">{t("engraving.title")}</h2>
+          <p className="mt-3 max-w-2xl text-muted">{t("engraving.text")}</p>
         </div>
+        <Link href={href} className={btnPrimary}>
+          Ver productos <ArrowRight size={18} weight="bold" aria-hidden />
+        </Link>
       </div>
     </section>
   );
 }
 
-function Blog({ content }: { content: HomeContent }) {
+function Instagram() {
+  if (INSTAGRAM_POSTS.length === 0) return null;
+  return (
+    <section id="instagram" className={`${container} mt-24 scroll-mt-28`}>
+      <SectionHeading {...heading("instagram")} />
+      <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
+        {INSTAGRAM_POSTS.slice(0, 6).map((post, i) => (
+          <li key={post.url} style={{ "--i": i } as React.CSSProperties} className="fx-vapor">
+            <a
+              href={post.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative block aspect-square overflow-hidden rounded-2xl bg-primary-soft"
+            >
+              <Image src={post.image} alt={post.alt} fill sizes="(min-width: 1024px) 14vw, (min-width: 768px) 30vw, 45vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+              <span className="absolute inset-0 grid place-items-center bg-primary-deep/0 text-white opacity-0 transition group-hover:bg-primary-deep/50 group-hover:opacity-100">
+                <InstagramLogo size={32} weight="bold" aria-hidden />
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-8 text-center">
+        <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className={btnOutline}>
+          <InstagramLogo size={18} weight="bold" aria-hidden /> Ver más en Instagram
+        </a>
+      </div>
+    </section>
+  );
+}
+
+function Blog() {
   return (
     <section id="blog" className={`${container} mt-24 scroll-mt-28`}>
-      <SectionHeading {...heading(content, "blog")} />
+      <SectionHeading {...heading("blog")} />
       <div className="grid gap-6 md:grid-cols-3">
         {BLOG_POSTS.slice(0, 3).map((post, i) => (
           <article
@@ -145,7 +212,7 @@ function Blog({ content }: { content: HomeContent }) {
   );
 }
 
-function Hero({ content }: { content: HomeContent }) {
+function Hero() {
   return (
     <section className="relative isolate">
       {/* Brillo verde suave detrás de la foto, como en el diseño */}
@@ -161,15 +228,15 @@ function Hero({ content }: { content: HomeContent }) {
           </div>
           <p className="fx-pop absolute -bottom-5 left-6 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold shadow-md">
             <WhatsappLogo size={18} weight="fill" className="text-primary" aria-hidden />
-            {content.t("hero.badge")}
+            {t("hero.badge")}
           </p>
         </div>
 
         <div className="lg:pl-4">
           <h1 style={{ "--i": 1 } as React.CSSProperties} className="fx-rise max-w-xl font-display text-4xl font-extrabold leading-[1.15] text-foreground sm:text-5xl lg:text-[3.15rem]">
-            {content.t("hero.titleStart")} <span className="text-primary">{content.t("hero.titleHighlight")}</span> {content.t("hero.titleEnd")}
+            {t("hero.titleStart")} <span className="text-primary">{t("hero.titleHighlight")}</span> {t("hero.titleEnd")}
           </h1>
-          <p style={{ "--i": 2 } as React.CSSProperties} className="fx-rise mt-6 max-w-xl leading-relaxed text-muted lg:text-[1.05rem]">{content.t("hero.text")}</p>
+          <p style={{ "--i": 2 } as React.CSSProperties} className="fx-rise mt-6 max-w-xl leading-relaxed text-muted lg:text-[1.05rem]">{t("hero.text")}</p>
           <div style={{ "--i": 3 } as React.CSSProperties} className="fx-rise mt-8 flex flex-wrap gap-3">
             {/* prefetch: en producción la tienda ya está cargada cuando se hace clic */}
             <Link href="/tienda" prefetch className={btnPrimary}>
@@ -188,13 +255,13 @@ function Hero({ content }: { content: HomeContent }) {
   );
 }
 
-function Categories({ categories, content }: { categories: PublicCategory[]; content: HomeContent }) {
+function Categories({ categories }: { categories: PublicCategory[] }) {
   if (categories.length === 0) return null;
   return (
     <section className={`${container} mt-20`}>
       <div className="fx-pour relative px-1 sm:px-6">
         <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
-        <SectionHeading title={content.t("categories.title")} text={content.t("categories.text")} compact />
+        <SectionHeading title={t("categories.title")} text={t("categories.text")} compact />
         <CategoryCarousel categories={categories} />
       </div>
     </section>
@@ -203,17 +270,15 @@ function Categories({ categories, content }: { categories: PublicCategory[]; con
 
 const BENEFIT_ICONS = { cart: ShoppingCartSimple, whatsapp: WhatsappLogo, chat: ChatCircleDots, store: Storefront };
 
-/** `wide`: sin productos al lado se muestra como franja (título a la izquierda y los 4 beneficios en fila). */
-function BenefitsCard({ wide = false }: { wide?: boolean }) {
+/** Card propia: título a la izquierda y los 4 beneficios en fila. */
+function BenefitsCard() {
   return (
     <div
       id="como-comprar"
-      className={`flex w-full scroll-mt-28 flex-col rounded-[var(--radius-card)] bg-primary p-6 text-white ${
-        wide ? "gap-5 sm:p-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-center lg:gap-8" : ""
-      }`}
+      className="flex w-full scroll-mt-28 flex-col gap-5 rounded-[var(--radius-card)] bg-primary p-6 text-white sm:p-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-center lg:gap-8"
     >
-      <h3 className={`font-display font-bold leading-tight ${wide ? "text-[1.6rem]" : "text-[1.4rem]"}`}>{BENEFITS.title}</h3>
-      <ul className={`grid grid-cols-2 gap-3 ${wide ? "sm:grid-cols-4 lg:row-span-2" : "mt-5"}`}>
+      <h3 className="font-display text-[1.6rem] font-bold leading-tight">{BENEFITS.title}</h3>
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:row-span-2">
         {BENEFITS.items.map(({ icon, text }) => {
           const Icon = BENEFIT_ICONS[icon];
           return (
@@ -229,7 +294,7 @@ function BenefitsCard({ wide = false }: { wide?: boolean }) {
       </ul>
       <Link
         href="/tienda"
-        className={`${wide ? "self-start" : "mt-5"} inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-white/35 px-5 py-2.5 font-bold transition-colors hover:bg-white hover:text-primary`}
+        className="self-start inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-white/35 px-5 py-2.5 font-bold transition-colors hover:bg-white hover:text-primary"
       >
         <CaretRight size={16} weight="bold" aria-hidden /> Conocé más
       </Link>
@@ -237,45 +302,33 @@ function BenefitsCard({ wide = false }: { wide?: boolean }) {
   );
 }
 
-/**
- * Hasta 3 productos y la tarjeta de beneficios, en 4 columnas iguales (centradas si hay menos).
- * `more`: productos que no entran en esa fila (destacados del 4.º en adelante), en grilla debajo.
- */
+/** Hasta 4 productos en una fila. `more`: los que no entran (destacados del 5.º en adelante), en grilla debajo. */
 function Offers({ heading, products, more = [] }: { heading: SectionHeadingProps; products: PublicProduct[]; more?: PublicProduct[] }) {
   const item = "w-full sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]";
-  // Sola, la tarjeta angosta quedaba huérfana en el medio: se muestra como franja con una aparición suave
-  if (products.length === 0) {
-    return (
-      <section id="ofertas" className={`${container} mt-24 scroll-mt-28`}>
-        <div className="fx-vapor">
-          <BenefitsCard wide />
-        </div>
-      </section>
-    );
-  }
   return (
     <section id="ofertas" className={`${container} mt-24 scroll-mt-28`}>
-      <SectionHeading {...heading} />
-      <div className="flex flex-wrap justify-center gap-6">
-        {products.map((p, i) => (
-          <div key={p.id} style={{ "--i": i } as React.CSSProperties} className={`fx-deal flex ${item}`}>
-            <ProductCard product={p} />
+      {products.length > 0 && (
+        <>
+          <SectionHeading {...heading} />
+          <div className="flex flex-wrap justify-center gap-6">
+            {products.map((p, i) => (
+              <div key={p.id} style={{ "--i": i } as React.CSSProperties} className={`fx-deal flex ${item}`}>
+                <ProductCard product={p} />
+              </div>
+            ))}
           </div>
-        ))}
-        <div className={`fx-flip flex ${item}`}>
-          <BenefitsCard />
-        </div>
-      </div>
-      {more.length > 0 && (
-        <div className="mt-6">
-          <ProductGrid products={more} reveal />
-        </div>
+          {more.length > 0 && (
+            <div className="mt-6">
+              <ProductGrid products={more} reveal />
+            </div>
+          )}
+        </>
       )}
     </section>
   );
 }
 
-function Ritual({ combosHref, content }: { combosHref: string; content: HomeContent }) {
+function Ritual({ combosHref }: { combosHref: string }) {
   const photo = "relative aspect-square w-1/2 max-w-60 overflow-hidden rounded-[1.75rem] bg-surface shadow-[0_14px_30px_rgb(11_17_25/0.14)]";
   return (
     <section className={`${container} relative isolate mt-24`}>
@@ -295,11 +348,11 @@ function Ritual({ combosHref, content }: { combosHref: string; content: HomeCont
         </div>
         <div className="px-2">
           <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.6rem] sm:leading-[1.2]">
-            {content.t("ritual.title")}
+            {t("ritual.title")}
             <br />
-            <span className="marker fx-marker">{content.t("ritual.titleBreak")}</span>
+            <span className="marker fx-marker">{t("ritual.titleBreak")}</span>
           </h2>
-          <p className="mt-5 max-w-[29rem] text-[1.05rem] leading-relaxed text-muted">{content.t("ritual.text")}</p>
+          <p className="mt-5 max-w-[29rem] text-[1.05rem] leading-relaxed text-muted">{t("ritual.text")}</p>
           <Link href={combosHref} className={`${btnPrimary} mt-8`}>
             <Gift size={18} weight="bold" aria-hidden /> Ver combos
           </Link>
@@ -309,22 +362,22 @@ function Ritual({ combosHref, content }: { combosHref: string; content: HomeCont
   );
 }
 
-function Promos({ bombillasHref, combosHref, content }: { bombillasHref: string; combosHref: string; content: HomeContent }) {
+function Promos({ bombillasHref, combosHref }: { bombillasHref: string; combosHref: string }) {
   return (
     <section className={`${container} mt-24 grid gap-6 lg:grid-cols-2`}>
       <PromoCard
         dark
         className="fx-from-left"
-        title={content.t("promoBombillas.title")}
-        text={content.t("promoBombillas.text")}
+        title={t("promoBombillas.title")}
+        text={t("promoBombillas.text")}
         href={bombillasHref}
         cta="Ver bombillas"
         image="/landing/promo-bombillas.svg"
       />
       <PromoCard
         className="fx-from-right"
-        title={content.t("promoCombos.title")}
-        text={content.t("promoCombos.text")}
+        title={t("promoCombos.title")}
+        text={t("promoCombos.text")}
         href={combosHref} cta="Ver combos" image="/landing/promo-combos.svg" />
     </section>
   );

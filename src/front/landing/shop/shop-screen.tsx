@@ -5,6 +5,7 @@ import { buildQuery } from "@/shared/query";
 import type {
   PublicCategory,
   PublicProduct,
+  PublicPromotion,
   ShopFilters,
 } from "@/shared/types";
 import { ProductGrid } from "../catalog/product-card";
@@ -16,22 +17,26 @@ export function ShopScreen({
   list,
   filters,
   categories,
+  promotion,
   pageSize,
 }: {
   list: { rows: PublicProduct[]; total: number };
   filters: ShopFilters;
   categories: PublicCategory[];
+  /** La promoción vigente que se está viendo (?promo=...), si hay. */
+  promotion: PublicPromotion | null;
   pageSize: number;
 }) {
   const current = categories.find((c) => c.slug === filters.category);
-  const title = filters.offers ? "Ofertas" : (current?.name ?? "Tienda");
+  const title = filters.promo ? (promotion?.name ?? "Promoción") : filters.offers ? "Ofertas" : (current?.name ?? "Tienda");
   const params = {
     q: filters.q,
     categoria: filters.category,
     orden: filters.sort === "destacados" ? undefined : filters.sort,
     ofertas: filters.offers ? "1" : undefined,
+    promo: filters.promo || undefined,
   };
-  const hasFilters = Boolean(filters.q || filters.category || filters.offers);
+  const hasFilters = Boolean(filters.q || filters.category || filters.offers || filters.promo);
 
   return (
     <>
@@ -49,6 +54,7 @@ export function ShopScreen({
               {list.total} {list.total === 1 ? "producto" : "productos"}
               {filters.q && <> para “{filters.q}”</>}
             </p>
+            {promotion?.description && <p className="mt-2 max-w-2xl text-muted">{promotion.description}</p>}
           </div>
         </header>
 

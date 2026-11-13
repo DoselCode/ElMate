@@ -1,13 +1,13 @@
 /**
  * Textos fijos de la web pública que no se editan desde el panel. Los de la portada y las secciones de la home
- * viven en shared/home-content.ts (con su valor por defecto) y se cambian desde "Textos de la web".
+ * viven en shared/home-content.ts (con su valor por defecto).
  * Los datos del local (WhatsApp, dirección, redes, horarios) se cargan desde el panel ("Datos del local");
  * FOOTER_PLACEHOLDER solo completa el footer mientras esos datos estén vacíos.
  *
  * Revisar con el cliente: los beneficios describen cómo se compra; no prometen envíos ni plazos.
  */
 
-/** Imagen de la portada. Los textos de la home se editan desde el panel (shared/home-content.ts). */
+/** Imagen de la portada. Los textos de la home están en shared/home-content.ts. */
 export const HERO = {
   image: "/landing/hero.jpg",
   imageAlt: "Un termo cebando agua en un mate con bombilla",
@@ -24,8 +24,23 @@ export const BENEFITS = {
   ],
 } as const;
 
-/** Marcas de ejemplo del diseño (fila de "Marcas que nos eligen"). Revisar con el cliente. */
-export const BRANDS = ["Yerbatal", "Matera Sur", "La Calabacera", "Termos Andes", "Bambuco", "Algarrobo & Co."] as const;
+/** Perfil de Instagram de la tienda (el de "Datos del local" tiene prioridad en el footer). */
+export const INSTAGRAM_URL = "https://www.instagram.com/elmate.cordoba/";
+
+export type InstagramPost = {
+  /** Link al posteo en Instagram. */
+  url: string;
+  /** Imagen en public/landing/instagram/ (ej. "/landing/instagram/posteo-1.jpg"). */
+  image: string;
+  /** Texto corto para lectores de pantalla. */
+  alt: string;
+};
+
+/**
+ * Últimos posteos, cargados a mano: para actualizarlos, sumar acá el link y la imagen del posteo nuevo
+ * (el más reciente primero; la home muestra hasta 6). Con la lista vacía la sección no aparece.
+ */
+export const INSTAGRAM_POSTS: InstagramPost[] = [];
 
 export type BlogPost = { slug: string; tag: string; title: string; excerpt: string; image: string; body: string[] };
 
@@ -87,7 +102,7 @@ export const FOOTER_PLACEHOLDER = {
   address: "Av. Siempre Verde 1234, Local 7 — Buenos Aires",
   phone: "+54 11 5555-1234",
   email: "hola@elmate.com.ar",
-  instagram_url: "https://www.instagram.com/",
+  instagram_url: "https://www.instagram.com/elmate.cordoba/",
   facebook_url: "https://www.facebook.com/",
   hours_weekdays: "9 a 19 h",
   hours_saturday: "9 a 13 h",

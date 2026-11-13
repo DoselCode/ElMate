@@ -35,6 +35,7 @@ export function ShopFiltersBar({ filters }: { filters: ShopFilters }) {
     const query = buildQuery({
       q: next.q.trim(),
       categoria: filters.category,
+      promo: filters.promo,
       orden: next.sort === "destacados" ? undefined : next.sort,
       ofertas: next.offers ? "1" : undefined,
     });

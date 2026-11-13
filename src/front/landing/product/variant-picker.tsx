@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { CheckCircle, ShoppingCartSimple, XCircle } from "@phosphor-icons/react";
 import type { PublicPaymentMethod, PublicProduct, PublicVariant } from "@/shared/types";
+import { MAX_NOTE } from "@/shared/cart";
+import { inputClass } from "@/front/shared/ui/field";
 import { QuantityStepper } from "../cart/cart-drawer";
 import { useCart } from "../cart/cart-provider";
 import { formatMoney } from "@/shared/format";
@@ -26,6 +28,9 @@ export function VariantPicker({
   const initial = variants.find((v) => v.in_stock) ?? variants[0];
   const [selected, setSelected] = useState<Record<string, string>>(initial?.attributes ?? {});
   const [quantity, setQuantity] = useState(1);
+  const [note, setNote] = useState("");
+  const [noteError, setNoteError] = useState(false);
+  const label = product.customization_label;
 
   const matches = (v: PublicVariant, sel: Record<string, string>) => options.every((o) => v.attributes[o] === sel[o]);
   const variant = variants.find((v) => matches(v, selected)) ?? null;
@@ -95,13 +100,38 @@ export function VariantPicker({
         </p>
       )}
 
+      {label && (
+        <div>
+          <label htmlFor="customization" className="mb-2 block text-base font-bold">
+            {label}
+          </label>
+          <textarea
+            id="customization"
+            value={note}
+            onChange={(e) => {
+              setNote(e.target.value);
+              setNoteError(false);
+            }}
+            maxLength={MAX_NOTE}
+            rows={2}
+            aria-invalid={noteError || undefined}
+            placeholder="Escribilo acá, tal cual lo querés"
+            className={inputClass}
+          />
+          <p className={`mt-1 text-sm ${noteError ? "font-semibold text-danger" : "text-muted"}`}>
+            {noteError ? "Completá este detalle para agregarlo al pedido." : "Te lo confirmamos por WhatsApp antes de hacerlo."}
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <QuantityStepper value={quantity} onChange={(q) => setQuantity(Math.max(1, q))} label={product.name} />
         <button
           type="button"
           disabled={!variant?.in_stock}
-          onClick={() =>
-            variant &&
+          onClick={() => {
+            if (!variant) return;
+            if (label && !note.trim()) return setNoteError(true);
             add(
               {
                 variantId: variant.id,
@@ -111,10 +141,11 @@ export function VariantPicker({
                 variantLabel: variant.label,
                 price: variant.price,
                 image: variant.image ?? product.images[0] ?? null,
+                ...(label ? { note: note.trim() } : {}),
               },
               quantity,
-            )
-          }
+            );
+          }}
           className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-bold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
         >
           <ShoppingCartSimple size={20} weight="bold" aria-hidden /> Agregar al carrito

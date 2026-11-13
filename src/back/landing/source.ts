@@ -1,5 +1,4 @@
-import type { HomeTexts } from "@/shared/home-content";
-import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, ShopSort, StoreInfo } from "@/shared/types";
+import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, ShopSort, StoreInfo } from "@/shared/types";
 
 /**
  * Consultas básicas del catálogo público. Hay dos implementaciones con el mismo contrato:
@@ -23,9 +22,11 @@ export type ProductQuery = {
 
 export interface CatalogSource {
   storeInfo(): Promise<StoreInfo>;
-  /** Textos de la home que el usuario cambió desde el panel (el resto usa los de por defecto). */
-  homeTexts(): Promise<HomeTexts>;
   categories(): Promise<PublicCategory[]>;
+  /** Promociones vigentes ahora (con o sin card en la home). */
+  promotions(): Promise<PublicPromotion[]>;
+  /** ids de los productos de una promoción vigente. */
+  promotionProductIds(slug: string): Promise<string[]>;
   products(query: ProductQuery): Promise<{ rows: PublicProduct[]; total: number }>;
   productBySlug(slug: string): Promise<PublicProduct | null>;
   variants(productId: string): Promise<PublicVariant[]>;

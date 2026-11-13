@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Minus, Plus, ShoppingCart, Trash, WhatsappLogo, X } from "@phosphor-icons/react";
 import { inputClass } from "@/front/shared/ui/field";
 import { formatMoney } from "@/shared/format";
-import { MAX_QUANTITY } from "@/shared/cart";
+import { lineKey, MAX_QUANTITY } from "@/shared/cart";
 import { buildOrderMessage, whatsappLink } from "@/shared/whatsapp";
 import { ProductThumb } from "../catalog/product-image";
 import { useCart } from "./cart-provider";
@@ -73,7 +73,7 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
             <ul className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-5 py-4">
               {cart.items.map((item, i) => (
                 <li
-                  key={item.variantId}
+                  key={lineKey(item)}
                   style={{ "--i": Math.min(i, 8) } as React.CSSProperties}
                   className="cart-item flex gap-3 rounded-2xl bg-surface p-3 shadow-sm"
                 >
@@ -87,10 +87,11 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
                       {item.name}
                     </Link>
                     {item.variantLabel && <p className="text-xs text-muted">{item.variantLabel}</p>}
+                    {item.note && <p className="mt-0.5 break-words text-xs font-semibold text-primary">✏️ {item.note}</p>}
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <QuantityStepper
                         value={item.quantity}
-                        onChange={(q) => cart.setQty(item.variantId, q)}
+                        onChange={(q) => cart.setQty(lineKey(item), q)}
                         label={item.name}
                       />
                       <p className="font-bold tabular-nums">{formatMoney(item.price * item.quantity)}</p>
@@ -98,7 +99,7 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
                   </div>
                   <button
                     type="button"
-                    onClick={() => cart.remove(item.variantId)}
+                    onClick={() => cart.remove(lineKey(item))}
                     aria-label={`Quitar ${item.name} del carrito`}
                     className="grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-full text-muted hover:bg-danger-soft hover:text-danger"
                   >

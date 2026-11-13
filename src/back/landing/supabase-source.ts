@@ -1,7 +1,6 @@
 import "server-only";
 import { createPublicClient } from "@/back/shared/supabase/public";
-import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, StoreInfo } from "@/shared/types";
-import { cleanHomeTexts, type HomeTexts } from "@/shared/home-content";
+import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, StoreInfo } from "@/shared/types";
 import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
 
 /** Catálogo real: solo lee las vistas public_* (nunca las tablas, que tienen costos y stock exacto). */
@@ -26,12 +25,6 @@ export const supabaseSource: CatalogSource = {
     return { ...EMPTY_STORE, ...(data ?? {}) };
   },
 
-  async homeTexts(): Promise<HomeTexts> {
-    const { data, error } = await createPublicClient().from("public_home_content").select("texts").maybeSingle();
-    if (error) throw error;
-    return cleanHomeTexts(data?.texts);
-  },
-
   async categories(): Promise<PublicCategory[]> {
     const { data, error } = await createPublicClient()
       .from("public_categories")
@@ -40,6 +33,18 @@ export const supabaseSource: CatalogSource = {
       .order("name");
     if (error) throw error;
     return (data ?? []) as PublicCategory[];
+  },
+
+  async promotions(): Promise<PublicPromotion[]> {
+    const { data, error } = await createPublicClient().from("public_promotions").select("*").order("starts_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as PublicPromotion[];
+  },
+
+  async promotionProductIds(slug: string): Promise<string[]> {
+    const { data, error } = await createPublicClient().from("public_promotion_products").select("product_id").eq("promotion_slug", slug);
+    if (error) throw error;
+    return (data ?? []).map((r) => r.product_id as string);
   },
 
   async products(q: ProductQuery) {
