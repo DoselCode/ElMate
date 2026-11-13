@@ -1,7 +1,6 @@
 import "server-only";
 import { createPublicClient } from "@/back/shared/supabase/public";
 import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, StoreInfo } from "@/shared/types";
-import { cleanHomeTexts, type HomeTexts } from "@/shared/home-content";
 import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
 
 /** Catálogo real: solo lee las vistas public_* (nunca las tablas, que tienen costos y stock exacto). */
@@ -24,12 +23,6 @@ export const supabaseSource: CatalogSource = {
     const { data, error } = await createPublicClient().from("public_store_info").select("*").maybeSingle();
     if (error) throw error;
     return { ...EMPTY_STORE, ...(data ?? {}) };
-  },
-
-  async homeTexts(): Promise<HomeTexts> {
-    const { data, error } = await createPublicClient().from("public_home_content").select("texts").maybeSingle();
-    if (error) throw error;
-    return cleanHomeTexts(data?.texts);
   },
 
   async categories(): Promise<PublicCategory[]> {

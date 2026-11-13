@@ -1,7 +1,6 @@
 import "server-only";
 import { cache } from "react";
 import { pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
-import { cleanHomeTexts, homeContent, type HomeContent } from "@/shared/home-content";
 import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, SearchResult, ShopFilters, ShopSort, StoreInfo } from "@/shared/types";
 import { demoSource } from "./demo-source";
 import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
@@ -33,11 +32,6 @@ const products = (q: ProductQuery) => safe("productos", { rows: [], total: 0 }, 
 // cache(): el layout y la página piden lo mismo en una visita; se consulta una sola vez
 export const getStoreInfo = cache((): Promise<StoreInfo> => safe("datos del local", EMPTY_STORE, () => source.storeInfo()));
 export const getCategories = cache((): Promise<PublicCategory[]> => safe("categorías", [], () => source.categories()));
-
-/** Textos de la home (los del panel o, donde no hay, los de por defecto). */
-export const getHomeContent = cache(
-  (): Promise<HomeContent> => safe("textos de la home", {}, () => source.homeTexts()).then((t) => homeContent(cleanHomeTexts(t))),
-);
 
 export async function getHomeData(): Promise<HomeData> {
   const [featured, offers, newest, bestIds] = await Promise.all([

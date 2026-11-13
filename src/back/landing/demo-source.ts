@@ -200,9 +200,6 @@ export const demoSource: CatalogSource = {
     // Sin WhatsApp a propósito: el demo no debe mandar pedidos a un número real
     return { ...EMPTY_STORE, tagline: "Todo para tu ronda de mate" };
   },
-  async homeTexts() {
-    return {};
-  },
   async categories() {
     return CATEGORIES.map((c) => ({ ...c, product_count: ALL.filter((p) => p.category_slug === c.slug).length }));
   },

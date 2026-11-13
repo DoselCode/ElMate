@@ -1,4 +1,3 @@
-import type { HomeTexts } from "@/shared/home-content";
 import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, ShopSort, StoreInfo } from "@/shared/types";
 
 /**
@@ -23,8 +22,6 @@ export type ProductQuery = {
 
 export interface CatalogSource {
   storeInfo(): Promise<StoreInfo>;
-  /** Textos de la home que el usuario cambió desde el panel (el resto usa los de por defecto). */
-  homeTexts(): Promise<HomeTexts>;
   categories(): Promise<PublicCategory[]>;
   products(query: ProductQuery): Promise<{ rows: PublicProduct[]; total: number }>;
   productBySlug(slug: string): Promise<PublicProduct | null>;
