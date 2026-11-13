@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
+  CaretDoubleDown,
   CaretRight,
   InstagramLogo,
   PencilSimpleLine,
@@ -15,6 +16,7 @@ import type { HomeData, PublicCategory, PublicProduct, PublicPromotion } from "@
 import { ProductGrid } from "../catalog/product-card";
 import { t } from "@/shared/home-content";
 import { BENEFITS, HERO, INSTAGRAM_POSTS, INSTAGRAM_URL } from "../content";
+import { CategoryCarousel } from "./category-carousel";
 import { HeroBrew } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
 
@@ -44,9 +46,10 @@ export function HomeScreen({ data, categories, promotions }: { data: HomeData; c
   return (
     <>
       <Hero />
-      {/* Las ofertas (productos con precio anterior o en promo) van primero, donde antes estaban las categorías */}
+      {/* Las ofertas (productos con precio anterior o en promo) van primero; las categorías vienen después */}
       <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
       <PromoCards promotions={promotions.filter((p) => p.show_card)} />
+      <Categories categories={categories} />
       <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
       <Engraving href={categoryHref(categories, "grabado")} />
       <section className={`${container} mt-24`}>
@@ -217,6 +220,19 @@ function BenefitsCard() {
         <CaretRight size={16} weight="bold" aria-hidden /> Conocé más
       </Link>
     </div>
+  );
+}
+
+function Categories({ categories }: { categories: PublicCategory[] }) {
+  if (categories.length === 0) return null;
+  return (
+    <section id="categorias" className={`${container} mt-24 scroll-mt-28`}>
+      <div className="fx-pour relative px-1 sm:px-6">
+        <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
+        <SectionHeading title={t("categories.title")} text={t("categories.text")} compact />
+        <CategoryCarousel categories={categories} />
+      </div>
+    </section>
   );
 }
 

@@ -10,6 +10,9 @@ const TEXTS = {
     "En nuestra tienda vas a encontrar de todo para tu ronda: mates de calabaza y algarrobo, termos, bombillas de alpaca, las yerbas más ricas y combos armados para regalar.",
   "hero.badge": "Pedí fácil por WhatsApp",
 
+  "categories.title": "Categorías de productos",
+  "categories.text": "Elegí por dónde empezar tu ronda: cada categoría tiene lo mejor del mundo matero.",
+
   "featured.eyebrow": "Destacados",
   "featured.title": "Productos destacados",
   "featured.text": "Lo que más sale para armar tu ronda.",
