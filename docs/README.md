@@ -24,10 +24,10 @@ Stack: Next.js 16 · TypeScript · Tailwind v4 · Supabase (Postgres, Auth, Stor
 - "Precio anterior" por variante en el formulario de producto.
 - **Datos del local** (`/admin/local`): WhatsApp de pedidos, contacto, redes y horarios que muestra la web.
 
-### 3. Ventas, caja e ingresos (`/admin`) — desarrollado, oculto hasta la entrega final
+### 3. Ventas, caja e ingresos (`/admin`) — entrega final, ya visible
 
-> Según los presupuestos, estas secciones son de la segunda mitad del proyecto: están ocultas en el panel
-> (ver [ALCANCE.md](ALCANCE.md) y `src/shared/features.ts`). Para verlas: `NEXT_PUBLIC_ELMATE_ETAPA2=1`.
+> Según los presupuestos, estas secciones son de la segunda mitad del proyecto y ahora se muestran en el panel
+> (ver [ALCANCE.md](ALCANCE.md) y `src/shared/features.ts`). Para ocultarlas: `NEXT_PUBLIC_ELMATE_ETAPA2=0`.
 
 - **Nueva venta** (`/admin/ventas/nueva`): búsqueda instantánea o lector de código de barras (escanear + Enter), cantidades en kg para granel, descuento, total por cada forma de pago y cobro contra la caja abierta.
 - **Caja** (`/admin/caja`): apertura con efectivo inicial (propone lo que quedó al último cierre), arqueo en vivo, retiros e ingresos de efectivo, cierre con diferencia e historial de cierres.

@@ -8,7 +8,7 @@ import { STAGE_2 } from "@/shared/features";
 import type { Role } from "@/shared/types";
 
 /** Secciones del panel. Para agregar una pantalla nueva, sumarla acá. */
-// stage2: secciones de la entrega final (ver shared/features.ts); se ocultan hasta entonces.
+// stage2: secciones de la entrega final (ver shared/features.ts); se pueden ocultar con NEXT_PUBLIC_ELMATE_ETAPA2=0.
 const ALL_ITEMS = [
   { href: "/admin/ventas/nueva", label: "Nueva venta", icon: ShoppingCart, adminOnly: false, stage2: true },
   { href: "/admin/caja", label: "Caja", icon: CashRegister, adminOnly: false, stage2: true },

@@ -10,11 +10,11 @@ Las dos propuestas cobran el segundo 25 % contra un hito intermedio:
 - **Stock:** "Semana 3: inventario y stock operativos".
 - **Landing:** "Semana 2: diseño y catálogo publicados online".
 
-Lo que está **visible** hoy suma unas **34 h de 68 (50 %)**. Ventas, caja, cierre e ingresos ya están
-desarrollados, pero corresponden a la entrega final: quedan **ocultos** con un interruptor
-(`src/shared/features.ts`). Para verlos en desarrollo, agregar `NEXT_PUBLIC_ELMATE_ETAPA2=1` en `.env.local`.
+La entrega intermedia sumaba unas **34 h de 68 (50 %)**. Ventas, caja, cierre e ingresos corresponden a la entrega
+final y ya están **visibles**. Siguen detrás de un interruptor (`src/shared/features.ts`): con
+`NEXT_PUBLIC_ELMATE_ETAPA2=0` en `.env.local` se vuelven a ocultar.
 
-Referencias: ✅ hecho y visible · 🟡 parcial · 🔒 hecho pero oculto hasta la entrega final · ⏳ pendiente.
+Referencias: ✅ hecho y visible · 🟡 parcial · ⏳ pendiente.
 
 ## Stock ElMate (40 h)
 
@@ -22,9 +22,9 @@ Referencias: ✅ hecho y visible · 🟡 parcial · 🔒 hecho pero oculto hasta
 |---|---|---|---|
 | 1. Control de inventario y stock | 6 | ✅ | Stock al día por variante, ingreso de mercadería, ajustes con motivo obligatorio, recuento, avisos de stock mínimo, historial de movimientos con usuario. |
 | 2. Gestión de precios y productos | 9 | 🟡 | ✅ Catálogo con código, categoría, foto, marca, proveedor y unidad (unidad/kg); precio y costo con % de ganancia (como la lista del local); carga inicial desde Excel (494 productos). ⏳ Actualización masiva de precios por categoría/proveedor, historial de precios, importador de Excel en el panel. |
-| 3. Gestión de caja y ventas | 10 | 🔒 | Pantalla de venta con búsqueda y lector de código de barras, ajuste automático por forma de pago, descuento sobre el total, ticket (no válido como factura), anulación con motivo y usuario. ⏳ Para cerrar el módulo: descuento por producto y en %, y **permitir vender sin stock con advertencia** (hoy la venta se bloquea). |
+| 3. Gestión de caja y ventas | 10 | ✅ | Pantalla de venta con búsqueda y lector de código de barras, ajuste automático por forma de pago, descuento sobre el total, ticket (no válido como factura), anulación con motivo y usuario. ⏳ Para cerrar el módulo: descuento por producto y en %, y **permitir vender sin stock con advertencia** (hoy la venta se bloquea). |
 | 4. Dashboard administrativo | 6 | ⏳ | Indicadores del día, estado de caja, últimos movimientos, ranking de más vendidos y sin movimiento. (La pantalla "Ingresos" mensual ya existe, oculta.) |
-| 5. Cierre de caja y arqueo | 5 | 🔒 | Apertura con efectivo inicial, retiros e ingresos de efectivo, cierre con sobrante/faltante, historial de cierres. |
+| 5. Cierre de caja y arqueo | 5 | ✅ | Apertura con efectivo inicial, retiros e ingresos de efectivo, cierre con sobrante/faltante, historial de cierres. |
 | 6. Infraestructura, despliegue y backups | 2 | 🟡 | Base en Supabase lista. ⏳ Despliegue en Vercel. Backups diarios con 30 días: el plan gratis de Supabase no los incluye (requiere plan Pro). |
 | 7. Puesta en marcha y capacitación | 2 | 🟡 | Catálogo inicial cargado (494 de hasta 500). ⏳ Stock inicial (el Excel no lo trae) y capacitación. |
 
