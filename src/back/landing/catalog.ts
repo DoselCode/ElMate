@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
-import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicVariant, SearchResult, ShopFilters, ShopSort, StoreInfo } from "@/shared/types";
+import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, SearchResult, ShopFilters, ShopSort, StoreInfo } from "@/shared/types";
 import { demoSource } from "./demo-source";
 import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
 import { supabaseSource } from "./supabase-source";
@@ -32,11 +32,13 @@ const products = (q: ProductQuery) => safe("productos", { rows: [], total: 0 }, 
 // cache(): el layout y la página piden lo mismo en una visita; se consulta una sola vez
 export const getStoreInfo = cache((): Promise<StoreInfo> => safe("datos del local", EMPTY_STORE, () => source.storeInfo()));
 export const getCategories = cache((): Promise<PublicCategory[]> => safe("categorías", [], () => source.categories()));
+/** Promociones vigentes ahora. */
+export const getPromotions = cache((): Promise<PublicPromotion[]> => safe("promociones", [], () => source.promotions()));
 
 export async function getHomeData(): Promise<HomeData> {
   const [featured, offers, newest, bestIds] = await Promise.all([
     products({ featuredOnly: true, sort: "destacados", limit: 8 }),
-    products({ onlyOffers: true, sort: "mayor-descuento", limit: 3 }),
+    products({ onlyOffers: true, sort: "mayor-descuento", limit: 4 }),
     products({ sort: "nuevos", inNewsOnly: true, limit: 4 }),
     safe("más vendidos", [] as string[], () => source.bestSellerIds()),
   ]);
@@ -63,12 +65,19 @@ export function parseShopFilters(sp: SearchParams): ShopFilters {
     category: param(sp, "categoria"),
     sort: SORTS.includes(sort) ? sort : "destacados",
     offers: param(sp, "ofertas") === "1",
+    promo: /^[a-z0-9-]{1,80}$/.test(param(sp, "promo")) ? param(sp, "promo") : "",
     page: pageParam(sp),
   };
 }
 
 export async function listShopProducts(f: ShopFilters): Promise<{ rows: PublicProduct[]; total: number }> {
+  let ids: string[] | undefined;
+  if (f.promo) {
+    ids = await safe("los productos de la promoción", [] as string[], () => source.promotionProductIds(f.promo));
+    if (ids.length === 0) return { rows: [], total: 0 };
+  }
   return products({
+    ids,
     q: f.q || undefined,
     category: f.category || undefined,
     onlyOffers: f.offers,

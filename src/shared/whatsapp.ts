@@ -28,7 +28,9 @@ export function buildOrderMessage(
 ): string {
   const lines = items.map((i) => {
     const label = i.variantLabel ? ` (${i.variantLabel})` : "";
-    return `• ${i.quantity} × ${i.name}${label} — ${formatMoney(i.price * i.quantity)}`;
+    const note = i.note ? `
+   ✏️ ${i.note}` : "";
+    return `• ${i.quantity} × ${i.name}${label} — ${formatMoney(i.price * i.quantity)}${note}`;
   });
 
   const parts = [

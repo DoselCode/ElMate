@@ -164,6 +164,7 @@ export function ProductForm({
   const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
   const [showInNews, setShowInNews] = useState(initial?.showInNews ?? true);
   const [webOrder, setWebOrder] = useState(initial?.webOrder === null || initial?.webOrder === undefined ? "" : String(initial.webOrder));
+  const [customizationLabel, setCustomizationLabel] = useState(initial?.customizationLabel ?? "");
   const [images, setImages] = useState<string[]>(initial?.images ?? []);
   const [optionNames, setOptionNames] = useState<string[]>(initial?.optionNames ?? []);
   const [optionDraft, setOptionDraft] = useState("");
@@ -226,6 +227,7 @@ export function ProductForm({
       isFeatured,
       showInNews,
       webOrder: webOrder.trim() === "" ? null : num(webOrder),
+      customizationLabel,
       variants: variants.map((v) => ({
         id: v.id,
         sku: v.sku,
@@ -412,6 +414,16 @@ export function ProductForm({
               hint="Un cartelito corto que se ve sobre la imagen del producto."
               error={err("badge")}
               onChange={(e) => setBadge(e.target.value)}
+            />
+            <TextField
+              id="customization-label"
+              label="Detalle que completa el cliente"
+              value={customizationLabel}
+              maxLength={80}
+              placeholder="Ej: ¿Qué querés grabar?"
+              hint="Si lo completás, en la página del producto el cliente escribe ese detalle (grabado, dedicatoria…) y llega en el pedido por WhatsApp. Vacío = no pide nada."
+              error={err("customizationLabel")}
+              onChange={(e) => setCustomizationLabel(e.target.value)}
             />
             <TextField
               id="web-order"

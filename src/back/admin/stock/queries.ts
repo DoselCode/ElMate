@@ -130,7 +130,7 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
     Promise.all([
       supabase
         .from("products")
-        .select("id, name, description, category_id, supplier_id, brand, unit, track_stock, option_names, images, is_visible, badge, is_featured, show_in_news, web_order")
+        .select("id, name, description, category_id, supplier_id, brand, unit, track_stock, option_names, images, is_visible, badge, is_featured, show_in_news, web_order, customization_label")
         .eq("id", id)
         .is("archived_at", null)
         .maybeSingle(),
@@ -165,6 +165,7 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
     isFeatured: product.is_featured,
     showInNews: product.show_in_news,
     webOrder: product.web_order,
+    customizationLabel: product.customization_label,
     variants: variants.map((v) => ({
       id: v.id,
       sku: v.sku,

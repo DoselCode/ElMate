@@ -63,6 +63,8 @@ export const productSchema = z
       .max(3, { error: "Máximo 3 opciones (ej: Color, Tamaño, Material)" }),
     images: z.array(z.url({ error: "Imagen inválida" })).max(6, { error: "Máximo 6 imágenes" }),
     isVisible: z.boolean(),
+    /** Si tiene texto, la web le pide al cliente un detalle al comprar (grabado, dedicatoria…). Vacío = no pide nada. */
+    customizationLabel: z.string().trim().max(80, { error: "Máximo 80 caracteres" }).default(""),
     badge: z.string().trim().max(50, { error: "Máximo 50 caracteres" }),
     /** Opciones de la web: destacado en la home, aparecer en Novedades y orden manual (menor = primero). */
     isFeatured: z.boolean().default(false),
@@ -148,6 +150,7 @@ export function toSavePayload(p: ProductData, slug: string) {
     is_featured: p.isFeatured,
     show_in_news: p.showInNews,
     web_order: p.webOrder,
+    customization_label: p.customizationLabel || null,
     variants: p.variants.map((v) => ({
       id: v.id ?? null,
       sku: v.sku,

@@ -21,6 +21,10 @@ const TEXTS = {
   "offers.title": "Productos con descuento",
   "offers.text": "Precios de ronda especial.",
 
+  "engraving.eyebrow": "Grabado personalizado",
+  "engraving.title": "Hacelo único: grabamos tu mate, termo o bombilla",
+  "engraving.text": "Un nombre, una fecha o una frase. Elegí el producto, escribinos qué querés grabar y te lo confirmamos por WhatsApp antes de hacerlo.",
+
   "ritual.title": "El ritual del mate,",
   "ritual.titleBreak": "más rico que nunca.",
   "ritual.text": "Armá tu combo matero: mate, bombilla, termo y yerba juntos, listo para regalar o para estrenar en la próxima ronda.",

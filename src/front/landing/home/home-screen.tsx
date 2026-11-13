@@ -5,13 +5,14 @@ import {
   CaretDoubleDown,
   CaretRight,
   InstagramLogo,
+  PencilSimpleLine,
   ChatCircleDots,
   Gift,
   ShoppingCartSimple,
   Storefront,
   WhatsappLogo,
 } from "@phosphor-icons/react/dist/ssr";
-import type { HomeData, PublicCategory, PublicProduct } from "@/shared/types";
+import type { HomeData, PublicCategory, PublicProduct, PublicPromotion } from "@/shared/types";
 import { ProductCard, ProductGrid } from "../catalog/product-card";
 import { t } from "@/shared/home-content";
 import { BENEFITS, BLOG_POSTS, HERO, INSTAGRAM_POSTS, INSTAGRAM_URL } from "../content";
@@ -43,12 +44,13 @@ const heading = (id: "featured" | "offers" | "bestSellers" | "newest" | "instagr
   text: t(`${id}.text`),
 });
 
-export function HomeScreen({ data, categories }: { data: HomeData; categories: PublicCategory[] }) {
+export function HomeScreen({ data, categories, promotions }: { data: HomeData; categories: PublicCategory[]; promotions: PublicPromotion[] }) {
   const featuredIds = new Set(data.featured.map((p) => p.id));
   return (
     <>
       <Hero />
       <Categories categories={categories} />
+      <PromoCards promotions={promotions.filter((p) => p.show_card)} />
       {/* Con ofertas (precio anterior cargado): destacados en su grilla y las ofertas al lado de los beneficios */}
       {data.offers.length > 0 ? (
         <>
@@ -69,6 +71,7 @@ export function HomeScreen({ data, categories }: { data: HomeData; categories: P
           more={data.featured.slice(4, 8)}
         />
       )}
+      <Engraving href={categoryHref(categories, "grabado")} />
       <section className={`${container} mt-24`}>
         <div className="fx-vapor">
           <BenefitsCard />
@@ -91,6 +94,58 @@ export function HomeScreen({ data, categories }: { data: HomeData; categories: P
       <Instagram />
       <Blog />
     </>
+  );
+}
+
+const dateFormat = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", timeZone: "America/Argentina/Buenos_Aires" });
+
+/** Cards de promociones vigentes (fecha especial, Cyber Monday…): se cargan en el panel y salen solas entre sus fechas. */
+function PromoCards({ promotions }: { promotions: PublicPromotion[] }) {
+  if (promotions.length === 0) return null;
+  return (
+    <section id="promociones" className={`${container} mt-12 grid scroll-mt-28 gap-6 ${promotions.length > 1 ? "lg:grid-cols-2" : ""}`}>
+      {promotions.slice(0, 2).map((promo, i) => (
+        <article
+          key={promo.id}
+          style={{ "--i": i } as React.CSSProperties}
+          className="fx-vapor flex flex-col items-start gap-4 rounded-[2rem] bg-primary-deep p-8 text-white sm:p-10"
+        >
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-bold">
+            <Gift size={16} weight="bold" aria-hidden />
+            {promo.ends_at ? `Hasta el ${dateFormat.format(new Date(promo.ends_at))}` : "Promo vigente"}
+          </p>
+          <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.2rem]">{promo.card_title || promo.name}</h2>
+          {(promo.card_text || promo.description) && <p className="max-w-xl text-white/85">{promo.card_text || promo.description}</p>}
+          <Link
+            href={`/tienda?promo=${promo.slug}`}
+            className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-primary-deep transition-colors hover:bg-primary-soft"
+          >
+            {promo.card_cta || "Ver promo"} <ArrowRight size={18} weight="bold" aria-hidden />
+          </Link>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+/** Invitación al grabado personalizado: lleva a los productos que se pueden grabar. */
+function Engraving({ href }: { href: string }) {
+  return (
+    <section id="grabado" className={`${container} mt-24 scroll-mt-28`}>
+      <div className="fx-vapor grid items-center gap-8 rounded-[2rem] bg-surface p-8 sm:p-12 lg:grid-cols-[auto_1fr_auto]">
+        <span className="grid size-20 place-items-center rounded-full bg-primary-soft text-primary" aria-hidden>
+          <PencilSimpleLine size={40} weight="duotone" />
+        </span>
+        <div>
+          <p className="text-sm font-extrabold uppercase tracking-[0.15em] text-primary">{t("engraving.eyebrow")}</p>
+          <h2 className="mt-2 font-display text-2xl font-bold leading-tight sm:text-[2rem]">{t("engraving.title")}</h2>
+          <p className="mt-3 max-w-2xl text-muted">{t("engraving.text")}</p>
+        </div>
+        <Link href={href} className={btnPrimary}>
+          Ver productos <ArrowRight size={18} weight="bold" aria-hidden />
+        </Link>
+      </div>
+    </section>
   );
 }
 

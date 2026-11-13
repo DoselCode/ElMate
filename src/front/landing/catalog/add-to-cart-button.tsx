@@ -17,9 +17,10 @@ export function AddToCartButton({ product }: { product: PublicProduct }) {
 
   if (!product.in_stock) return null;
 
-  if (product.variant_count > 1) {
+  // Con varias variantes o con un detalle para completar (grabado) se elige en la página del producto
+  if (product.variant_count > 1 || product.customization_label) {
     return (
-      <Link href={`/producto/${product.slug}`} className={round} aria-label={`Elegir opciones de ${product.name}`} title="Elegir opciones">
+      <Link href={`/producto/${product.slug}`} className={round} aria-label={`Elegir opciones de ${product.name}`} title={product.customization_label ? "Personalizar" : "Elegir opciones"}>
         <ArrowRight size={20} weight="bold" aria-hidden />
       </Link>
     );

@@ -61,8 +61,9 @@ type CartContextValue = {
   open: () => void;
   close: () => void;
   add: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  setQty: (variantId: string, quantity: number) => void;
-  remove: (variantId: string) => void;
+  /** `key` es lineKey() del ítem (variante + detalle). */
+  setQty: (key: string, quantity: number) => void;
+  remove: (key: string) => void;
   clear: () => void;
 };
 
@@ -85,8 +86,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         writeCart((prev) => addItem(prev, item, quantity));
         setIsOpen(true);
       },
-      setQty: (variantId, quantity) => writeCart((prev) => setQuantity(prev, variantId, quantity)),
-      remove: (variantId) => writeCart((prev) => removeItem(prev, variantId)),
+      setQty: (key, quantity) => writeCart((prev) => setQuantity(prev, key, quantity)),
+      remove: (key) => writeCart((prev) => removeItem(prev, key)),
       clear: () => writeCart(() => EMPTY),
     }),
     [items, isOpen],

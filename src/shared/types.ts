@@ -277,6 +277,8 @@ export type ProductForEdit = {
   isFeatured: boolean;
   showInNews: boolean;
   webOrder: number | null;
+  /** Texto que se le pide al cliente al comprar (ej. "¿Qué querés grabar?"); null = no pide nada. */
+  customizationLabel: string | null;
   variants: VariantForEdit[];
 };
 
@@ -310,6 +312,8 @@ export type PublicProduct = {
   is_featured: boolean;
   show_in_news: boolean;
   web_order: number | null;
+  /** Si tiene texto, la web pide un detalle (grabado, dedicatoria…) al agregar al carrito. */
+  customization_label: string | null;
 };
 
 export type PublicVariant = {
@@ -357,6 +361,8 @@ export type ShopFilters = {
   category: string;
   sort: ShopSort;
   offers: boolean;
+  /** slug de una promoción vigente: muestra solo sus productos */
+  promo: string;
   page: number;
 };
 
@@ -380,6 +386,22 @@ export type SearchResult = {
 /** Forma de pago como la ve la web (vista public_payment_methods). */
 export type PublicPaymentMethod = { name: string; adjustment_pct: number; is_cash: boolean; sort_order: number };
 
+/** Promoción vigente con card en la home (vista public_promotions). */
+export type PublicPromotion = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  /** true = tiene card en la home */
+  show_card: boolean;
+  card_title: string | null;
+  card_text: string | null;
+  card_cta: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  product_count: number;
+};
+
 export type ProductPageData = {
   product: PublicProduct;
   variants: PublicVariant[];
@@ -397,6 +419,8 @@ export type CartItem = {
   price: number;
   image: string | null;
   quantity: number;
+  /** Detalle que escribió el cliente (grabado, dedicatoria…). La misma variante con otro detalle es otra línea. */
+  note?: string;
 };
 
 // ---- Acciones ------------------------------------------------------------------------------
@@ -405,3 +429,49 @@ export type CartItem = {
 export type ActionResult<T extends object = object> =
   | ({ ok: true } & T)
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
+
+// ---- Promociones (panel) -------------------------------------------------------------------
+
+export type PromotionStatus = "vigente" | "programada" | "terminada" | "pausada";
+
+/** Fila del listado de promociones. */
+export type PromotionRow = {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+  starts_at: string;
+  ends_at: string | null;
+  show_card: boolean;
+  item_count: number;
+  status: PromotionStatus;
+};
+
+/** Una variante dentro de una promoción, con los datos para mostrarla en el formulario. */
+export type PromotionItemForEdit = {
+  variantId: string;
+  productName: string;
+  variantLabel: string;
+  sku: string;
+  /** Precio de lista actual (la promo tiene que ser menor). */
+  price: number;
+  image: string | null;
+  promoPrice: number;
+};
+
+export type PromotionForEdit = {
+  id: string;
+  name: string;
+  description: string;
+  active: boolean;
+  startsAt: string;
+  endsAt: string | null;
+  showCard: boolean;
+  cardTitle: string | null;
+  cardText: string | null;
+  cardCta: string | null;
+  items: PromotionItemForEdit[];
+};
+
+/** Resultado de buscar variantes para sumarlas a una promoción. */
+export type PromotionVariantHit = Omit<PromotionItemForEdit, "promoPrice">;

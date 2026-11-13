@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addItem, cartCount, cartTotal, MAX_QUANTITY, removeItem, sanitizeCart, setQuantity } from "./cart";
+import { addItem, cartCount, lineKey, cartTotal, MAX_QUANTITY, removeItem, sanitizeCart, setQuantity } from "./cart";
 import { buildOrderMessage, normalizeWhatsappNumber, whatsappLink } from "./whatsapp";
 import type { CartItem } from "./types";
 
@@ -31,6 +31,25 @@ describe("carrito", () => {
     expect(sanitizeCart([{ ...mate, quantity: 2 }, { variantId: 3 }, { ...termo, price: "caro", quantity: 1 }])).toEqual([
       { ...mate, quantity: 2 },
     ]);
+  });
+});
+
+describe("carrito con detalle (grabado)", () => {
+  it("la misma variante con distinto detalle son líneas separadas", () => {
+    let items: CartItem[] = [];
+    items = addItem(items, { ...mate, note: "Para Juan" });
+    items = addItem(items, { ...mate, note: "Para Ana" });
+    items = addItem(items, { ...mate, note: "Para Juan" });
+    items = addItem(items, mate);
+    expect(items).toHaveLength(3);
+    expect(items[0].quantity).toBe(2);
+    expect(lineKey(items[2])).toBe("v1");
+    expect(removeItem(items, lineKey(items[0]))).toHaveLength(2);
+  });
+
+  it("el detalle viaja en el mensaje de WhatsApp", () => {
+    const msg = buildOrderMessage(addItem([], { ...mate, note: "Para Juan" }), { storeName: "ElMate" });
+    expect(msg).toContain("✏️ Para Juan");
   });
 });
 
