@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Plus } from "@phosphor-icons/react/dist/ssr";
 import { SummarySkeleton, TableSkeleton } from "@/front/admin/layout/panel-loading";
+import { AutoFilterForm } from "@/front/shared/ui/auto-filter-form";
 import { buttonClass } from "@/front/shared/ui/button";
 import { EmptyState, LoadError } from "@/front/shared/ui/empty-state";
 import { inputClass } from "@/front/shared/ui/field";
@@ -58,7 +59,7 @@ export function StockScreen({
         <SummaryCards summary={summary} />
       </Suspense>
 
-      <form method="get" action="/admin/stock" className="flex flex-wrap items-end gap-3" role="search">
+      <AutoFilterForm action="/admin/stock" hasFilters={hasFilters}>
         <FilterField id="q" label="Buscar" className="min-w-56 flex-1">
           <input id="q" name="q" type="search" defaultValue={q} placeholder="Nombre, código o código de barras" className={inputClass} />
         </FilterField>
@@ -89,15 +90,7 @@ export function StockScreen({
           <input type="checkbox" name="inactive" value="1" defaultChecked={showInactive} className="size-4 accent-primary" />
           Ver inactivas
         </label>
-        <button type="submit" className={buttonClass("primary")}>
-          Filtrar
-        </button>
-        {hasFilters && (
-          <Link href="/admin/stock" className={buttonClass("ghost")}>
-            Limpiar
-          </Link>
-        )}
-      </form>
+      </AutoFilterForm>
 
       {/* key: al cambiar un filtro o de página vuelve a mostrar el esqueleto mientras llegan las filas */}
       <Suspense key={JSON.stringify(filters)} fallback={<TableSkeleton />}>
