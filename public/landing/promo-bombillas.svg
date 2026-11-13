@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <defs>
+    <linearGradient id="plata" x1="0" x2="1">
+      <stop offset="0" stop-color="#aeb8b2"/><stop offset=".45" stop-color="#f4f7f5"/><stop offset="1" stop-color="#9aa59f"/>
+    </linearGradient>
+    <linearGradient id="oro" x1="0" x2="1">
+      <stop offset="0" stop-color="#b8892e"/><stop offset=".45" stop-color="#f5d98a"/><stop offset="1" stop-color="#a87a24"/>
+    </linearGradient>
+    <pattern id="agujeros" width="7" height="7" patternUnits="userSpaceOnUse">
+      <circle cx="3.5" cy="3.5" r="1.5" fill="#173f28" opacity=".45"/>
+    </pattern>
+  </defs>
+  <circle cx="120" cy="120" r="104" fill="#fff" opacity=".07"/>
+  <circle cx="120" cy="120" r="74" fill="#fff" opacity=".05"/>
+  <!-- Bombilla de plata, pico de loro -->
+  <g transform="rotate(-24 120 120)">
+    <path d="M114 50 V36 q0-14 14-18" fill="none" stroke="url(#plata)" stroke-width="10" stroke-linecap="round"/>
+    <rect x="113" y="44" width="14" height="140" rx="7" fill="url(#plata)"/>
+    <rect x="109" y="76" width="22" height="12" rx="4" fill="url(#oro)"/>
+    <rect x="110" y="94" width="20" height="5" rx="2.5" fill="url(#oro)"/>
+    <ellipse cx="120" cy="196" rx="20" ry="26" fill="url(#plata)"/>
+    <ellipse cx="120" cy="196" rx="14" ry="19" fill="url(#agujeros)"/>
+  </g>
+  <!-- Bombilla de alpaca dorada -->
+  <g transform="rotate(22 120 120)">
+    <rect x="113" y="30" width="14" height="150" rx="7" fill="url(#oro)"/>
+    <rect x="115" y="22" width="10" height="16" rx="5" fill="#f5d98a"/>
+    <rect x="109" y="66" width="22" height="12" rx="4" fill="url(#plata)"/>
+    <ellipse cx="120" cy="192" rx="20" ry="26" fill="url(#oro)"/>
+    <ellipse cx="120" cy="192" rx="14" ry="19" fill="url(#agujeros)"/>
+  </g>
+</svg>
