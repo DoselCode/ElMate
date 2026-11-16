@@ -15,8 +15,11 @@ export function normalizeInstagramPost(raw: string): string | null {
   return `https://www.instagram.com/${kind}/${m[2]}/`;
 }
 
-/** Dirección del iframe de una publicación ya normalizada. */
-export const instagramEmbedUrl = (post: string): string => `${post}embed`;
+/**
+ * Dirección del iframe de una publicación ya normalizada. Los reels se incrustan por /p/: con /reel/ el embed
+ * manda a la cuenta en vez de reproducirse en la web.
+ */
+export const instagramEmbedUrl = (post: string): string => `${post.replace("/reel/", "/p/")}embed`;
 
 /**
  * Interpreta el texto del formulario (un link por línea o separados por espacios/comas).

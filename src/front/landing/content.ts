@@ -84,12 +84,12 @@ export const BLOG_POSTS: BlogPost[] = [
  */
 export const FOOTER_PLACEHOLDER = {
   tagline: "Tu tienda matera de confianza: mates artesanales, termos, bombillas y las mejores yerbas.",
-  address: "Av. Siempre Verde 1234, Local 7 — Buenos Aires",
-  phone: "+54 11 5555-1234",
+  address: "Perú 41, Jesús María, Córdoba, Argentina (5220)",
+  phone: "+54 9 3525 41-5125",
   email: "hola@elmate.com.ar",
   instagram_url: "https://www.instagram.com/elmate.cordoba/",
   facebook_url: "https://www.facebook.com/",
-  hours_weekdays: "9 a 19 h",
-  hours_saturday: "9 a 13 h",
+  hours_weekdays: "9:00 a 13:00 y de 16:30 a 20:30 hs",
+  hours_saturday: "9:00 a 13:00 y de 16:30 a 20:30 hs",
   hours_sunday: null,
 } as const;

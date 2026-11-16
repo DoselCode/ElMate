@@ -21,9 +21,11 @@ function withPlaceholders(info: StoreInfo): StoreInfo {
 export function SiteFooter({ store: info, categories }: { store: StoreInfo; categories: PublicCategory[] }) {
   const store = withPlaceholders(info);
   const whatsapp = normalizeWhatsappNumber(store.whatsapp_number);
+  // Mismo horario de lunes a viernes y sábados: una sola línea ("Lun a Sáb")
+  const sameWeek = Boolean(store.hours_weekdays) && store.hours_weekdays === store.hours_saturday;
   const hours = [
-    store.hours_weekdays && `Lun a Vie: ${store.hours_weekdays}`,
-    store.hours_saturday && `Sábados: ${store.hours_saturday}`,
+    sameWeek ? `Lun a Sáb: ${store.hours_weekdays}` : store.hours_weekdays && `Lun a Vie: ${store.hours_weekdays}`,
+    !sameWeek && store.hours_saturday && `Sábados: ${store.hours_saturday}`,
     store.hours_sunday && `Domingos: ${store.hours_sunday}`,
   ].filter(Boolean) as string[];
 

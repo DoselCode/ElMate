@@ -190,6 +190,9 @@ function Instagram({ posts, profileUrl }: { posts: string[]; profileUrl: string 
               scrolling="no"
               className="aspect-[5/7] w-full rounded-2xl border border-border bg-surface"
             />
+            <a href={post} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+              <InstagramLogo size={16} weight="bold" aria-hidden /> Ver en Instagram
+            </a>
           </li>
         ))}
       </ul>

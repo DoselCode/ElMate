@@ -33,4 +33,8 @@ describe("instagramEmbedUrl", () => {
   it("agrega /embed", () => {
     expect(instagramEmbedUrl("https://www.instagram.com/p/Aaaaa11111/")).toBe("https://www.instagram.com/p/Aaaaa11111/embed");
   });
+
+  it("los reels se incrustan por /p/ para que se reproduzcan en la web", () => {
+    expect(instagramEmbedUrl("https://www.instagram.com/reel/Bbbbb22222/")).toBe("https://www.instagram.com/p/Bbbbb22222/embed");
+  });
 });
