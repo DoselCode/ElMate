@@ -23,7 +23,7 @@ export function Price({
           {formatMoney(compareAt)}
         </p>
       )}
-      <p className={`font-display font-bold tabular-nums text-foreground ${size === "lg" ? "text-4xl" : "text-xl"}`}>
+      <p className={`font-display font-bold tabular-nums text-foreground ${size === "lg" ? "text-4xl" : "text-base sm:text-xl"}`}>
         {from && <span className={`mr-1 font-sans font-semibold text-muted ${size === "lg" ? "text-base" : "text-xs"}`}>Desde</span>}
         {compareAt !== null && <span className="sr-only">Ahora </span>}
         {formatMoney(price)}

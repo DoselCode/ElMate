@@ -6,7 +6,7 @@ import type { PublicProduct } from "@/shared/types";
 import { useCart } from "../cart/cart-provider";
 
 const round =
-  "grid size-11 shrink-0 cursor-pointer place-items-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover";
+  "grid size-9 shrink-0 sm:size-11 cursor-pointer place-items-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover";
 
 /**
  * Botón redondo de la tarjeta. Si el producto tiene una sola variante la agrega directo;
