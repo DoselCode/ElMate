@@ -31,7 +31,7 @@ function discountOf(base: number, type: DiscountType, text: string): number | nu
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 const normalize = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 24;
 
 /** Controla stock y no queda nada: no se puede vender. */
 const outOfStock = (i: SellableItem) => i.track_stock && i.stock <= 0;
@@ -259,12 +259,16 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
             )}
           </div>
 
-          {/* Productos: todos, paginados; los que no tienen stock se ven grises y no se pueden agregar */}
+          {/* Productos: paginados y con scroll propio (el buscador, el paginador y el carrito quedan a la vista);
+              los que no tienen stock se ven grises y no se pueden agregar */}
           <div id="pos-products" aria-label="Productos" className="space-y-3">
             {filtered.length === 0 ? (
               <p className="rounded-2xl bg-surface px-4 py-6 text-center text-sm text-muted">No hay productos con “{query}”.</p>
             ) : (
-              <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-4">
+              <ul
+                key={currentPage}
+                className="grid max-h-[60svh] grid-cols-2 content-start gap-2 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-3 lg:max-h-[calc(100svh-17rem)] xl:grid-cols-4 2xl:grid-cols-5"
+              >
                 {pageItems.map((i) => {
                   const out = outOfStock(i);
                   return (
@@ -299,16 +303,16 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
                         }`}
                       >
                         <CardPhoto src={i.image} />
-                        <span className="flex flex-1 flex-col gap-1 p-3">
-                          <span className={`line-clamp-2 text-sm font-semibold ${out ? "" : "text-foreground"}`}>
+                        <span className="flex flex-1 flex-col gap-0.5 p-2">
+                          <span className={`line-clamp-2 text-[0.8rem] font-semibold leading-snug ${out ? "" : "text-foreground"}`}>
                             {i.product_name}
                             {i.variant_label && <span className="font-normal text-muted"> · {i.variant_label}</span>}
                           </span>
-                          <span className="truncate text-xs text-muted">
+                          <span className="truncate text-[0.7rem] text-muted">
                             <span className="font-mono">{i.sku}</span>
                             {out ? " · Sin stock" : i.track_stock ? ` · Stock: ${formatQuantity(i.stock, i.unit)}` : ""}
                           </span>
-                          <span className="mt-auto pt-1 text-base font-bold tabular-nums">
+                          <span className="mt-auto pt-0.5 text-sm font-bold tabular-nums">
                             {formatMoney(i.price)}
                             {i.unit === "kg" && <span className="text-xs font-normal text-muted"> por kg</span>}
                           </span>
@@ -683,9 +687,9 @@ function DiscountInput({
 /** Foto grande de la tarjeta de producto. */
 function CardPhoto({ src }: { src: string | null }) {
   return (
-    <span className="relative block aspect-[4/3] w-full bg-background">
+    <span className="relative block aspect-[16/10] w-full bg-background">
       {src ? (
-        <Image src={src} alt="" fill sizes="(min-width: 1536px) 14rem, (min-width: 768px) 12rem, 45vw" draggable={false} className="object-cover" />
+        <Image src={src} alt="" fill sizes="(min-width: 1280px) 10rem, (min-width: 640px) 12rem, 45vw" draggable={false} className="object-cover" />
       ) : (
         <span className="grid size-full place-items-center text-muted" aria-hidden>
           <Package size={32} />
