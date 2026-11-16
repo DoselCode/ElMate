@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, EnvelopeSimple, FacebookLogo, InstagramLogo, MapPin, Phone, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { Clock, InstagramLogo, MapPin, Phone, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
 import type { PublicCategory, StoreInfo } from "@/shared/types";
 import { normalizeWhatsappNumber } from "@/shared/whatsapp";
 import { FOOTER_PLACEHOLDER } from "../content";
@@ -31,12 +31,10 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
 
   const socials = [
     store.instagram_url && { href: store.instagram_url, label: "Instagram", Icon: InstagramLogo },
-    store.facebook_url && { href: store.facebook_url, label: "Facebook", Icon: FacebookLogo },
     whatsapp && { href: `https://wa.me/${whatsapp}`, label: "WhatsApp", Icon: WhatsappLogo },
-    store.email && { href: `mailto:${store.email}`, label: "Email", Icon: EnvelopeSimple },
   ].filter(Boolean) as { href: string; label: string; Icon: typeof InstagramLogo }[];
 
-  const hasContact = store.address || store.phone || store.email || hours.length > 0;
+  const hasContact = store.address || store.phone || hours.length > 0;
 
   return (
     <footer id="contacto" className="mt-16 scroll-mt-24 bg-primary-soft">
@@ -93,11 +91,6 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
             {store.phone && (
               <ContactItem Icon={Phone}>
                 <a href={`tel:${store.phone.replace(/[^\d+]/g, "")}`} className="hover:text-primary">{store.phone}</a>
-              </ContactItem>
-            )}
-            {store.email && (
-              <ContactItem Icon={EnvelopeSimple}>
-                <a href={`mailto:${store.email}`} className="hover:text-primary">{store.email}</a>
               </ContactItem>
             )}
             {hours.length > 0 && (

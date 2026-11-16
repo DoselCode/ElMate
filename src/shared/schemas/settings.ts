@@ -15,10 +15,8 @@ export const storeSettingsSchema = z.object({
     error: "No parece un número válido. Ej: 11 5555-1234 o +54 9 11 5555-1234",
   }),
   phone: optionalText(30),
-  email: optionalText(120).refine((v) => v === "" || z.email().safeParse(v).success, { error: "Email inválido" }),
   address: optionalText(160),
   instagramUrl: optionalUrl,
-  facebookUrl: optionalUrl,
   /** Links de publicaciones de Instagram, uno por línea. */
   instagramPosts: optionalText(1200).superRefine((v, ctx) => {
     const { urls, invalid } = parseInstagramPosts(v);

@@ -24,16 +24,14 @@ const SECTIONS: { title: string; description: string; fields: { key: Key; label:
     fields: [
       { key: "whatsappNumber", label: "WhatsApp para pedidos", placeholder: "+54 9 11 5555-1234", type: "tel" },
       { key: "phone", label: "Teléfono", placeholder: "011 4444-5555", type: "tel" },
-      { key: "email", label: "Email", placeholder: "hola@elmate.com.ar", type: "email" },
       { key: "address", label: "Dirección", placeholder: "Calle 123, Ciudad" },
     ],
   },
   {
     title: "Redes",
-    description: "Pegá el link completo del perfil.",
+    description: "Pegá el link completo del perfil de Instagram.",
     fields: [
       { key: "instagramUrl", label: "Instagram", placeholder: "https://instagram.com/elmate", type: "url" },
-      { key: "facebookUrl", label: "Facebook", placeholder: "https://facebook.com/elmate", type: "url" },
     ],
   },
   {

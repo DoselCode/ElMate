@@ -343,10 +343,8 @@ export type StoreInfo = {
   logo: string | null;
   phone: string | null;
   whatsapp_number: string | null;
-  email: string | null;
   address: string | null;
   instagram_url: string | null;
-  facebook_url: string | null;
   hours_weekdays: string | null;
   hours_saturday: string | null;
   hours_sunday: string | null;
