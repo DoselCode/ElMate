@@ -15,6 +15,16 @@ export function normalizeInstagramPost(raw: string): string | null {
   return `https://www.instagram.com/${kind}/${m[2]}/`;
 }
 
+/** Link de Instagram válido (https y dominio instagram.com): evita javascript: y sitios ajenos en los enlaces de la web. */
+export function isInstagramUrl(raw: string): boolean {
+  try {
+    const u = new URL(raw.trim());
+    return u.protocol === "https:" && (u.hostname === "instagram.com" || u.hostname === "www.instagram.com");
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Dirección del iframe de una publicación ya normalizada. Los reels se incrustan por /p/: con /reel/ el embed
  * manda a la cuenta en vez de reproducirse en la web.

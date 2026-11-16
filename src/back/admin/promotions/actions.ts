@@ -78,7 +78,7 @@ export async function deletePromotionAction(id: string): Promise<ActionResult> {
 /** Busca variantes activas por nombre o código para sumarlas a una promoción (máx. 12). */
 export async function searchPromotionVariantsAction(text: string): Promise<PromotionVariantHit[]> {
   if (!(await getAdminOrNull())) return [];
-  const words = text.replace(/[,()"\\*%_]/g, " ").split(/\s+/).filter(Boolean).slice(0, 5);
+  const words = text.slice(0, 100).replace(/[,()"\\*%_]/g, " ").split(/\s+/).filter(Boolean).slice(0, 5).map((w) => w.slice(0, 40));
   if (words.length === 0) return [];
 
   const supabase = await createClient();

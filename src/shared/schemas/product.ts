@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { httpUrl, plainText } from "./text";
 
 const price = z
   .number({ error: "Ingresá un número" })
@@ -18,9 +19,9 @@ export const variantSchema = z
   .object({
     id: z.uuid().optional(),
     /** Vacío = lo genera la base (EM-00001). */
-    sku: z.string().trim().max(40, { error: "Máximo 40 caracteres" }),
-    barcode: z.string().trim().max(64, { error: "Máximo 64 caracteres" }),
-    attributes: z.record(z.string(), z.string().trim().max(60, { error: "Máximo 60 caracteres" })),
+    sku: plainText().max(40, { error: "Máximo 40 caracteres" }),
+    barcode: plainText().max(64, { error: "Máximo 64 caracteres" }),
+    attributes: z.record(z.string(), plainText().max(60, { error: "Máximo 60 caracteres" })),
     price,
     /** "Precio anterior": si está, la web lo muestra tachado y calcula el % de descuento. */
     compareAtPrice: price.nullable(),
@@ -49,23 +50,23 @@ export const productSchema = z
       .trim()
       .min(2, { error: "El nombre es obligatorio (mínimo 2 caracteres)" })
       .max(150, { error: "Máximo 150 caracteres" }),
-    description: z.string().trim().max(2000, { error: "Máximo 2000 caracteres" }),
+    description: plainText().max(2000, { error: "Máximo 2000 caracteres" }),
     categoryId: z.uuid().nullable(),
     supplierId: z.uuid().nullable(),
-    brand: z.string().trim().max(80, { error: "Máximo 80 caracteres" }),
+    brand: plainText().max(80, { error: "Máximo 80 caracteres" }),
     /** "kg" permite vender con decimales (yerba a granel). */
     unit: z.enum(UNITS),
     /** false = servicio o producto sin inventario (ej: grabados). */
     trackStock: z.boolean(),
     /** Ejes de variación, ej: ["Color", "Tamaño"]. Vacío = producto sin variantes. */
     optionNames: z
-      .array(z.string().trim().min(1, { error: "La opción no puede estar vacía" }).max(30, { error: "Máximo 30 caracteres" }))
+      .array(plainText().min(1, { error: "La opción no puede estar vacía" }).max(30, { error: "Máximo 30 caracteres" }))
       .max(3, { error: "Máximo 3 opciones (ej: Color, Tamaño, Material)" }),
-    images: z.array(z.url({ error: "Imagen inválida" })).max(6, { error: "Máximo 6 imágenes" }),
+    images: z.array(httpUrl("Imagen inválida")).max(6, { error: "Máximo 6 imágenes" }),
     isVisible: z.boolean(),
     /** Si tiene texto, la web le pide al cliente un detalle al comprar (grabado, dedicatoria…). Vacío = no pide nada. */
-    customizationLabel: z.string().trim().max(80, { error: "Máximo 80 caracteres" }).default(""),
-    badge: z.string().trim().max(50, { error: "Máximo 50 caracteres" }),
+    customizationLabel: plainText().max(80, { error: "Máximo 80 caracteres" }).default(""),
+    badge: plainText().max(50, { error: "Máximo 50 caracteres" }),
     /** Opciones de la web: destacado en la home, aparecer en Novedades y orden manual (menor = primero). */
     isFeatured: z.boolean().default(false),
     showInNews: z.boolean().default(true),

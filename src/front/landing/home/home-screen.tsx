@@ -13,7 +13,7 @@ import {
   WhatsappLogo,
 } from "@phosphor-icons/react/dist/ssr";
 import type { HomeData, PublicCategory, PublicProduct, PublicPromotion, StoreInfo } from "@/shared/types";
-import { instagramEmbedUrl } from "@/shared/instagram";
+import { instagramEmbedUrl, isInstagramUrl, normalizeInstagramPost } from "@/shared/instagram";
 import { ProductGrid } from "../catalog/product-card";
 import { t } from "@/shared/home-content";
 import { BENEFITS, HERO, INSTAGRAM_URL } from "../content";
@@ -67,7 +67,7 @@ export function HomeScreen({
       <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
       <Ritual combosHref={categoryHref(categories, "combo")} />
       <Engraving href={categoryHref(categories, "grabado")} />
-      <Instagram posts={store.instagram_posts} profileUrl={store.instagram_url || INSTAGRAM_URL} />
+      <Instagram posts={store.instagram_posts} profileUrl={store.instagram_url && isInstagramUrl(store.instagram_url) ? store.instagram_url : INSTAGRAM_URL} />
     </>
   );
 }
@@ -174,7 +174,9 @@ function Engraving({ href }: { href: string }) {
 }
 
 /** Publicaciones de Instagram incrustadas: se cargan en el panel pegando solo el link de cada una. */
-function Instagram({ posts, profileUrl }: { posts: string[]; profileUrl: string }) {
+function Instagram({ posts: links, profileUrl }: { posts: string[]; profileUrl: string }) {
+  // Solo links que son de una publicación de Instagram: lo demás no se incrusta
+  const posts = links.map(normalizeInstagramPost).filter((p): p is string => p !== null);
   if (posts.length === 0) return null;
   return (
     <section id="instagram" className={`${container} mt-24 scroll-mt-28`}>
@@ -187,6 +189,8 @@ function Instagram({ posts, profileUrl }: { posts: string[]; profileUrl: string 
               title={`Publicación ${i + 1} de Instagram`}
               loading="lazy"
               scrolling="no"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              referrerPolicy="strict-origin-when-cross-origin"
               className="aspect-[5/7] w-full rounded-2xl border border-border bg-surface"
             />
           </li>

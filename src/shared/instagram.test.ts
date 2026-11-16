@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { instagramEmbedUrl, normalizeInstagramPost, parseInstagramPosts } from "./instagram";
+import { instagramEmbedUrl, isInstagramUrl, normalizeInstagramPost, parseInstagramPosts } from "./instagram";
 
 describe("normalizeInstagramPost", () => {
   it("acepta posts, reels y links con perfil o parámetros", () => {
@@ -26,6 +26,17 @@ describe("parseInstagramPosts", () => {
 
   it("texto vacío: sin links", () => {
     expect(parseInstagramPosts("  \n ")).toEqual({ urls: [], invalid: [] });
+  });
+});
+
+describe("isInstagramUrl", () => {
+  it("solo https en instagram.com", () => {
+    expect(isInstagramUrl("https://www.instagram.com/elmate.cordoba/")).toBe(true);
+    expect(isInstagramUrl("https://instagram.com/elmate.cordoba")).toBe(true);
+    expect(isInstagramUrl("javascript:alert(1)")).toBe(false);
+    expect(isInstagramUrl("http://www.instagram.com/x")).toBe(false);
+    expect(isInstagramUrl("https://instagram.com.evil.com/x")).toBe(false);
+    expect(isInstagramUrl("https://evil.com/?u=instagram.com")).toBe(false);
   });
 });
 

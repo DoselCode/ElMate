@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { plainText } from "./text";
 
 /**
  * Promociones: un conjunto de variantes con precio especial, entre dos fechas, y una card opcional en la home.
@@ -32,17 +33,17 @@ export const promotionItemSchema = z.object({
 export const promotionSchema = z
   .object({
     id: z.uuid().optional(),
-    name: z.string().trim().min(2, { error: "Poné un nombre (mínimo 2 caracteres)" }).max(80, { error: "Máximo 80 caracteres" }),
-    description: z.string().trim().max(500, { error: "Máximo 500 caracteres" }),
+    name: plainText().min(2, { error: "Poné un nombre (mínimo 2 caracteres)" }).max(80, { error: "Máximo 80 caracteres" }),
+    description: plainText().max(500, { error: "Máximo 500 caracteres" }),
     /** Pausada = no se aplica aunque esté dentro de las fechas. */
     active: z.boolean(),
     startsAt: z.string().min(1, { error: "Elegí cuándo empieza" }),
     /** Vacío = sin fecha de fin. */
     endsAt: z.string(),
     showCard: z.boolean(),
-    cardTitle: z.string().trim().max(80, { error: "Máximo 80 caracteres" }),
-    cardText: z.string().trim().max(200, { error: "Máximo 200 caracteres" }),
-    cardCta: z.string().trim().max(30, { error: "Máximo 30 caracteres" }),
+    cardTitle: plainText().max(80, { error: "Máximo 80 caracteres" }),
+    cardText: plainText().max(200, { error: "Máximo 200 caracteres" }),
+    cardCta: plainText().max(30, { error: "Máximo 30 caracteres" }),
     items: z.array(promotionItemSchema).max(300, { error: "Máximo 300 productos por promoción" }),
   })
   .superRefine((p, ctx) => {

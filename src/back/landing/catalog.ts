@@ -72,7 +72,7 @@ export function parseShopFilters(sp: SearchParams): ShopFilters {
   const sort = param(sp, "orden") as ShopSort;
   return {
     q: safeSearch(param(sp, "q")),
-    category: param(sp, "categoria"),
+    category: /^[a-z0-9-]{1,80}$/.test(param(sp, "categoria")) ? param(sp, "categoria") : "",
     sort: SORTS.includes(sort) ? sort : "destacados",
     offers: param(sp, "ofertas") === "1",
     promo: /^[a-z0-9-]{1,80}$/.test(param(sp, "promo")) ? param(sp, "promo") : "",

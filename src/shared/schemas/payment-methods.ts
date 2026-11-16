@@ -1,9 +1,10 @@
 import * as z from "zod";
+import { plainText } from "./text";
 
 /** Una forma de pago con su ajuste sobre el precio de lista (−20 = 20 % de descuento). */
 export const paymentMethodSchema = z.object({
   id: z.uuid().optional(),
-  name: z.string().trim().min(2, { error: "Poné un nombre" }).max(40, { error: "Máximo 40 caracteres" }),
+  name: plainText().min(2, { error: "Poné un nombre" }).max(40, { error: "Máximo 40 caracteres" }),
   adjustmentPct: z
     .number({ error: "Ingresá un número" })
     .min(-100, { error: "Entre −100 y 100" })

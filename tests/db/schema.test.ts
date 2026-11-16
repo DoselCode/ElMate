@@ -99,6 +99,27 @@ describe("usuarios y roles", () => {
     expect(profiles.find((p) => p.id === staffId)?.role).toBe("empleado");
   });
 
+  it("quien se registra solo (sin confirmar, por teléfono o anónimo) queda inactivo y sin acceso", async () => {
+    const cases = [
+      "insert into auth.users (email, email_confirmed_at) values ('auto@elmate.test', null) returning id",
+      "insert into auth.users (email, raw_app_meta_data) values ('tel@elmate.test', '{\"provider\":\"phone\"}') returning id",
+      "insert into auth.users (email, is_anonymous) values ('anon@elmate.test', true) returning id",
+    ];
+    for (const sql of cases) {
+      const [u] = await rows(sql);
+      const [p] = await rows("select role, active from public.profiles where id = $1", [u.id]);
+      expect(p.active, sql).toBe(false);
+      const visible = await as(u.id, () => rows("select id from public.products"));
+      expect(visible).toHaveLength(0);
+      await expect(as(u.id, () => rows("select public.open_cash_session($1, 0)", [registerId]))).rejects.toThrow(/Permiso denegado/);
+    }
+  });
+
+  it("el usuario creado por el admin (email confirmado) entra activo", async () => {
+    const [p] = await rows("select active from public.profiles where id = $1", [staffId]);
+    expect(p.active).toBe(true);
+  });
+
   it("un empleado no puede ascenderse a admin", async () => {
     await as(staffId, () => db.query("update public.profiles set role = 'admin' where id = $1", [staffId]));
     const [p] = await rows("select role from public.profiles where id = $1", [staffId]);

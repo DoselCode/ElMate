@@ -12,6 +12,14 @@ export function param(sp: SearchParams, key: string): string {
   return (Array.isArray(v) ? v[0] : v)?.trim() ?? "";
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Un uuid válido, o "" (un valor armado a mano en la URL no llega a la base). */
+export function uuidParam(sp: SearchParams, key: string): string {
+  const v = param(sp, key);
+  return UUID.test(v) ? v : "";
+}
+
 export function pageParam(sp: SearchParams): number {
   const n = Number.parseInt(param(sp, "page"), 10);
   return Number.isFinite(n) && n > 0 ? Math.min(n, 10_000) : 1;

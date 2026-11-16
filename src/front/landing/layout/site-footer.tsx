@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Clock, InstagramLogo, MapPin, Phone, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { isInstagramUrl } from "@/shared/instagram";
 import type { PublicCategory, StoreInfo } from "@/shared/types";
 import { normalizeWhatsappNumber } from "@/shared/whatsapp";
 import { FOOTER_PLACEHOLDER } from "../content";
@@ -30,7 +31,7 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
   ].filter(Boolean) as string[];
 
   const socials = [
-    store.instagram_url && { href: store.instagram_url, label: "Instagram", Icon: InstagramLogo },
+    store.instagram_url && isInstagramUrl(store.instagram_url) && { href: store.instagram_url, label: "Instagram", Icon: InstagramLogo },
     whatsapp && { href: `https://wa.me/${whatsapp}`, label: "WhatsApp", Icon: WhatsappLogo },
   ].filter(Boolean) as { href: string; label: string; Icon: typeof InstagramLogo }[];
 

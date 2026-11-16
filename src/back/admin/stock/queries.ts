@@ -1,7 +1,7 @@
 import "server-only";
 import { guarded } from "@/back/admin/auth/guarded";
 import { requireAdmin, requireStaff } from "@/back/admin/auth/session";
-import { PAGE_SIZE, pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
+import { PAGE_SIZE, pageParam, param, safeSearch, uuidParam, type SearchParams } from "@/shared/query";
 import type {
   MovementFilters,
   MovementRow,
@@ -33,8 +33,8 @@ export function parseStockFilters(sp: SearchParams): StockFilters {
   const status = param(sp, "status");
   return {
     q: safeSearch(param(sp, "q")),
-    supplier: param(sp, "supplier"),
-    category: param(sp, "category"),
+    supplier: uuidParam(sp, "supplier"),
+    category: uuidParam(sp, "category"),
     status: status === "low" || status === "out" ? status : "",
     showInactive: param(sp, "inactive") === "1",
     page: pageParam(sp),
