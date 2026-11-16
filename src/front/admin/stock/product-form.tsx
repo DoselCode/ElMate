@@ -12,6 +12,7 @@ import { formatMoney, formatQuantity, parseDecimal, type Unit } from "@/shared/f
 import { applyAdjustment, priceFromCost } from "@/shared/pricing";
 import { fieldErrors, productSchema, type ProductInput } from "@/shared/schemas/product";
 import type { Option, ProductForEdit, VariantForEdit } from "@/shared/types";
+import { newUuid } from "@/shared/uuid";
 import { ImageUploader } from "./image-uploader";
 
 /** Estado de una variante mientras se edita: los números se guardan como texto (lo que tipea el usuario). */
@@ -39,7 +40,7 @@ type VariantDraft = {
 const OPTION_SUGGESTIONS = ["Color", "Tamaño", "Material", "Talle"];
 
 const num = (s: string) => (s.trim() === "" ? Number.NaN : parseDecimal(s));
-const newKey = () => crypto.randomUUID();
+const newKey = () => newUuid();
 const omit = (obj: Record<string, string>, key: string) => Object.fromEntries(Object.entries(obj).filter(([k]) => k !== key));
 
 function emptyVariant(from?: VariantDraft): VariantDraft {

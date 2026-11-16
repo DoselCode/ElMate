@@ -1,4 +1,5 @@
 import { createClient } from "@/back/shared/supabase/browser";
+import { newUuid } from "@/shared/uuid";
 
 /**
  * Sube una foto de producto a Supabase Storage y devuelve su URL pública.
@@ -7,7 +8,7 @@ import { createClient } from "@/back/shared/supabase/browser";
  */
 export async function uploadProductImage(blob: Blob, ext: "webp" | "jpg"): Promise<string> {
   const supabase = createClient();
-  const path = `${crypto.randomUUID()}.${ext}`;
+  const path = `${newUuid()}.${ext}`;
   const bucket = supabase.storage.from("product-images");
 
   const { error } = await bucket.upload(path, blob, { contentType: blob.type, cacheControl: "31536000" });
