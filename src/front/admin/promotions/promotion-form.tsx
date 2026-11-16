@@ -139,7 +139,7 @@ export function PromotionForm({ initial }: { initial?: PromotionForEdit }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="mx-auto max-w-4xl space-y-6 pb-10">
+    <form onSubmit={submit} noValidate className="space-y-6 pb-10">
       <header>
         <h1 className="font-display text-2xl font-bold">{initial ? "Editar promoción" : "Nueva promoción"}</h1>
         <p className="mt-1 text-sm text-muted">Las fechas son en hora de Argentina. Mientras la promo está vigente, la web muestra el precio especial y el normal tachado.</p>

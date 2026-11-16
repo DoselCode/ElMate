@@ -29,14 +29,6 @@ const TEXTS = {
   "ritual.titleBreak": "más rico que nunca.",
   "ritual.text": "Armá tu combo matero: mate, bombilla, termo y yerba juntos, listo para regalar o para estrenar en la próxima ronda.",
 
-  "bestSellers.eyebrow": "Lo más vendido",
-  "bestSellers.title": "Ofertas especiales",
-  "bestSellers.text": "Los favoritos de la comunidad matera, con precio de ronda.",
-
-  "newest.eyebrow": "Recién llegados",
-  "newest.title": "Novedades",
-  "newest.text": "Lo último que entró, directo a tu mesa.",
-
   "promoBombillas.title": "Bombillas de alpaca, el detalle que cambia el mate",
   "promoBombillas.text": "Filtrado perfecto y brillo eterno: las preferidas de los cebadores exigentes.",
   "promoCombos.title": "Combos materos: ahorrá comprando todo junto",
@@ -45,10 +37,6 @@ const TEXTS = {
   "instagram.eyebrow": "Instagram",
   "instagram.title": "Seguinos en @elmate.cordoba",
   "instagram.text": "Novedades, lanzamientos y regalos materos: lo último que publicamos.",
-
-  "blog.eyebrow": "Blog",
-  "blog.title": "Últimos artículos",
-  "blog.text": "Trucos, recetas y cultura matera para llevar el rito a otro nivel.",
 } as const;
 
 export type HomeTextKey = keyof typeof TEXTS;

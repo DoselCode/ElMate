@@ -1,7 +1,7 @@
 import "server-only";
 import { guarded } from "@/back/admin/auth/guarded";
 import { requireAdmin, requireStaff } from "@/back/admin/auth/session";
-import { PAGE_SIZE, pageParam, param, type SearchParams } from "@/shared/query";
+import { SALES_PAGE_SIZE, pageParam, param, type SearchParams } from "@/shared/query";
 import type {
   CashMethodTotal,
   CashMovementRow,
@@ -161,7 +161,7 @@ const SALE_NUMBERS: (keyof SaleRow)[] = ["subtotal", "discount_amount", "discoun
 export async function getSales(f: SalesFilters): Promise<Paged<SaleRow> & { totals: SalesTotals }> {
   return guarded(requireStaff, async (supabase) => {
     const range = { from: `${f.from}T00:00:00${AR_OFFSET}`, to: `${f.to}T23:59:59.999${AR_OFFSET}` };
-    const from = (f.page - 1) * PAGE_SIZE;
+    const from = (f.page - 1) * SALES_PAGE_SIZE;
 
     let list = supabase.from("sales_log").select("*", { count: "exact" })
       .gte("created_at", range.from).lte("created_at", range.to);
@@ -173,7 +173,7 @@ export async function getSales(f: SalesFilters): Promise<Paged<SaleRow> & { tota
     if (f.method) paid = paid.eq("payment_method_name", f.method);
 
     const [listRes, paidRes] = await Promise.all([
-      list.order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1),
+      list.order("created_at", { ascending: false }).range(from, from + SALES_PAGE_SIZE - 1),
       f.status === "anulada" ? Promise.resolve({ data: [] as { total: number; payment_method_name: string }[] }) : paid.range(0, 9999),
     ]);
 

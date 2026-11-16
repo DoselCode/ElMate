@@ -3,6 +3,8 @@
 export type SearchParams = Record<string, string | string[] | undefined>;
 
 export const PAGE_SIZE = 25;
+/** El historial de ventas se pagina de a 10 para que se vea siempre el paginador. */
+export const SALES_PAGE_SIZE = 10;
 
 /** Valor de un searchParam como string (si viene repetido, el primero). */
 export function param(sp: SearchParams, key: string): string {

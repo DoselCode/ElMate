@@ -8,15 +8,18 @@ export function Pagination({
   pageSize,
   total,
   params,
+  alwaysShow = false,
 }: {
   basePath: string;
   page: number;
   pageSize: number;
   total: number;
   params: Record<string, string | undefined>;
+  /** Se muestra también con una sola página (con los botones deshabilitados). */
+  alwaysShow?: boolean;
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
-  if (pages <= 1) return null;
+  if (pages <= 1 && !alwaysShow) return null;
 
   const href = (p: number) => `${basePath}${buildQuery({ ...params, page: p > 1 ? p : undefined })}`;
   const link = "rounded-full border border-border-strong bg-surface px-4 py-2 text-sm font-semibold hover:bg-primary-soft";

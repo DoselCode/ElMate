@@ -1,13 +1,12 @@
 import Link from "next/link";
-import { ShoppingCart } from "@phosphor-icons/react/dist/ssr";
+import { Receipt, ShoppingCart } from "@phosphor-icons/react/dist/ssr";
 import { Badge } from "@/front/shared/ui/badge";
 import { buttonClass } from "@/front/shared/ui/button";
 import { EmptyState, LoadError } from "@/front/shared/ui/empty-state";
-import { inputClass } from "@/front/shared/ui/field";
-import { FilterField } from "@/front/shared/ui/filter-field";
 import { Pagination } from "@/front/shared/ui/pagination";
 import { formatDateTime, formatMoney } from "@/shared/format";
-import { PAGE_SIZE } from "@/shared/query";
+import { SALES_PAGE_SIZE } from "@/shared/query";
+import { SalesFilterBar } from "./sales-filters";
 import type { Paged, PaymentMethod, SaleRow, SalesFilters, SalesTotals } from "@/shared/types";
 
 const day = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", timeZone: "UTC" });
@@ -39,33 +38,7 @@ export function SalesScreen({
         </Link>
       </header>
 
-      <form method="get" action="/admin/ventas" className="flex flex-wrap items-end gap-3">
-        <FilterField id="from" label="Desde">
-          <input id="from" name="from" type="date" defaultValue={from} max={today} className={inputClass} />
-        </FilterField>
-        <FilterField id="to" label="Hasta">
-          <input id="to" name="to" type="date" defaultValue={to} max={today} className={inputClass} />
-        </FilterField>
-        <FilterField id="method" label="Forma de pago">
-          <select id="method" name="method" defaultValue={method} className={inputClass}>
-            <option value="">Todas</option>
-            {methods.map((m) => (
-              <option key={m.id} value={m.name}>{m.name}</option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField id="status" label="Estado">
-          <select id="status" name="status" defaultValue={status} className={inputClass}>
-            <option value="">Todas</option>
-            <option value="pagada">Pagadas</option>
-            <option value="anulada">Anuladas</option>
-          </select>
-        </FilterField>
-        <button type="submit" className={buttonClass("primary")}>Filtrar</button>
-        {!isToday || method || status ? (
-          <Link href="/admin/ventas" className={buttonClass("ghost")}>Ver hoy</Link>
-        ) : null}
-      </form>
+      <SalesFilterBar filters={filters} methods={methods} today={today} showReset={!isToday || Boolean(method) || Boolean(status)} />
 
       {status !== "anulada" && (
         <section aria-label="Totales del período" className="rounded-[var(--radius-card)] bg-surface p-5 shadow-sm">
@@ -94,7 +67,7 @@ export function SalesScreen({
       ) : (
         <>
           <div className="overflow-x-auto rounded-[var(--radius-card)] bg-surface shadow-sm">
-            <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[860px] border-collapse text-left text-sm">
               <caption className="sr-only">Ventas {period}</caption>
               <thead>
                 <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
@@ -103,6 +76,7 @@ export function SalesScreen({
                   <th scope="col" className="px-3 py-3.5 font-bold">Forma de pago</th>
                   <th scope="col" className="px-3 py-3.5 text-right font-bold">Total</th>
                   <th scope="col" className="px-5 py-3.5 font-bold">Estado</th>
+                  <th scope="col" className="px-5 py-3.5 text-right font-bold"><span className="sr-only">Ticket</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -126,12 +100,21 @@ export function SalesScreen({
                     <td className="px-5 py-3">
                       {s.status === "pagada" ? <Badge tone="success">Pagada</Badge> : <Badge tone="danger">Anulada</Badge>}
                     </td>
+                    <td className="px-5 py-3 text-right">
+                      <Link
+                        href={`/admin/ventas/${s.id}`}
+                        aria-label={`Ver ticket N° ${s.ticket_number}`}
+                        className={buttonClass("secondary", "sm")}
+                      >
+                        <Receipt size={16} aria-hidden /> Ver ticket
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <Pagination basePath="/admin/ventas" page={page} pageSize={PAGE_SIZE} total={list.total} params={filterParams} />
+          <Pagination basePath="/admin/ventas" page={page} pageSize={SALES_PAGE_SIZE} total={list.total} params={filterParams} alwaysShow />
         </>
       )}
     </div>

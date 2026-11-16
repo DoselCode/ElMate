@@ -13,9 +13,9 @@ import {
   WhatsappLogo,
 } from "@phosphor-icons/react/dist/ssr";
 import type { HomeData, PublicCategory, PublicProduct, PublicPromotion } from "@/shared/types";
-import { ProductCard, ProductGrid } from "../catalog/product-card";
+import { ProductGrid } from "../catalog/product-card";
 import { t } from "@/shared/home-content";
-import { BENEFITS, BLOG_POSTS, HERO, INSTAGRAM_POSTS, INSTAGRAM_URL } from "../content";
+import { BENEFITS, HERO, INSTAGRAM_POSTS, INSTAGRAM_URL } from "../content";
 import { CategoryCarousel } from "./category-carousel";
 import { HeroBrew } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
@@ -33,66 +33,28 @@ function categoryHref(categories: PublicCategory[], keyword: string) {
   return c ? `/tienda?categoria=${c.slug}` : "/tienda";
 }
 
-function uniqueProducts(products: PublicProduct[]) {
-  return products.filter((p, i) => products.findIndex((q) => q.id === p.id) === i);
-}
-
 /** Título, etiqueta y texto de una sección (ver shared/home-content.ts). */
-const heading = (id: "featured" | "offers" | "bestSellers" | "newest" | "instagram" | "blog"): SectionHeadingProps => ({
+const heading = (id: "featured" | "offers" | "instagram"): SectionHeadingProps => ({
   eyebrow: t(`${id}.eyebrow`),
   title: t(`${id}.title`),
   text: t(`${id}.text`),
 });
 
 export function HomeScreen({ data, categories, promotions }: { data: HomeData; categories: PublicCategory[]; promotions: PublicPromotion[] }) {
-  const featuredIds = new Set(data.featured.map((p) => p.id));
+  // Destacados; si todavía no hay ninguno, los más vendidos para que la sección no quede vacía
+  const highlighted = data.featured.length > 0 ? data.featured : data.bestSellers;
   return (
     <>
       <Hero />
-      <Categories categories={categories} />
+      {/* Se alternan secciones de listado (productos, categorías) con las que no lo son (ritual, grabado, promos) */}
+      <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
       <PromoCards promotions={promotions.filter((p) => p.show_card)} />
-      {/* Con ofertas (precio anterior cargado): destacados en su grilla y las ofertas al lado de los beneficios */}
-      {data.offers.length > 0 ? (
-        <>
-          {data.featured.length > 0 && (
-            <section id="destacados" className={`${container} mt-24 scroll-mt-28`}>
-              <SectionHeading {...heading("featured")} />
-              <ProductGrid products={data.featured.slice(0, 8)} reveal />
-            </section>
-          )}
-          <Offers heading={heading("offers")} products={data.offers.slice(0, 4)} />
-        </>
-      ) : (
-        /* Sin ofertas: los destacados van al lado de los beneficios (el resto, debajo). Si tampoco hay destacados,
-           se usan los más vendidos y las novedades para que la sección no quede vacía */
-        <Offers
-          heading={heading("featured")}
-          products={(featuredIds.size > 0 ? data.featured : uniqueProducts([...data.bestSellers, ...data.newest])).slice(0, 4)}
-          more={data.featured.slice(4, 8)}
-        />
-      )}
-      <Engraving href={categoryHref(categories, "grabado")} />
-      <section className={`${container} mt-24`}>
-        <div className="fx-vapor">
-          <BenefitsCard />
-        </div>
-      </section>
+      <Categories categories={categories} />
       <Ritual combosHref={categoryHref(categories, "combo")} />
-      {data.bestSellers.length > 0 && (
-        <section className={`${container} mt-24`}>
-          <SectionHeading {...heading("bestSellers")} />
-          <ProductGrid products={data.bestSellers} reveal />
-        </section>
-      )}
-      {data.newest.length > 0 && (
-        <section className={`${container} mt-24`}>
-          <SectionHeading {...heading("newest")} />
-          <ProductGrid products={data.newest} reveal />
-        </section>
-      )}
-      <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
+      <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
+      <Engraving href={categoryHref(categories, "grabado")} />
       <Instagram />
-      <Blog />
+      <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
     </>
   );
 }
@@ -180,38 +142,6 @@ function Instagram() {
   );
 }
 
-function Blog() {
-  return (
-    <section id="blog" className={`${container} mt-24 scroll-mt-28`}>
-      <SectionHeading {...heading("blog")} />
-      <div className="grid gap-6 md:grid-cols-3">
-        {BLOG_POSTS.slice(0, 3).map((post, i) => (
-          <article
-            key={post.slug}
-            style={{ "--i": i } as React.CSSProperties}
-            className="fx-vapor flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-surface shadow-sm"
-          >
-            <div className="relative aspect-[16/10] bg-primary-soft">
-              <Image src={post.image} alt="" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" />
-              <span className="absolute left-4 top-4 rounded-full bg-surface px-3 py-1 text-xs font-bold text-primary">{post.tag}</span>
-            </div>
-            <div className="flex flex-1 flex-col p-6">
-              <h3 className="font-display text-lg font-bold leading-snug">{post.title}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">{post.excerpt}</p>
-              <Link
-                href={`/blog/${post.slug}`}
-                className="mt-5 inline-flex items-center gap-1.5 self-start rounded-full border-2 border-primary/25 px-4 py-2 text-sm font-bold transition-colors hover:border-primary hover:text-primary"
-              >
-                Leer más <CaretRight size={14} weight="bold" aria-hidden />
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function Hero() {
   return (
     <section className="relative isolate">
@@ -242,7 +172,7 @@ function Hero() {
             <Link href="/tienda" prefetch className={btnPrimary}>
               Ver tienda <ArrowRight size={18} weight="bold" aria-hidden />
             </Link>
-            <Link href="/#ofertas" className={btnOutline}>
+            <Link href="/#destacados" className={btnOutline}>
               Ver productos
             </Link>
           </div>
@@ -255,30 +185,17 @@ function Hero() {
   );
 }
 
-function Categories({ categories }: { categories: PublicCategory[] }) {
-  if (categories.length === 0) return null;
-  return (
-    <section className={`${container} mt-20`}>
-      <div className="fx-pour relative px-1 sm:px-6">
-        <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
-        <SectionHeading title={t("categories.title")} text={t("categories.text")} compact />
-        <CategoryCarousel categories={categories} />
-      </div>
-    </section>
-  );
-}
-
 const BENEFIT_ICONS = { cart: ShoppingCartSimple, whatsapp: WhatsappLogo, chat: ChatCircleDots, store: Storefront };
 
-/** Card propia: título a la izquierda y los 4 beneficios en fila. */
+/** Beneficios de comprar: en columna junto a las categorías en escritorio; apilada y en fila en pantallas chicas. */
 function BenefitsCard() {
   return (
     <div
       id="como-comprar"
-      className="flex w-full scroll-mt-28 flex-col gap-5 rounded-[var(--radius-card)] bg-primary p-6 text-white sm:p-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-center lg:gap-8"
+      className="flex w-full scroll-mt-28 flex-col justify-between gap-5 rounded-[var(--radius-card)] bg-primary p-6 text-white sm:p-8 lg:p-6"
     >
-      <h3 className="font-display text-[1.6rem] font-bold leading-tight">{BENEFITS.title}</h3>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:row-span-2">
+      <h3 className="font-display text-[1.5rem] font-bold leading-tight">{BENEFITS.title}</h3>
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
         {BENEFITS.items.map(({ icon, text }) => {
           const Icon = BENEFIT_ICONS[icon];
           return (
@@ -294,7 +211,7 @@ function BenefitsCard() {
       </ul>
       <Link
         href="/tienda"
-        className="self-start inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-white/35 px-5 py-2.5 font-bold transition-colors hover:bg-white hover:text-primary"
+        className="inline-flex items-center justify-center gap-1.5 self-start rounded-full border-2 border-white/35 px-5 py-2.5 font-bold transition-colors hover:bg-white hover:text-primary"
       >
         <CaretRight size={16} weight="bold" aria-hidden /> Conocé más
       </Link>
@@ -302,28 +219,33 @@ function BenefitsCard() {
   );
 }
 
-/** Hasta 4 productos en una fila. `more`: los que no entran (destacados del 5.º en adelante), en grilla debajo. */
-function Offers({ heading, products, more = [] }: { heading: SectionHeadingProps; products: PublicProduct[]; more?: PublicProduct[] }) {
-  const item = "w-full sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)]";
+/** Categorías a la izquierda y la card de beneficios al lado (debajo en pantallas chicas). */
+function Categories({ categories }: { categories: PublicCategory[] }) {
   return (
-    <section id="ofertas" className={`${container} mt-24 scroll-mt-28`}>
-      {products.length > 0 && (
-        <>
-          <SectionHeading {...heading} />
-          <div className="flex flex-wrap justify-center gap-6">
-            {products.map((p, i) => (
-              <div key={p.id} style={{ "--i": i } as React.CSSProperties} className={`fx-deal flex ${item}`}>
-                <ProductCard product={p} />
-              </div>
-            ))}
+    <section id="categorias" className={`${container} mt-24 scroll-mt-28`}>
+      <div className={categories.length > 0 ? "grid items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]" : ""}>
+        {categories.length > 0 && (
+          <div className="fx-pour relative min-w-0 px-1 sm:px-4">
+            <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
+            <SectionHeading title={t("categories.title")} text={t("categories.text")} compact />
+            <CategoryCarousel categories={categories} />
           </div>
-          {more.length > 0 && (
-            <div className="mt-6">
-              <ProductGrid products={more} reveal />
-            </div>
-          )}
-        </>
-      )}
+        )}
+        <div className="fx-vapor flex">
+          <BenefitsCard />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Sección con título y hasta 8 productos en grilla. Sin productos no se muestra. */
+function ProductSection({ id, heading, products }: { id: string; heading: SectionHeadingProps; products: PublicProduct[] }) {
+  if (products.length === 0) return null;
+  return (
+    <section id={id} className={`${container} mt-24 scroll-mt-28`}>
+      <SectionHeading {...heading} />
+      <ProductGrid products={products} reveal />
     </section>
   );
 }

@@ -36,10 +36,9 @@ export const getCategories = cache((): Promise<PublicCategory[]> => safe("catego
 export const getPromotions = cache((): Promise<PublicPromotion[]> => safe("promociones", [], () => source.promotions()));
 
 export async function getHomeData(): Promise<HomeData> {
-  const [featured, offers, newest, bestIds] = await Promise.all([
+  const [featured, offers, bestIds] = await Promise.all([
     products({ featuredOnly: true, sort: "destacados", limit: 8 }),
     products({ onlyOffers: true, sort: "mayor-descuento", limit: 4 }),
-    products({ sort: "nuevos", inNewsOnly: true, limit: 4 }),
     safe("más vendidos", [] as string[], () => source.bestSellerIds()),
   ]);
 
@@ -55,7 +54,7 @@ export async function getHomeData(): Promise<HomeData> {
     }
   }
 
-  return { featured: featured.rows, offers: offers.rows, bestSellers: best, newest: newest.rows };
+  return { featured: featured.rows, offers: offers.rows, bestSellers: best };
 }
 
 export function parseShopFilters(sp: SearchParams): ShopFilters {

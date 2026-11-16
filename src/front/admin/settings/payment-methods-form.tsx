@@ -7,6 +7,7 @@ import { Button } from "@/front/shared/ui/button";
 import { inputClass, inputErrorClass } from "@/front/shared/ui/field";
 import { formatMoney, parseDecimal } from "@/shared/format";
 import { applyAdjustment } from "@/shared/pricing";
+import { newUuid } from "@/shared/uuid";
 import type { PaymentMethod } from "@/shared/types";
 
 type Draft = { key: string; id?: string; name: string; adjustment: string; isCash: boolean; active: boolean };
@@ -149,7 +150,7 @@ export function PaymentMethodsForm({ initial }: { initial: PaymentMethod[] }) {
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => setRows((rs) => [...rs, { key: crypto.randomUUID(), name: "", adjustment: "0", isCash: false, active: true }])}
+          onClick={() => setRows((rs) => [...rs, { key: newUuid(), name: "", adjustment: "0", isCash: false, active: true }])}
           disabled={rows.length >= 20}
         >
           <Plus size={14} weight="bold" aria-hidden /> Agregar forma de pago

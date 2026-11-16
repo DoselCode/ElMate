@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { TableSkeleton } from "@/front/admin/layout/panel-loading";
 import { Badge } from "@/front/shared/ui/badge";
-import { buttonClass } from "@/front/shared/ui/button";
+import { AutoFilterForm } from "@/front/shared/ui/auto-filter-form";
 import { EmptyState, LoadError } from "@/front/shared/ui/empty-state";
 import { inputClass } from "@/front/shared/ui/field";
 import { FilterField } from "@/front/shared/ui/filter-field";
@@ -32,7 +31,7 @@ export function MovementsScreen({ list, filters }: { list: Promise<Paged<Movemen
         </p>
       </header>
 
-      <form method="get" action="/admin/stock/movements" className="flex flex-wrap items-end gap-3" role="search">
+      <AutoFilterForm action="/admin/stock/movements" hasFilters={hasFilters}>
         <FilterField id="q" label="Buscar" className="min-w-56 flex-1">
           <input id="q" name="q" type="search" defaultValue={q} placeholder="Producto o código" className={inputClass} />
         </FilterField>
@@ -44,15 +43,7 @@ export function MovementsScreen({ list, filters }: { list: Promise<Paged<Movemen
             ))}
           </select>
         </FilterField>
-        <button type="submit" className={buttonClass("primary")}>
-          Filtrar
-        </button>
-        {hasFilters && (
-          <Link href="/admin/stock/movements" className={buttonClass("ghost")}>
-            Limpiar
-          </Link>
-        )}
-      </form>
+      </AutoFilterForm>
 
       {/* key: al cambiar un filtro o de página vuelve a mostrar el esqueleto mientras llegan las filas */}
       <Suspense key={JSON.stringify(filters)} fallback={<TableSkeleton />}>
