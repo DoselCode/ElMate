@@ -60,15 +60,14 @@ export function HomeScreen({
   return (
     <>
       <Hero />
-      {/* Se alternan secciones de listado (productos, categorías) con las que no lo son (ritual, grabado, promos) */}
-      <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
+      {/* Primero lo urgente (promos de temporada y ofertas), después se alternan listados (categorías, productos) con secciones de contenido (ritual, grabado) */}
       <PromoCards promotions={promotions.filter((p) => p.show_card)} showcase={promoShowcase} fallback={data.offers} />
+      <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
       <Categories categories={categories} />
-      <Ritual combosHref={categoryHref(categories, "combo")} />
       <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
+      <Ritual combosHref={categoryHref(categories, "combo")} />
       <Engraving href={categoryHref(categories, "grabado")} />
       <Instagram posts={store.instagram_posts} profileUrl={store.instagram_url || INSTAGRAM_URL} />
-      <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
     </>
   );
 }
@@ -341,67 +340,5 @@ function Ritual({ combosHref }: { combosHref: string }) {
         </div>
       </div>
     </section>
-  );
-}
-
-function Promos({ bombillasHref, combosHref }: { bombillasHref: string; combosHref: string }) {
-  return (
-    <section className={`${container} mt-24 grid gap-6 lg:grid-cols-2`}>
-      <PromoCard
-        dark
-        className="fx-from-left"
-        title={t("promoBombillas.title")}
-        text={t("promoBombillas.text")}
-        href={bombillasHref}
-        cta="Ver bombillas"
-        image="/landing/promo-bombillas.svg"
-      />
-      <PromoCard
-        className="fx-from-right"
-        title={t("promoCombos.title")}
-        text={t("promoCombos.text")}
-        href={combosHref} cta="Ver combos" image="/landing/promo-combos.svg" />
-    </section>
-  );
-}
-
-/** Tarjeta de promo: texto a la izquierda e ilustración a la derecha (SVG livianos en public/landing). */
-function PromoCard({
-  title,
-  text,
-  href,
-  cta,
-  image,
-  dark = false,
-  className = "",
-}: {
-  title: string;
-  text: string;
-  href: string;
-  cta: string;
-  image: string;
-  dark?: boolean;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`${className} flex flex-col-reverse items-center gap-6 rounded-[2rem] p-8 text-center sm:flex-row sm:p-10 sm:text-left ${
-        dark ? "bg-primary-deep text-white" : "bg-surface text-foreground"
-      }`}
-    >
-      <div className="flex-1">
-        <h2 className="font-display text-2xl font-bold leading-tight sm:text-[1.75rem]">{title}</h2>
-        <p className={`mt-3 ${dark ? "text-white/85" : "text-muted"}`}>{text}</p>
-        <Link
-          href={href}
-          className={`mt-6 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 font-bold transition-colors ${
-            dark ? "bg-white text-primary-deep hover:bg-primary-soft" : "bg-primary-deep text-white hover:bg-primary"
-          }`}
-        >
-          {cta} <CaretRight size={16} weight="bold" aria-hidden />
-        </Link>
-      </div>
-      <Image src={image} alt="" width={240} height={240} unoptimized className="fx-stir size-40 shrink-0 sm:size-44" />
-    </div>
   );
 }
