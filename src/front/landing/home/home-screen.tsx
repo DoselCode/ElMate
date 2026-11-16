@@ -12,10 +12,11 @@ import {
   Storefront,
   WhatsappLogo,
 } from "@phosphor-icons/react/dist/ssr";
-import type { HomeData, PublicCategory, PublicProduct, PublicPromotion } from "@/shared/types";
+import type { HomeData, PublicCategory, PublicProduct, PublicPromotion, StoreInfo } from "@/shared/types";
+import { instagramEmbedUrl } from "@/shared/instagram";
 import { ProductGrid } from "../catalog/product-card";
 import { t } from "@/shared/home-content";
-import { BENEFITS, HERO, INSTAGRAM_POSTS, INSTAGRAM_URL } from "../content";
+import { BENEFITS, HERO, INSTAGRAM_URL } from "../content";
 import { CategoryCarousel } from "./category-carousel";
 import { HeroBrew } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
@@ -40,7 +41,20 @@ const heading = (id: "featured" | "offers" | "instagram"): SectionHeadingProps =
   text: t(`${id}.text`),
 });
 
-export function HomeScreen({ data, categories, promotions }: { data: HomeData; categories: PublicCategory[]; promotions: PublicPromotion[] }) {
+export function HomeScreen({
+  data,
+  categories,
+  promotions,
+  store,
+  promoShowcase,
+}: {
+  data: HomeData;
+  categories: PublicCategory[];
+  promotions: PublicPromotion[];
+  store: StoreInfo;
+  /** Productos con foto de cada promo con card (por slug), para ilustrarla. */
+  promoShowcase: Record<string, PublicProduct[]>;
+}) {
   // Destacados; si todavía no hay ninguno, los más vendidos para que la sección no quede vacía
   const highlighted = data.featured.length > 0 ? data.featured : data.bestSellers;
   return (
@@ -48,12 +62,12 @@ export function HomeScreen({ data, categories, promotions }: { data: HomeData; c
       <Hero />
       {/* Se alternan secciones de listado (productos, categorías) con las que no lo son (ritual, grabado, promos) */}
       <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
-      <PromoCards promotions={promotions.filter((p) => p.show_card)} />
+      <PromoCards promotions={promotions.filter((p) => p.show_card)} showcase={promoShowcase} fallback={data.offers} />
       <Categories categories={categories} />
       <Ritual combosHref={categoryHref(categories, "combo")} />
       <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
       <Engraving href={categoryHref(categories, "grabado")} />
-      <Instagram />
+      <Instagram posts={store.instagram_posts} profileUrl={store.instagram_url || INSTAGRAM_URL} />
       <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
     </>
   );
@@ -62,7 +76,16 @@ export function HomeScreen({ data, categories, promotions }: { data: HomeData; c
 const dateFormat = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", timeZone: "America/Argentina/Buenos_Aires" });
 
 /** Cards de promociones vigentes (fecha especial, Cyber Monday…): se cargan en el panel y salen solas entre sus fechas. */
-function PromoCards({ promotions }: { promotions: PublicPromotion[] }) {
+function PromoCards({
+  promotions,
+  showcase,
+  fallback,
+}: {
+  promotions: PublicPromotion[];
+  showcase: Record<string, PublicProduct[]>;
+  /** Si la promo no tiene productos con foto, se ilustra con los productos en oferta. */
+  fallback: PublicProduct[];
+}) {
   if (promotions.length === 0) return null;
   return (
     <section id="promociones" className={`${container} mt-12 grid scroll-mt-28 gap-6 ${promotions.length > 1 ? "lg:grid-cols-2" : ""}`}>
@@ -70,23 +93,63 @@ function PromoCards({ promotions }: { promotions: PublicPromotion[] }) {
         <article
           key={promo.id}
           style={{ "--i": i } as React.CSSProperties}
-          className="fx-vapor flex flex-col items-start gap-4 rounded-[2rem] bg-primary-deep p-8 text-white sm:p-10"
+          className="fx-vapor grid items-center gap-6 rounded-[2rem] bg-primary-deep p-8 text-white sm:grid-cols-[minmax(0,1fr)_auto] sm:p-10"
         >
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-bold">
-            <Gift size={16} weight="bold" aria-hidden />
-            {promo.ends_at ? `Hasta el ${dateFormat.format(new Date(promo.ends_at))}` : "Promo vigente"}
-          </p>
-          <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.2rem]">{promo.card_title || promo.name}</h2>
-          {(promo.card_text || promo.description) && <p className="max-w-xl text-white/85">{promo.card_text || promo.description}</p>}
-          <Link
+          <div className="flex flex-col items-start gap-4">
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-bold">
+              <Gift size={16} weight="bold" aria-hidden />
+              {promo.ends_at ? `Hasta el ${dateFormat.format(new Date(promo.ends_at))}` : "Promo vigente"}
+            </p>
+            <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.2rem]">{promo.card_title || promo.name}</h2>
+            {(promo.card_text || promo.description) && <p className="max-w-xl text-white/85">{promo.card_text || promo.description}</p>}
+            <Link
+              href={`/tienda?promo=${promo.slug}`}
+              className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-primary-deep transition-colors hover:bg-primary-soft"
+            >
+              {promo.card_cta || "Ver promo"} <ArrowRight size={18} weight="bold" aria-hidden />
+            </Link>
+          </div>
+          <PromoCollage
             href={`/tienda?promo=${promo.slug}`}
-            className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-primary-deep transition-colors hover:bg-primary-soft"
-          >
-            {promo.card_cta || "Ver promo"} <ArrowRight size={18} weight="bold" aria-hidden />
-          </Link>
+            name={promo.card_title || promo.name}
+            products={showcase[promo.slug]?.length ? showcase[promo.slug] : fallback.filter((p) => p.images.length > 0).slice(0, 4)}
+          />
         </article>
       ))}
     </section>
+  );
+}
+
+/** Fotos de los productos de la promo (con su % de descuento), como collage a la derecha de la card. */
+function PromoCollage({ href, name, products }: { href: string; name: string; products: PublicProduct[] }) {
+  if (products.length === 0) {
+    return (
+      <span className="hidden size-36 place-items-center rounded-3xl bg-white/10 text-white/80 sm:grid" aria-hidden>
+        <Gift size={64} weight="duotone" />
+      </span>
+    );
+  }
+  const single = products.length === 1;
+  return (
+    <Link
+      href={href}
+      aria-label={`Ver los productos de ${name}`}
+      className={`grid gap-2.5 ${single ? "w-44 grid-cols-1 sm:w-52" : "grid-cols-2 sm:w-60"}`}
+    >
+      {products.map((p, i) => (
+        <span
+          key={p.id}
+          className={`relative aspect-square overflow-hidden rounded-2xl bg-white/10 shadow-lg ring-2 ring-white/30 transition-transform hover:scale-[1.03] ${i % 2 === 0 ? "-rotate-2" : "rotate-2"}`}
+        >
+          <Image src={p.images[0]} alt={p.name} fill sizes="(min-width: 640px) 120px, 45vw" className="object-cover" />
+          {p.discount_pct ? (
+            <span className="absolute left-1.5 top-1.5 rounded-full bg-white px-2 py-0.5 text-xs font-extrabold text-primary-deep">
+              −{p.discount_pct}%
+            </span>
+          ) : null}
+        </span>
+      ))}
+    </Link>
   );
 }
 
@@ -111,30 +174,27 @@ function Engraving({ href }: { href: string }) {
   );
 }
 
-function Instagram() {
-  if (INSTAGRAM_POSTS.length === 0) return null;
+/** Publicaciones de Instagram incrustadas: se cargan en el panel pegando solo el link de cada una. */
+function Instagram({ posts, profileUrl }: { posts: string[]; profileUrl: string }) {
+  if (posts.length === 0) return null;
   return (
     <section id="instagram" className={`${container} mt-24 scroll-mt-28`}>
       <SectionHeading {...heading("instagram")} />
-      <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
-        {INSTAGRAM_POSTS.slice(0, 6).map((post, i) => (
-          <li key={post.url} style={{ "--i": i } as React.CSSProperties} className="fx-vapor">
-            <a
-              href={post.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative block aspect-square overflow-hidden rounded-2xl bg-primary-soft"
-            >
-              <Image src={post.image} alt={post.alt} fill sizes="(min-width: 1024px) 14vw, (min-width: 768px) 30vw, 45vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
-              <span className="absolute inset-0 grid place-items-center bg-primary-deep/0 text-white opacity-0 transition group-hover:bg-primary-deep/50 group-hover:opacity-100">
-                <InstagramLogo size={32} weight="bold" aria-hidden />
-              </span>
-            </a>
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {posts.slice(0, 6).map((post, i) => (
+          <li key={post} style={{ "--i": i } as React.CSSProperties} className="fx-vapor">
+            <iframe
+              src={instagramEmbedUrl(post)}
+              title={`Publicación ${i + 1} de Instagram`}
+              loading="lazy"
+              scrolling="no"
+              className="aspect-[5/7] w-full rounded-2xl border border-border bg-surface"
+            />
           </li>
         ))}
       </ul>
       <div className="mt-8 text-center">
-        <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className={btnOutline}>
+        <a href={profileUrl} target="_blank" rel="noopener noreferrer" className={btnOutline}>
           <InstagramLogo size={18} weight="bold" aria-hidden /> Ver más en Instagram
         </a>
       </div>

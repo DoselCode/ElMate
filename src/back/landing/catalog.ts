@@ -57,6 +57,17 @@ export async function getHomeData(): Promise<HomeData> {
   return { featured: featured.rows, offers: offers.rows, bestSellers: best };
 }
 
+/**
+ * Productos de una promoción para ilustrar su card en la home: los de mayor descuento que tengan foto (hasta 4).
+ * Sin ninguno, la home usa los productos en oferta.
+ */
+export async function getPromotionShowcase(slug: string): Promise<PublicProduct[]> {
+  const ids = await safe("los productos de la promoción", [] as string[], () => source.promotionProductIds(slug));
+  if (ids.length === 0) return [];
+  const { rows } = await products({ ids: ids.slice(0, 100), sort: "mayor-descuento", limit: 12 });
+  return rows.filter((p) => p.images.length > 0).slice(0, 4);
+}
+
 export function parseShopFilters(sp: SearchParams): ShopFilters {
   const sort = param(sp, "orden") as ShopSort;
   return {

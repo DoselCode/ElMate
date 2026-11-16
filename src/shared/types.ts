@@ -350,6 +350,8 @@ export type StoreInfo = {
   hours_weekdays: string | null;
   hours_saturday: string | null;
   hours_sunday: string | null;
+  /** Links de publicaciones de Instagram para incrustar en la home (la más nueva primero). */
+  instagram_posts: string[];
 };
 
 export type ShopSort = "destacados" | "precio-asc" | "precio-desc" | "nuevos";

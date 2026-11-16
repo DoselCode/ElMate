@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { saveStoreSettingsAction } from "@/back/admin/settings/actions";
 import { Button } from "@/front/shared/ui/button";
-import { TextField } from "@/front/shared/ui/field";
+import { Field, TextField, inputClass, inputErrorClass } from "@/front/shared/ui/field";
 import { fieldErrors } from "@/shared/schemas/product";
 import { storeSettingsSchema, type StoreSettingsInput } from "@/shared/schemas/settings";
 
@@ -101,6 +101,25 @@ export function SettingsForm({ initial }: { initial: StoreSettingsInput }) {
           </div>
         </section>
       ))}
+
+      <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
+        <h2 className="font-display text-lg font-bold">Publicaciones de Instagram</h2>
+        <p className="mb-4 mt-0.5 text-sm text-muted">
+          Pegá el link de cada publicación o reel, uno por línea (hasta 6, la más nueva primero). La web los muestra en la home sin que cargues nada más.
+        </p>
+        <Field label="Links de las publicaciones" htmlFor="settings-instagramPosts" error={errors.instagramPosts} hint="Ej: https://www.instagram.com/p/AbCdEfGhIjK/">
+          <textarea
+            id="settings-instagramPosts"
+            rows={6}
+            value={values.instagramPosts}
+            placeholder={"https://www.instagram.com/p/…\nhttps://www.instagram.com/reel/…"}
+            aria-invalid={Boolean(errors.instagramPosts)}
+            aria-describedby={errors.instagramPosts ? "settings-instagramPosts-error" : undefined}
+            onChange={(e) => setValues((v) => ({ ...v, instagramPosts: e.target.value }))}
+            className={`${inputClass} font-mono ${errors.instagramPosts ? inputErrorClass : ""}`}
+          />
+        </Field>
+      </section>
 
       <div className="flex flex-wrap items-center justify-end gap-3">
         {message && (

@@ -6,6 +6,7 @@ import { friendlyDbError } from "@/back/shared/db-errors";
 import { createClient } from "@/back/shared/supabase/server";
 import { fieldErrors } from "@/shared/schemas/product";
 import { paymentMethodsSchema } from "@/shared/schemas/payment-methods";
+import { parseInstagramPosts } from "@/shared/instagram";
 import { storeSettingsSchema } from "@/shared/schemas/settings";
 import type { ActionResult } from "@/shared/types";
 
@@ -30,6 +31,7 @@ export async function saveStoreSettingsAction(input: unknown): Promise<ActionRes
       address: orNull(s.address),
       instagram_url: orNull(s.instagramUrl),
       facebook_url: orNull(s.facebookUrl),
+      instagram_posts: parseInstagramPosts(s.instagramPosts).urls,
       hours_weekdays: orNull(s.hoursWeekdays),
       hours_saturday: orNull(s.hoursSaturday),
       hours_sunday: orNull(s.hoursSunday),

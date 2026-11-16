@@ -24,23 +24,8 @@ export const BENEFITS = {
   ],
 } as const;
 
-/** Perfil de Instagram de la tienda (el de "Datos del local" tiene prioridad en el footer). */
+/** Perfil de Instagram por defecto (el de "Datos del local" tiene prioridad). Las publicaciones se cargan en el panel. */
 export const INSTAGRAM_URL = "https://www.instagram.com/elmate.cordoba/";
-
-export type InstagramPost = {
-  /** Link al posteo en Instagram. */
-  url: string;
-  /** Imagen en public/landing/instagram/ (ej. "/landing/instagram/posteo-1.jpg"). */
-  image: string;
-  /** Texto corto para lectores de pantalla. */
-  alt: string;
-};
-
-/**
- * Últimos posteos, cargados a mano: para actualizarlos, sumar acá el link y la imagen del posteo nuevo
- * (el más reciente primero; la home muestra hasta 6). Con la lista vacía la sección no aparece.
- */
-export const INSTAGRAM_POSTS: InstagramPost[] = [];
 
 export type BlogPost = { slug: string; tag: string; title: string; excerpt: string; image: string; body: string[] };
 

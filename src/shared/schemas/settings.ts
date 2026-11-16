@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { MAX_INSTAGRAM_POSTS, parseInstagramPosts } from "../instagram";
 import { normalizeWhatsappNumber } from "../whatsapp";
 
 const optionalText = (max: number) => z.string().trim().max(max, { error: `Máximo ${max} caracteres` });
@@ -18,6 +19,15 @@ export const storeSettingsSchema = z.object({
   address: optionalText(160),
   instagramUrl: optionalUrl,
   facebookUrl: optionalUrl,
+  /** Links de publicaciones de Instagram, uno por línea. */
+  instagramPosts: optionalText(1200).superRefine((v, ctx) => {
+    const { urls, invalid } = parseInstagramPosts(v);
+    if (invalid.length > 0) {
+      ctx.addIssue({ code: "custom", message: `No es un link de publicación o reel de Instagram: ${invalid[0].slice(0, 60)}` });
+    } else if (urls.length > MAX_INSTAGRAM_POSTS) {
+      ctx.addIssue({ code: "custom", message: `Máximo ${MAX_INSTAGRAM_POSTS} publicaciones` });
+    }
+  }),
   hoursWeekdays: optionalText(60),
   hoursSaturday: optionalText(60),
   hoursSunday: optionalText(60),

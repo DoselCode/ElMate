@@ -40,6 +40,7 @@ export async function getStoreSettings(): Promise<StoreSettingsInput> {
     address: text(s.address),
     instagramUrl: text(s.instagram_url),
     facebookUrl: text(s.facebook_url),
+    instagramPosts: Array.isArray(s.instagram_posts) ? s.instagram_posts.join("\n") : "",
     hoursWeekdays: text(s.hours_weekdays),
     hoursSaturday: text(s.hours_saturday),
     hoursSunday: text(s.hours_sunday),

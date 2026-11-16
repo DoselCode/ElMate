@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useTransition } from "react";
-import { CheckCircle, MagnifyingGlass, Minus, Package, Plus, Receipt, Tag, Trash, Warning } from "@phosphor-icons/react";
+import { CheckCircle, MagnifyingGlass, Minus, Package, Plus, Receipt, ShoppingCartSimple, Tag, Trash, Warning } from "@phosphor-icons/react";
 import { createSaleAction } from "@/back/admin/sales/actions";
 import { Button, buttonClass } from "@/front/shared/ui/button";
 import { Modal } from "@/front/shared/ui/modal";
@@ -31,7 +31,7 @@ function discountOf(base: number, type: DiscountType, text: string): number | nu
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 const normalize = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 12;
 
 /** Controla stock y no queda nada: no se puede vender. */
 const outOfStock = (i: SellableItem) => i.track_stock && i.stock <= 0;
@@ -65,6 +65,9 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
   const [notice, setNotice] = useState<string>();
   const [done, setDone] = useState<{ saleId: string; ticketNumber: number; total: number } | null>(null);
   const [pending, startTransition] = useTransition();
+  /** Arrastrando un producto: se resalta el carrito como destino. */
+  const [dragging, setDragging] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   // ---- búsqueda ---------------------------------------------------------------------------
   const filtered = useMemo(() => {
@@ -224,7 +227,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
         )}
       </Modal>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_27rem]">
         <section aria-label="Productos de la venta" className="space-y-4">
           {/* Buscador */}
           <div>
@@ -261,38 +264,56 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
             {filtered.length === 0 ? (
               <p className="rounded-2xl bg-surface px-4 py-6 text-center text-sm text-muted">No hay productos con “{query}”.</p>
             ) : (
-              <ul className="grid gap-2 sm:grid-cols-2">
+              <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-4">
                 {pageItems.map((i) => {
                   const out = outOfStock(i);
                   return (
                     <li key={i.variant_id}>
-                      <button
-                        type="button"
-                        onClick={() => add(i)}
-                        disabled={out}
-                        aria-label={out ? `${labelOf(i)}: sin stock` : undefined}
-                        className={`flex h-full w-full items-center gap-3 rounded-2xl p-2.5 text-left shadow-sm transition-colors ${
+                      {/* div y no button: Firefox no deja arrastrar un botón */}
+                      <div
+                        role="button"
+                        tabIndex={out ? -1 : 0}
+                        aria-disabled={out}
+                        aria-label={out ? `${labelOf(i)}: sin stock` : `Agregar ${labelOf(i)} al carrito`}
+                        draggable={!out}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", i.variant_id);
+                          e.dataTransfer.effectAllowed = "copy";
+                          setDragging(true);
+                        }}
+                        onDragEnd={() => {
+                          setDragging(false);
+                          setDragOver(false);
+                        }}
+                        onClick={() => !out && add(i)}
+                        onKeyDown={(e) => {
+                          if (!out && (e.key === "Enter" || e.key === " ")) {
+                            e.preventDefault();
+                            add(i);
+                          }
+                        }}
+                        className={`flex h-full select-none flex-col overflow-hidden rounded-2xl text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                           out
                             ? "cursor-not-allowed bg-background text-muted opacity-60 grayscale"
-                            : "cursor-pointer bg-surface hover:bg-primary-soft"
+                            : "cursor-grab bg-surface hover:-translate-y-0.5 hover:bg-primary-soft hover:shadow-md active:cursor-grabbing"
                         }`}
                       >
-                        <Thumb src={i.image} />
-                        <span className="min-w-0 flex-1">
-                          <span className={`block truncate text-sm font-semibold ${out ? "" : "text-foreground"}`}>
+                        <CardPhoto src={i.image} />
+                        <span className="flex flex-1 flex-col gap-1 p-3">
+                          <span className={`line-clamp-2 text-sm font-semibold ${out ? "" : "text-foreground"}`}>
                             {i.product_name}
                             {i.variant_label && <span className="font-normal text-muted"> · {i.variant_label}</span>}
                           </span>
-                          <span className="block truncate text-xs text-muted">
+                          <span className="truncate text-xs text-muted">
                             <span className="font-mono">{i.sku}</span>
                             {out ? " · Sin stock" : i.track_stock ? ` · Stock: ${formatQuantity(i.stock, i.unit)}` : ""}
                           </span>
+                          <span className="mt-auto pt-1 text-base font-bold tabular-nums">
+                            {formatMoney(i.price)}
+                            {i.unit === "kg" && <span className="text-xs font-normal text-muted"> por kg</span>}
+                          </span>
                         </span>
-                        <span className="text-right">
-                          <span className="block text-sm font-bold tabular-nums">{formatMoney(i.price)}</span>
-                          {i.unit === "kg" && <span className="block text-xs text-muted">por kg</span>}
-                        </span>
-                      </button>
+                      </div>
                     </li>
                   );
                 })}
@@ -316,10 +337,47 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
             )}
           </div>
 
-          {/* Líneas */}
+        </section>
+
+        {/* Carrito: se le arrastran los productos (o se tocan) y de acá se cobra */}
+        <aside
+          aria-label="Carrito y cobro"
+          onDragOver={(e) => {
+            if (!dragging) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+            setDragOver(true);
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragOver(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData("text/plain");
+            setDragOver(false);
+            setDragging(false);
+            const item = items.find((x) => x.variant_id === id);
+            if (item) add(item);
+          }}
+          className={`space-y-4 rounded-[var(--radius-card)] p-5 shadow-sm transition lg:sticky lg:top-6 lg:max-h-[calc(100svh-3rem)] lg:overflow-y-auto ${
+            dragOver ? "bg-primary-soft ring-4 ring-primary/40" : dragging ? "bg-surface ring-2 ring-primary/30" : "bg-surface"
+          }`}
+        >
+          <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+            <ShoppingCartSimple size={22} className="text-primary" aria-hidden /> Carrito
+            {lines.length > 0 && (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-white">{lines.length}</span>
+            )}
+          </h2>
+
           {lines.length === 0 ? (
-            <div className="rounded-[var(--radius-card)] border-2 border-dashed border-border-strong p-10 text-center text-sm text-muted">
-              Buscá un producto para empezar la venta.
+            <div
+              className={`rounded-2xl border-2 border-dashed p-8 text-center text-sm ${
+                dragOver ? "border-primary text-primary" : "border-border-strong text-muted"
+              }`}
+            >
+              <ShoppingCartSimple size={32} className="mx-auto mb-2" aria-hidden />
+              Arrastrá los productos hasta acá, o tocalos, para armar la venta.
             </div>
           ) : (
             <ul className="space-y-2">
@@ -328,91 +386,93 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
                 const id = `qty-${l.item.variant_id}`;
                 const setQty = (qty: string) => setLine(l.item.variant_id, { qty });
                 return (
-                  <li key={l.item.variant_id} className="rounded-2xl bg-surface p-3 shadow-sm">
-                    <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
-                    <Thumb src={l.item.image} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {l.item.product_name}
-                        {l.item.variant_label && <span className="font-normal text-muted"> · {l.item.variant_label}</span>}
-                      </p>
-                      <p className="text-xs text-muted">
-                        {formatMoney(l.item.price)}
-                        {l.item.unit === "kg" ? " por kg" : " c/u"}
-                        {over && <span className="font-semibold text-danger"> · máximo {formatQuantity(l.item.stock, l.item.unit)}</span>}
-                      </p>
+                  <li key={l.item.variant_id} className="rounded-2xl bg-background p-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <Thumb src={l.item.image} />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-semibold">
+                          {l.item.product_name}
+                          {l.item.variant_label && <span className="font-normal text-muted"> · {l.item.variant_label}</span>}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {formatMoney(l.item.price)}
+                          {l.item.unit === "kg" ? " por kg" : " c/u"}
+                          {over && <span className="font-semibold text-danger"> · máximo {formatQuantity(l.item.stock, l.item.unit)}</span>}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setLines((ls) => ls.filter((x) => x.item.variant_id !== l.item.variant_id))}
+                        aria-label={`Quitar ${l.item.product_name}`}
+                        className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-muted hover:bg-danger-soft hover:text-danger"
+                      >
+                        <Trash size={16} aria-hidden />
+                      </button>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {l.item.unit === "unidad" && (
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1">
+                        {l.item.unit === "unidad" && (
+                          <button
+                            type="button"
+                            className="grid size-8 cursor-pointer place-items-center rounded-full hover:bg-primary-soft disabled:opacity-40"
+                            aria-label={`Restar uno de ${l.item.product_name}`}
+                            disabled={!l.ok || l.qtyNumber <= 1}
+                            onClick={() => setQty(String(l.qtyNumber - 1))}
+                          >
+                            <Minus size={14} weight="bold" aria-hidden />
+                          </button>
+                        )}
+                        <label htmlFor={id} className="sr-only">
+                          {l.item.unit === "kg" ? "Kilos" : "Cantidad"} de {l.item.product_name}
+                        </label>
+                        <input
+                          id={id}
+                          value={l.qty}
+                          inputMode={l.item.unit === "kg" ? "decimal" : "numeric"}
+                          autoFocus={l.item.unit === "kg" && l.qty === ""}
+                          placeholder={l.item.unit === "kg" ? "0,250" : "1"}
+                          onChange={(e) => setQty(e.target.value)}
+                          aria-invalid={!l.ok}
+                          className={`w-16 rounded-xl border bg-surface px-2 py-1.5 text-center text-sm font-semibold tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+                            l.ok ? "border-border-strong" : "border-danger"
+                          }`}
+                        />
+                        {l.item.unit === "kg" ? (
+                          <span className="text-xs text-muted">kg</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="grid size-8 cursor-pointer place-items-center rounded-full hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
+                            aria-label={`Sumar uno de ${l.item.product_name}`}
+                            title={l.item.track_stock && l.ok && l.qtyNumber >= l.item.stock ? "No hay más stock" : undefined}
+                            disabled={l.item.track_stock && l.ok && l.qtyNumber >= l.item.stock}
+                            onClick={() => setQty(String((l.ok ? l.qtyNumber : 0) + 1))}
+                          >
+                            <Plus size={14} weight="bold" aria-hidden />
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="text-right">
+                          {l.lineDiscount ? <p className="text-xs text-muted line-through tabular-nums">{formatMoney(l.gross)}</p> : null}
+                          <p className="text-sm font-bold tabular-nums">{l.ok ? formatMoney(l.lineTotal) : "—"}</p>
+                        </div>
                         <button
                           type="button"
-                          className="grid size-8 cursor-pointer place-items-center rounded-full hover:bg-primary-soft disabled:opacity-40"
-                          aria-label={`Restar uno de ${l.item.product_name}`}
-                          disabled={!l.ok || l.qtyNumber <= 1}
-                          onClick={() => setQty(String(l.qtyNumber - 1))}
+                          onClick={() => setLine(l.item.variant_id, { showDiscount: !l.showDiscount })}
+                          aria-label={`Descuento para ${l.item.product_name}`}
+                          aria-expanded={l.showDiscount}
+                          title="Descuento"
+                          className={`grid size-8 cursor-pointer place-items-center rounded-full hover:bg-primary-soft hover:text-primary ${
+                            l.lineDiscount ? "bg-primary-soft text-primary" : "text-muted"
+                          }`}
                         >
-                          <Minus size={14} weight="bold" aria-hidden />
+                          <Tag size={16} aria-hidden />
                         </button>
-                      )}
-                      <label htmlFor={id} className="sr-only">
-                        {l.item.unit === "kg" ? "Kilos" : "Cantidad"} de {l.item.product_name}
-                      </label>
-                      <input
-                        id={id}
-                        value={l.qty}
-                        inputMode={l.item.unit === "kg" ? "decimal" : "numeric"}
-                        autoFocus={l.item.unit === "kg" && l.qty === ""}
-                        placeholder={l.item.unit === "kg" ? "0,250" : "1"}
-                        onChange={(e) => setQty(e.target.value)}
-                        aria-invalid={!l.ok}
-                        className={`w-20 rounded-xl border px-2 py-1.5 text-center text-sm font-semibold tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 ${
-                          l.ok ? "border-border-strong" : "border-danger"
-                        }`}
-                      />
-                      {l.item.unit === "kg" ? (
-                        <span className="text-xs text-muted">kg</span>
-                      ) : (
-                        <button
-                          type="button"
-                          className="grid size-8 cursor-pointer place-items-center rounded-full hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label={`Sumar uno de ${l.item.product_name}`}
-                          title={l.item.track_stock && l.ok && l.qtyNumber >= l.item.stock ? "No hay más stock" : undefined}
-                          disabled={l.item.track_stock && l.ok && l.qtyNumber >= l.item.stock}
-                          onClick={() => setQty(String((l.ok ? l.qtyNumber : 0) + 1))}
-                        >
-                          <Plus size={14} weight="bold" aria-hidden />
-                        </button>
-                      )}
-                    </div>
-                    <div className="w-24 text-right">
-                      {l.lineDiscount ? (
-                        <p className="text-xs text-muted line-through tabular-nums">{formatMoney(l.gross)}</p>
-                      ) : null}
-                      <p className="text-sm font-bold tabular-nums">{l.ok ? formatMoney(l.lineTotal) : "—"}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setLine(l.item.variant_id, { showDiscount: !l.showDiscount })}
-                      aria-label={`Descuento para ${l.item.product_name}`}
-                      aria-expanded={l.showDiscount}
-                      title="Descuento"
-                      className={`grid size-8 cursor-pointer place-items-center rounded-full hover:bg-primary-soft hover:text-primary ${
-                        l.lineDiscount ? "bg-primary-soft text-primary" : "text-muted"
-                      }`}
-                    >
-                      <Tag size={16} aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLines((ls) => ls.filter((x) => x.item.variant_id !== l.item.variant_id))}
-                      aria-label={`Quitar ${l.item.product_name}`}
-                      className="grid size-8 cursor-pointer place-items-center rounded-full text-muted hover:bg-danger-soft hover:text-danger"
-                    >
-                      <Trash size={16} aria-hidden />
-                    </button>
+                      </div>
                     </div>
                     {l.showDiscount && (
-                      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-dashed border-border pt-2 pl-[3.25rem] text-sm">
+                      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-dashed border-border pt-2 text-sm">
                         <span className="text-muted">Descuento</span>
                         <DiscountInput
                           id={`disc-${l.item.variant_id}`}
@@ -436,10 +496,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
               })}
             </ul>
           )}
-        </section>
 
-        {/* Cobro */}
-        <aside aria-label="Cobro" className="space-y-4 rounded-[var(--radius-card)] bg-surface p-5 shadow-sm lg:sticky lg:top-6">
           <dl className="space-y-1.5 text-sm">
             <div className="flex justify-between">
               <dt className="text-muted">Subtotal</dt>
@@ -620,5 +677,20 @@ function DiscountInput({
         ))}
       </div>
     </div>
+  );
+}
+
+/** Foto grande de la tarjeta de producto. */
+function CardPhoto({ src }: { src: string | null }) {
+  return (
+    <span className="relative block aspect-[4/3] w-full bg-background">
+      {src ? (
+        <Image src={src} alt="" fill sizes="(min-width: 1536px) 14rem, (min-width: 768px) 12rem, 45vw" draggable={false} className="object-cover" />
+      ) : (
+        <span className="grid size-full place-items-center text-muted" aria-hidden>
+          <Package size={32} />
+        </span>
+      )}
+    </span>
   );
 }
