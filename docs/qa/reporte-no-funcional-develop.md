@@ -86,11 +86,12 @@ Teclado (manual):
 
 ### NF-03 · Media · El link del collage de promos no incluye su texto visible
 - `PromoCollage` (`src/front/landing/home/home-screen.tsx`, en `origin/develop`) usa `aria-label="Ver los productos de {promo}"`, pero adentro muestra "−22%". Incumple WCAG 2.5.3 (el nombre accesible debe contener el texto visible). Quien usa control por voz no puede activarlo diciendo lo que ve.
-- Sugerencia: sacar el `aria-label` y dejar que el nombre salga de los `alt` y el porcentaje, o incluir el descuento en el label.
+- **Corregido en el código (falta desplegar):** se reemplazó el `aria-label` por un prefijo `sr-only`; el nombre queda "Ver los productos de {promo}: … −22%".
 - E2E: `e2e/a11y/accessibility.spec.ts` › "home …" falla mientras exista.
 
 ### NF-04 · Baja · Al cerrar el buscador con Escape se pierde el foco
 - El foco queda en `BODY`, en vez de volver al botón "Buscar productos". Quien navega con teclado tiene que empezar de nuevo desde arriba.
+- **Corregido en el código (falta desplegar):** Escape y la X devuelven el foco al botón. E2E: "closing the search panel with Escape returns focus to its toggle".
 
 ### Falsos positivos descartados
 - **Contraste en las cards de promo (axe: 1,1–1,4:1):** axe midió en plena animación de entrada (blur + fade). Con la animación terminada es texto blanco sobre `rgb(11,17,25)`, con contraste alto. El spec ahora emula `prefers-reduced-motion`, que el CSS respeta.

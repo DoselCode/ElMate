@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import type { HomeData, PublicCategory, PublicProduct, PublicPromotion, StoreInfo } from "@/shared/types";
 import { instagramEmbedUrl, isInstagramUrl, normalizeInstagramPost } from "@/shared/instagram";
+import { badgePct } from "@/shared/pricing";
 import { ProductGrid } from "../catalog/product-card";
 import { t } from "@/shared/home-content";
 import { BENEFITS, HERO, INSTAGRAM_URL } from "../content";
@@ -130,24 +131,25 @@ function PromoCollage({ href, name, products }: { href: string; name: string; pr
   }
   const single = products.length === 1;
   return (
-    <Link
-      href={href}
-      aria-label={`Ver los productos de ${name}`}
-      className={`grid gap-2.5 ${single ? "w-44 grid-cols-1 sm:w-52" : "grid-cols-2 sm:w-60"}`}
-    >
-      {products.map((p, i) => (
-        <span
-          key={p.id}
-          className={`relative aspect-square overflow-hidden rounded-2xl bg-white/10 shadow-lg ring-2 ring-white/30 transition-transform hover:scale-[1.03] ${i % 2 === 0 ? "-rotate-2" : "rotate-2"}`}
-        >
-          <Image src={p.images[0]} alt={p.name} fill sizes="(min-width: 640px) 120px, 45vw" className="object-cover" />
-          {p.discount_pct ? (
-            <span className="absolute left-1.5 top-1.5 rounded-full bg-white px-2 py-0.5 text-xs font-extrabold text-primary-deep">
-              −{p.discount_pct}%
-            </span>
-          ) : null}
-        </span>
-      ))}
+    <Link href={href} className={`grid gap-2.5 ${single ? "w-44 grid-cols-1 sm:w-52" : "grid-cols-2 sm:w-60"}`}>
+      {/* Hidden prefix instead of aria-label: the accessible name must keep the visible "−22%" (WCAG 2.5.3) */}
+      <span className="sr-only">Ver los productos de {name}:</span>
+      {products.map((p, i) => {
+        const pct = badgePct(p.discount_pct);
+        return (
+          <span
+            key={p.id}
+            className={`relative aspect-square overflow-hidden rounded-2xl bg-white/10 shadow-lg ring-2 ring-white/30 transition-transform hover:scale-[1.03] ${i % 2 === 0 ? "-rotate-2" : "rotate-2"}`}
+          >
+            <Image src={p.images[0]} alt={p.name} fill sizes="(min-width: 640px) 120px, 45vw" className="object-cover" />
+            {pct ? (
+              <span className="absolute left-1.5 top-1.5 rounded-full bg-white px-2 py-0.5 text-xs font-extrabold text-primary-deep">
+                −{pct}%
+              </span>
+            ) : null}
+          </span>
+        );
+      })}
     </Link>
   );
 }

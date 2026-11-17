@@ -40,3 +40,18 @@ export function marginOf(listPrice: number, cost: number, cashAdjustmentPct: num
   if (!(cash > 0) || !(cost >= 0)) return null;
   return Math.round((1 - cost / cash) * 1000) / 10;
 }
+
+/** Highest discount shown on the web: a 99.5 % cut must not read as "-100%" (the item is not free). */
+const MAX_SHOWN_DISCOUNT = 99;
+
+/** Discount badge value from an already rounded percentage (e.g. `discount_pct` from the public views). */
+export function badgePct(pct: number | null): number | null {
+  if (!pct || pct <= 0) return null;
+  return Math.min(pct, MAX_SHOWN_DISCOUNT);
+}
+
+/** Rounded discount percentage of a sale price against its previous price, capped for display. */
+export function discountPct(price: number, compareAt: number | null): number | null {
+  if (!compareAt || compareAt <= price) return null;
+  return badgePct(Math.round(100 * (1 - price / compareAt)));
+}

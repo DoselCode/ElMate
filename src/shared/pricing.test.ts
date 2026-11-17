@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAdjustment, marginOf, priceFromCost } from "./pricing";
+import { applyAdjustment, badgePct, discountPct, marginOf, priceFromCost } from "./pricing";
 import { formatQuantity, parseDecimal } from "./format";
 
 describe("precios de la lista del local", () => {
@@ -55,5 +55,28 @@ describe("fechas", () => {
     const text = formatDateTime("2026-10-18T21:05:00Z");
     expect(text).toBe("18/10/2026, 18:05");
     expect(text).not.toMatch(/[\u202f\u00a0]/);
+  });
+});
+
+describe("porcentaje de descuento que se muestra en la web", () => {
+  it("nunca muestra 100 % aunque el redondeo llegue", () => {
+    // $4.587,50 → $22 es 99,5 %: antes se veía "-100%"
+    expect(discountPct(22, 4587.5)).toBe(99);
+    expect(badgePct(100)).toBe(99);
+  });
+
+  it("mantiene el redondeo de siempre en los demás casos", () => {
+    expect(discountPct(30000, 38500)).toBe(22);
+    expect(discountPct(5500, 6662.5)).toBe(17);
+    expect(discountPct(10234, 11275)).toBe(9);
+    expect(badgePct(22)).toBe(22);
+  });
+
+  it("sin precio anterior o sin rebaja no hay descuento", () => {
+    expect(discountPct(1000, null)).toBeNull();
+    expect(discountPct(1000, 1000)).toBeNull();
+    expect(discountPct(1200, 1000)).toBeNull();
+    expect(badgePct(null)).toBeNull();
+    expect(badgePct(0)).toBeNull();
   });
 });

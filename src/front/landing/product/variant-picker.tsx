@@ -8,6 +8,7 @@ import { inputClass } from "@/front/shared/ui/field";
 import { QuantityStepper } from "../cart/cart-drawer";
 import { useCart } from "../cart/cart-provider";
 import { formatMoney } from "@/shared/format";
+import { discountPct } from "@/shared/pricing";
 import { DiscountBadge, Price } from "../catalog/price";
 
 /**
@@ -58,7 +59,7 @@ export function VariantPicker({
     <div className="mt-6 space-y-6">
       <div className="flex items-center gap-3">
         <Price price={shown.price} compareAt={shown.compare_at_price} size="lg" perKg={product.unit === "kg"} />
-        {shown.compare_at_price && <DiscountBadge pct={Math.round(100 * (1 - shown.price / shown.compare_at_price))} />}
+        <DiscountBadge pct={discountPct(shown.price, shown.compare_at_price)} />
       </div>
       <PaymentPrices price={shown.price} methods={paymentMethods} />
 

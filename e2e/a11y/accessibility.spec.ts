@@ -44,6 +44,15 @@ test.describe("Accessibility (WCAG 2.1 AA, axe)", () => {
     expect(blocking, found.join("\n")).toEqual([]);
   });
 
+  test("closing the search panel with Escape returns focus to its toggle", async ({ page }) => {
+    await page.goto("/tienda");
+    const toggle = page.locator("[data-search-toggle]");
+    await toggle.click();
+    await expect(page.getByRole("combobox").or(page.getByRole("searchbox")).first()).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(toggle).toBeFocused();
+  });
+
   for (const path of ["/admin/stock", "/admin/ventas/nueva", "/admin/caja"]) {
     test(`panel ${path} has no critical or serious violations`, async ({ page }) => {
       requireAdmin();

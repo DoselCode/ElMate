@@ -19,6 +19,13 @@ const DEBOUNCE_MS = 180;
 
 const tiendaHref = (q: string) => `/tienda?q=${encodeURIComponent(q.trim())}`;
 
+/** Closing from the keyboard (Escape or the X) returns focus to the header toggle instead of losing it. */
+function closeAndRefocus(onClose: () => void) {
+  const toggle = document.querySelector<HTMLElement>("[data-search-toggle]");
+  onClose();
+  toggle?.focus();
+}
+
 /**
  * Buscador flotante del header: muestra resultados mientras se escribe (sin recargar la página).
  * Enter abre el resultado marcado o la tienda filtrada; flechas para moverse; Escape cierra.
@@ -63,7 +70,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
       if (!panelRef.current?.contains(target) && !target.closest("[data-search-toggle]")) onClose();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") closeAndRefocus(onClose);
     };
     document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
@@ -128,7 +135,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
         />
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => closeAndRefocus(onClose)}
           aria-label="Cerrar el buscador"
           className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-muted hover:bg-primary-soft hover:text-foreground"
         >

@@ -69,7 +69,8 @@ Casos: [casos-de-uso.md](casos-de-uso.md).
 ### BUG-01 · Alta · Promoción con precio de $22 (badge "-100%")
 - **Origen:** la promo **"Navidad ocn el mate"** (16/11/2026 → 07/01/2027) pone precio promocional **$22** a "Aguantadora Suave 500 g" ($4.587,50), "Bomb. Alpaca Chica con Estribo y Dije" ($15.175) y "Matera Alta de Cuero" ($85.000).
 - **Qué pasa:** en la web se ve "Antes $4.587,50 / Ahora $22" con **-100%** (99,5 % redondeado).
-- **Sugerencia:** corregir la promo; en el formulario de promociones advertir o bloquear descuentos > 70 %; en `DiscountBadge` (`src/front/landing/catalog/price.tsx`) redondear hacia abajo.
+- **Badge corregido en el código (falta desplegar):** `badgePct` / `discountPct` (`src/shared/pricing.ts`) limitan el badge a 99 %; el resto de los porcentajes no cambia.
+- **Pendiente:** corregir el precio de la promo (dato) y, en el formulario de promociones, advertir o bloquear descuentos > 70 %.
 - **E2E:** `e2e/public/home.spec.ts` › "discount badges never show 100% or more" falla mientras exista.
 
 ### BUG-02 · Media · Card de promo con texto basura en la home

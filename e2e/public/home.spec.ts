@@ -21,9 +21,11 @@ test.describe("CU-01 Home", () => {
 
   test("discount badges never show 100% or more", async ({ page }) => {
     await page.goto("/");
-    const badges = await page.locator("main span", { hasText: /^-\d+%/ }).allInnerTexts();
+    // Product badges use "-", the promo collage uses the minus sign "−"
+    const badges = await page.locator("main span", { hasText: /^[-−]\d+%/ }).allInnerTexts();
+    expect(badges.length).toBeGreaterThan(0);
     for (const badge of badges) {
-      const pct = Number(badge.match(/-(\d+)%/)?.[1]);
+      const pct = Number(badge.match(/[-−](\d+)%/)?.[1]);
       expect(pct, `badge "${badge}"`).toBeLessThan(100);
     }
   });
