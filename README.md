@@ -27,6 +27,9 @@ Landing + catálogo web + sistema de stock/caja en un solo proyecto.
    - `supabase/migrations/20261022000000_web_sin_precio_cero.sql`
    - `supabase/migrations/20261031000000_web_configurable.sql`
    - `supabase/migrations/20261113000000_promociones_y_personalizacion.sql`
+   - `supabase/migrations/20261116000000_instagram_posts.sql`
+   - `supabase/migrations/20261116000001_sin_email_ni_facebook.sql`
+   - `supabase/migrations/20261116000002_registro_seguro.sql`
    - `supabase/migrations/20261117000000_sku_automatico_sin_choques.sql`
 
    Una migración ya aplicada en la base real no se edita: los cambios van siempre en una migración nueva.
