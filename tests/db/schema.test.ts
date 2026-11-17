@@ -698,3 +698,22 @@ describe("web pública sin precios en $0", () => {
     expect(await as(adminId, () => rows("select 1 from public.stock_overview where sku = 'SIN-PRECIO'"))).toHaveLength(1);
   });
 });
+
+describe("código automático (SKU) con códigos EM- cargados a mano", () => {
+  it("salta los códigos que ya existen en vez de chocar", async () => {
+    // Simula datos importados o migrados con códigos EM- por delante de la secuencia.
+    const [{ next }] = await rows(
+      "select case when is_called then last_value + 1 else last_value end as next from public.sku_seq",
+    );
+    const taken = [0, 1, 2].map((i) => `EM-${String(Number(next) + i).padStart(5, "0")}`);
+    await saveProduct(adminId, {
+      name: "Importado con EM", slug: "importado-con-em", option_names: ["Talle"],
+      variants: taken.map((sku, i) => ({ sku, attributes: { Talle: String(i) }, price: 1000 })),
+    });
+
+    const id = await saveProduct(adminId, { name: "Nuevo sin código", slug: "nuevo-sin-codigo", variants: [{ sku: "", price: 2000 }] });
+    const [v] = await rows("select sku from public.product_variants where product_id = $1", [id]);
+    expect(v.sku).toMatch(/^EM-\d{5}$/);
+    expect(taken).not.toContain(v.sku);
+  });
+});

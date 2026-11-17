@@ -62,7 +62,7 @@ Casos: [casos-de-uso.md](casos-de-uso.md).
 - **Pasos:** Inventario → Nuevo producto → completar nombre, costo y ganancia, dejar "Código (SKU)" vacío → "Crear producto".
 - **Qué pasa:** "Ya existe una variante con ese código (SKU)." Se repitió 5 veces seguidas. Con un SKU cargado a mano el producto se crea.
 - **Causa probable:** la secuencia `public.sku_seq` de develop quedó atrasada respecto de los SKUs `EM-xxxxx` que ya existen (por ejemplo, datos migrados sin sincronizar la secuencia). En el panel solo se ven `EM-00001`, `EM-00024`, `EM-00025` y `EM-00026`, así que las demás colisiones son con variantes que la vista de stock no muestra. Para confirmarlo hay que mirar la base: `select last_value from sku_seq;` contra `select max(sku) from product_variants where sku like 'EM-%';`.
-- **Sugerencia:** migración nueva que haga `setval` de `sku_seq` al máximo `EM-` existente, y que `next_sku()` saltee códigos ocupados para que no vuelva a pasar.
+- **Corrección (en el repo, falta aplicarla en develop):** `supabase/migrations/20261117000000_sku_automatico_sin_choques.sql` adelanta `sku_seq` hasta el mayor código `EM-` existente y hace que `next_sku()` saltee códigos ocupados. Test: `tests/db/schema.test.ts` › "código automático (SKU) con códigos EM- cargados a mano".
 - **E2E:** `e2e/admin/stock-and-sales.spec.ts` › "BUG-05 …" (con `E2E_ALLOW_WRITES=1`).
 
 ### BUG-01 · Alta · Promoción con precio de $22 (badge "-100%")
