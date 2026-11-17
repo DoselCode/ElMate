@@ -19,7 +19,7 @@ Target: http://u0k9wpc6hc9inleg5jc4h3fb.187.41.122.109.sslip.io (Coolify app `el
 | T2 | S2 | inline | public done; admin pending login | `docs/qa/reporte-qa-develop.md` |
 | T3 | S3, S4 | inline | public + auth done; admin flows pending | `e2e/`, `playwright.config.ts` |
 | T4 | S3 | inline | done for public | 16 passed, 1 failed (BUG-01, expected), 1 skipped (CU-20, no creds) |
-| T5 | S2, S3 | inline | pending | admin QA (CU-23…CU-36) after user signs in |
+| T5 | S2, S3 | inline | done (CU-23 empleado, CU-31, real cash close pending) | report updated; `e2e/admin/panel.spec.ts`, `e2e/admin/stock-and-sales.spec.ts` (unverified: no credentials) |
 
 ## Log
 
