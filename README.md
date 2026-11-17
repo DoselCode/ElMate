@@ -42,7 +42,18 @@ npm run build      # build de producción
 npm run lint
 npm run typecheck
 npm test           # base de datos (Postgres en memoria) + validaciones
+npm run test:e2e   # end-to-end con Playwright contra una instancia corriendo
 ```
+
+### Tests end-to-end
+
+Los specs viven en `e2e/` y cubren los casos de uso marcados **[E2E]** en [docs/qa/casos-de-uso.md](docs/qa/casos-de-uso.md).
+
+- La primera vez: `npx playwright install chromium`.
+- `E2E_BASE_URL` elige el destino (por defecto `http://localhost:3000`). Para correr contra develop en Coolify:
+  `E2E_BASE_URL=<url de develop> npm run test:e2e` (en PowerShell: `$env:E2E_BASE_URL='<url>'; npm run test:e2e`).
+- El login válido (CU-20) usa `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD` desde `.env.local`; sin ellas ese test se omite.
+- El reporte HTML queda en `playwright-report/` (`npx playwright show-report`).
 
 Los tests de base de datos corren las migraciones reales sobre [PGlite](https://pglite.dev) con un stub de `auth` y los roles de Supabase, y prueban permisos (admin / empleado / anónimo), stock, ventas, caja y vistas públicas. No hace falta Docker ni internet.
 
