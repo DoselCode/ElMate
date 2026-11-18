@@ -123,6 +123,42 @@ test.describe("Shop", () => {
     await expect(opener).toBeFocused();
   });
 
+  test("CU-20 typing a multi-word search keeps focus and every character", async ({ page }) => {
+    await page.goto("/tienda");
+    const box = page.getByRole("main").getByRole("searchbox", { name: "Buscar productos" });
+    await box.click();
+    await box.pressSequentially("mate de", { delay: 150 });
+    await page.waitForTimeout(600); // la URL ya cambió con "mate de"
+    await box.pressSequentially(" calabaza", { delay: 150 });
+    await expect(box).toBeFocused();
+    await expect(box).toHaveValue("mate de calabaza");
+    await expect(page).toHaveURL(/q=mate\+de\+calabaza|q=mate%20de%20calabaza/);
+  });
+
+  test("CU-21 tabbing from minimum to maximum price keeps the maximum field usable", async ({ page }) => {
+    await page.goto("/tienda");
+    const panel = filtersPanel(page);
+    await panel.getByText("Precio", { exact: true }).click();
+    await panel.getByLabel("Precio mínimo").fill("5000");
+    await page.keyboard.press("Tab");
+    await expect(page).toHaveURL(/precio=5000-/);
+    const max = panel.getByLabel("Precio máximo");
+    await expect(max).toBeFocused();
+    await page.keyboard.type("90000");
+    await expect(max).toHaveValue("90000");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/precio=5000-90000/);
+  });
+
+  test("CU-22 unknown query params (marketing links) do not filter the store", async ({ page }) => {
+    await page.goto("/tienda");
+    const total = await shopTotal(page);
+    await page.goto("/tienda?ref=instagram&utm_source=ig&si=abc");
+    await expect(productCards(page).first()).toBeVisible();
+    expect(await shopTotal(page)).toBe(total);
+    await expect(page.getByRole("button", { name: /^Quitar filtro/ })).toHaveCount(0);
+  });
+
   test("CU-07 opens a product page with prices per payment method", async ({ page }) => {
     await page.goto("/tienda");
     const link = productCards(page).first().locator("h3 a");

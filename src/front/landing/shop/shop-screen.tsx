@@ -45,7 +45,7 @@ export function ShopScreen({
 
       <ShopLayout title={title} total={list.total} filters={filters} facets={facets}>
         {promotion?.description && <p className="mb-4 max-w-2xl text-muted">{promotion.description}</p>}
-        <ShopSearch key={filters.q} filters={filters} />
+        <ShopSearch filters={filters} />
         <div className="mt-4">
           <ActiveFilters filters={filters} facets={facets} promoName={promotion?.name ?? null} />
         </div>

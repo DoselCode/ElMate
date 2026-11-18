@@ -108,3 +108,16 @@ describe("offerableFacets", () => {
     expect(f.options.map((o) => o.key)).toEqual(["color"]);
   });
 });
+
+describe("known option keys", () => {
+  it("drops params that are not a variant option of the catalog (marketing links)", () => {
+    const f = parseShopFilters({ ref: "instagram", si: "abc", color: "rojo", categoria: "yerbas" }, ["color", "tamano"]);
+    expect(f.options).toEqual({ color: ["rojo"] });
+    expect(f.category).toBe("yerbas");
+  });
+
+  it("junk params do not use up the option slots", () => {
+    const junk = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`j${i}`, "x"]));
+    expect(parseShopFilters({ ...junk, color: "rojo" }, ["color"]).options).toEqual({ color: ["rojo"] });
+  });
+});

@@ -9,12 +9,25 @@ const DEBOUNCE_MS = 300;
 
 /**
  * Búsqueda por texto de /tienda: actualiza la URL con una espera corta entre teclas, sin botón.
- * Quien la usa le pone key={filters.q} para que arranque de nuevo si la búsqueda cambia desde afuera.
+ * Si la búsqueda cambia desde afuera (un chip, "Limpiar todo") el campo se actualiza; si el cambio
+ * es el que mandó este mismo campo, no se toca (se sigue escribiendo sin perder letras ni el foco).
  */
 export function ShopSearch({ filters }: { filters: ShopFilters }) {
   const { apply } = useShopNavigation(filters);
   const [q, setQ] = useState(filters.q);
+  const [seenQ, setSeenQ] = useState(filters.q);
+  const [sentQ, setSentQ] = useState(filters.q);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  if (filters.q !== seenQ) {
+    setSeenQ(filters.q);
+    if (filters.q !== sentQ) setQ(filters.q);
+  }
+
+  const send = (value: string) => {
+    setSentQ(value.trim());
+    apply({ q: value.trim() });
+  };
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -24,7 +37,7 @@ export function ShopSearch({ filters }: { filters: ShopFilters }) {
       onSubmit={(e) => {
         e.preventDefault();
         clearTimeout(timer.current);
-        apply({ q: q.trim() });
+        send(q);
       }}
       className="relative"
     >
@@ -38,7 +51,7 @@ export function ShopSearch({ filters }: { filters: ShopFilters }) {
           const value = e.target.value;
           setQ(value);
           clearTimeout(timer.current);
-          timer.current = setTimeout(() => apply({ q: value.trim() }), DEBOUNCE_MS);
+          timer.current = setTimeout(() => send(value), DEBOUNCE_MS);
         }}
         placeholder="Buscar productos"
         className="w-full rounded-full border border-border-strong bg-surface py-2.5 pl-11 pr-4 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"

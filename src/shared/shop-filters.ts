@@ -31,12 +31,17 @@ function priceParam(raw: string): PriceRange {
   return min !== null && max !== null && min > max ? { min: max, max: min } : { min, max };
 }
 
-export function parseShopFilters(sp: SearchParams): ShopFilters {
+/**
+ * `knownOptionKeys`: las opciones de variante que existen en el catálogo. Con la lista, cualquier otro
+ * parámetro (?ref=instagram, ?utm_source=...) se ignora en vez de filtrar por una opción inexistente.
+ */
+export function parseShopFilters(sp: SearchParams, knownOptionKeys?: readonly string[]): ShopFilters {
   const sort = param(sp, "orden") as ShopSort;
   const options: Record<string, string[]> = {};
   for (const key of Object.keys(sp)) {
     if (Object.keys(options).length >= MAX_OPTIONS) break;
     if (RESERVED_PARAMS.includes(key) || !OPTION_KEY.test(key)) continue;
+    if (knownOptionKeys && !knownOptionKeys.includes(key)) continue;
     const values = listParam(param(sp, key));
     if (values.length) options[key] = values;
   }

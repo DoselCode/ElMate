@@ -46,11 +46,27 @@ function PriceFilter({ filters, facets }: { filters: ShopFilters; facets: ShopFa
   const id = useId();
   const [min, setMin] = useState(filters.price.min?.toString() ?? "");
   const [max, setMax] = useState(filters.price.max?.toString() ?? "");
+  // Igual que la búsqueda: solo se pisan los campos si el precio cambió desde afuera (chip, limpiar)
+  const urlKey = `${filters.price.min}-${filters.price.max}`;
+  const [seenKey, setSeenKey] = useState(urlKey);
+  const [sentKey, setSentKey] = useState(urlKey);
+  if (urlKey !== seenKey) {
+    setSeenKey(urlKey);
+    if (urlKey !== sentKey) {
+      setMin(filters.price.min?.toString() ?? "");
+      setMax(filters.price.max?.toString() ?? "");
+    }
+  }
   const toNumber = (v: string) => (/^\d{1,9}$/.test(v.trim()) ? Number(v.trim()) : null);
 
   const submit = () => {
     const next = { min: toNumber(min), max: toNumber(max) };
-    if (next.min !== filters.price.min || next.max !== filters.price.max) apply({ price: next });
+    if (next.min !== filters.price.min || next.max !== filters.price.max) {
+      // El parser ordena mín/máx: se recuerda la clave como va a volver en la URL
+      const [lo, hi] = next.min !== null && next.max !== null && next.min > next.max ? [next.max, next.min] : [next.min, next.max];
+      setSentKey(`${lo}-${hi}`);
+      apply({ price: next });
+    }
   };
   const input = "w-full rounded-full border border-border-strong bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
 
@@ -69,6 +85,8 @@ function PriceFilter({ filters, facets }: { filters: ShopFilters; facets: ShopFa
       <label className="sr-only" htmlFor={`${id}-max`}>Precio máximo</label>
       <input id={`${id}-max`} type="number" inputMode="numeric" min={0} value={max} onChange={(e) => setMax(e.target.value)} onBlur={submit}
         placeholder={facets.price ? `$ ${Math.ceil(facets.price.max)}` : "Máximo"} className={input} />
+      {/* Con dos campos, Enter solo envía el formulario si hay un botón de envío */}
+      <button type="submit" className="sr-only">Aplicar precio</button>
     </form>
   );
 }
@@ -129,8 +147,7 @@ export function ShopSidebar({ filters, facets }: { filters: ShopFilters; facets:
 
       {(facets.price || hasPrice) && (
         <Section title="Precio" open={hasPrice}>
-          {/* key: si el precio cambia desde afuera (chip, limpiar), los campos arrancan de nuevo */}
-          <PriceFilter key={`${filters.price.min}-${filters.price.max}`} filters={filters} facets={facets} />
+          <PriceFilter filters={filters} facets={facets} />
         </Section>
       )}
 

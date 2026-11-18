@@ -1,8 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { safeSearch } from "@/shared/query";
-import { offerableFacets } from "@/shared/shop-filters";
-export { parseShopFilters } from "@/shared/shop-filters";
+import { offerableFacets, parseShopFilters } from "@/shared/shop-filters";
+import type { SearchParams } from "@/shared/query";
 import { EMPTY_FACETS, type HomeData, type ProductPageData, type PublicCategory, type PublicPaymentMethod, type PublicProduct, type PublicPromotion, type PublicVariant, type SearchResult, type ShopFacets, type ShopFilters, type StoreInfo } from "@/shared/types";
 import { demoSource } from "./demo-source";
 import { EMPTY_STORE, type CatalogSource, type FacetQuery, type ProductQuery } from "./source";
@@ -67,6 +67,17 @@ export async function getPromotionShowcase(slug: string): Promise<PublicProduct[
   if (ids.length === 0) return [];
   const { rows } = await products({ ids: ids.slice(0, 100), sort: "mayor-descuento", limit: 12 });
   return rows.filter((p) => p.images.length > 0).slice(0, 4);
+}
+
+/** Claves de las opciones de variante que existen en el catálogo (una consulta por visita). */
+const getShopOptionKeys = cache(async (): Promise<string[]> => {
+  const facets = await safe("opciones de variante", EMPTY_FACETS, () => source.facets({}));
+  return offerableFacets(facets).options.map((o) => o.key);
+});
+
+/** Filtros de la URL; los parámetros que no son una opción del catálogo (?ref=..., ?utm_...) se ignoran. */
+export async function resolveShopFilters(sp: SearchParams): Promise<ShopFilters> {
+  return parseShopFilters(sp, await getShopOptionKeys());
 }
 
 /** Filtros de la tienda en el formato de las consultas; null si la promo pedida no tiene productos. */
