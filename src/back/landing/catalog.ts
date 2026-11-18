@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
-import { pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
-import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, SearchResult, ShopFilters, ShopSort, StoreInfo } from "@/shared/types";
+import { safeSearch } from "@/shared/query";
+export { parseShopFilters } from "@/shared/shop-filters";
+import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, SearchResult, ShopFilters, StoreInfo } from "@/shared/types";
 import { demoSource } from "./demo-source";
 import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
 import { supabaseSource } from "./supabase-source";
@@ -16,7 +17,6 @@ export const isDemoCatalog = process.env.ELMATE_DEMO === "1";
 const source: CatalogSource = isDemoCatalog ? demoSource : supabaseSource;
 
 export const SHOP_PAGE_SIZE = 12;
-const SORTS: ShopSort[] = ["destacados", "precio-asc", "precio-desc", "nuevos"];
 
 async function safe<T>(what: string, fallback: T, fn: () => Promise<T>): Promise<T> {
   try {
@@ -66,18 +66,6 @@ export async function getPromotionShowcase(slug: string): Promise<PublicProduct[
   if (ids.length === 0) return [];
   const { rows } = await products({ ids: ids.slice(0, 100), sort: "mayor-descuento", limit: 12 });
   return rows.filter((p) => p.images.length > 0).slice(0, 4);
-}
-
-export function parseShopFilters(sp: SearchParams): ShopFilters {
-  const sort = param(sp, "orden") as ShopSort;
-  return {
-    q: safeSearch(param(sp, "q")),
-    category: /^[a-z0-9-]{1,80}$/.test(param(sp, "categoria")) ? param(sp, "categoria") : "",
-    sort: SORTS.includes(sort) ? sort : "destacados",
-    offers: param(sp, "ofertas") === "1",
-    promo: /^[a-z0-9-]{1,80}$/.test(param(sp, "promo")) ? param(sp, "promo") : "",
-    page: pageParam(sp),
-  };
 }
 
 export async function listShopProducts(f: ShopFilters): Promise<{ rows: PublicProduct[]; total: number }> {
