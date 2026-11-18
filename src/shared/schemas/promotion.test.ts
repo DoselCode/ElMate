@@ -43,3 +43,16 @@ describe("promotionSchema", () => {
     expect(promotionSchema.safeParse({ ...base, items: [], showCard: true, cardTitle: "Día del Padre" }).success).toBe(true);
   });
 });
+
+describe("imagen de fondo de la card", () => {
+  it("vacía usa la de por defecto (null) y una URL http(s) se guarda tal cual", () => {
+    expect(toPromotionPayload(promotionSchema.parse(base), "x").card_image).toBeNull();
+    const url = "https://abc.supabase.co/storage/v1/object/public/product-images/promociones/a.webp";
+    expect(toPromotionPayload(promotionSchema.parse({ ...base, cardImage: url }), "x").card_image).toBe(url);
+  });
+
+  it("rechaza lo que no es una URL http(s)", () => {
+    expect(promotionSchema.safeParse({ ...base, cardImage: "javascript:alert(1)" }).success).toBe(false);
+    expect(promotionSchema.safeParse({ ...base, cardImage: "fondo.jpg" }).success).toBe(false);
+  });
+});

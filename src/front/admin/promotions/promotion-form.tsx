@@ -11,6 +11,7 @@ import { formatMoney } from "@/shared/format";
 import { fieldErrors } from "@/shared/schemas/product";
 import { isoToLocal, promotionSchema, type PromotionInput } from "@/shared/schemas/promotion";
 import type { PromotionForEdit, PromotionVariantHit } from "@/shared/types";
+import { BackgroundPicker } from "./background-picker";
 
 type ItemDraft = { variantId: string; productName: string; variantLabel: string; sku: string; price: number; promoPrice: string };
 
@@ -48,6 +49,7 @@ export function PromotionForm({ initial }: { initial?: PromotionForEdit }) {
   const [cardTitle, setCardTitle] = useState(initial?.cardTitle ?? "");
   const [cardText, setCardText] = useState(initial?.cardText ?? "");
   const [cardCta, setCardCta] = useState(initial?.cardCta ?? "");
+  const [cardImage, setCardImage] = useState(initial?.cardImage ?? "");
   const [items, setItems] = useState<ItemDraft[]>(
     (initial?.items ?? []).map((i) => ({ ...i, promoPrice: String(i.promoPrice) })),
   );
@@ -99,6 +101,7 @@ export function PromotionForm({ initial }: { initial?: PromotionForEdit }) {
       cardTitle,
       cardText,
       cardCta,
+      cardImage,
       items: items.map((i) => ({ variantId: i.variantId, promoPrice: num(i.promoPrice) })),
     };
   }
@@ -307,6 +310,9 @@ export function PromotionForm({ initial }: { initial?: PromotionForEdit }) {
             <TextField id="card-title" label="Título de la card" className="md:col-span-2" value={cardTitle} maxLength={80} placeholder={name || "Ej: Cyber Monday: hasta 30% off"} error={err("cardTitle")} onChange={(e) => setCardTitle(e.target.value)} />
             <TextField id="card-text" label="Texto" className="md:col-span-2" value={cardText} maxLength={200} placeholder="Ej: Solo hasta el lunes, mates y termos con precio especial." error={err("cardText")} onChange={(e) => setCardText(e.target.value)} />
             <TextField id="card-cta" label="Texto del botón" value={cardCta} maxLength={30} placeholder="Ver promo" error={err("cardCta")} onChange={(e) => setCardCta(e.target.value)} />
+            <div className="md:col-span-2">
+              <BackgroundPicker value={cardImage} onChange={setCardImage} title={cardTitle || name} error={err("cardImage")} />
+            </div>
           </div>
         )}
       </SectionCard>

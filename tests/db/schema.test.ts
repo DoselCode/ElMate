@@ -717,3 +717,23 @@ describe("código automático (SKU) con códigos EM- cargados a mano", () => {
     expect(taken).not.toContain(v.sku);
   });
 });
+
+describe("promociones: imagen de fondo de la card", () => {
+  const save = (p: Record<string, unknown>) =>
+    as(adminId, () => rows("select public.save_promotion($1::jsonb) as id", [JSON.stringify(p)]));
+  const card = { name: "Día del Padre", slug: "dia-del-padre", show_card: true, items: [] };
+
+  it("guarda la imagen, la publica en la vista y vacía vuelve a la de por defecto (null)", async () => {
+    const [{ id }] = await save({ ...card, card_image: "https://cdn.example.com/fondo.webp" });
+    const [pub] = await as("anon", () => rows("select card_image from public.public_promotions where slug = 'dia-del-padre'"));
+    expect(pub.card_image).toBe("https://cdn.example.com/fondo.webp");
+
+    await save({ ...card, id, card_image: "" });
+    const [after] = await rows("select card_image from public.promotions where id = $1", [id]);
+    expect(after.card_image).toBeNull();
+  });
+
+  it("rechaza algo que no es una URL http(s)", async () => {
+    await expect(save({ ...card, slug: "promo-mala", card_image: "javascript:alert(1)" })).rejects.toThrow();
+  });
+});

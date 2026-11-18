@@ -15,6 +15,7 @@ import {
 import type { HomeData, PublicCategory, PublicProduct, PublicPromotion, StoreInfo } from "@/shared/types";
 import { instagramEmbedUrl, isInstagramUrl, normalizeInstagramPost } from "@/shared/instagram";
 import { badgePct } from "@/shared/pricing";
+import { DEFAULT_PROMO_BACKGROUND } from "@/shared/schemas/promotion";
 import { ProductGrid } from "../catalog/product-card";
 import { t } from "@/shared/home-content";
 import { BENEFITS, HERO, INSTAGRAM_URL } from "../content";
@@ -93,8 +94,17 @@ function PromoCards({
         <article
           key={promo.id}
           style={{ "--i": i } as React.CSSProperties}
-          className="fx-vapor grid items-center gap-6 rounded-[2rem] bg-primary-deep p-8 text-white sm:grid-cols-[minmax(0,1fr)_auto] sm:p-10"
+          className="fx-vapor relative isolate grid items-center gap-6 overflow-hidden rounded-[2rem] bg-primary-deep p-8 text-white sm:grid-cols-[minmax(0,1fr)_auto] sm:p-10"
         >
+          {/* Fondo configurable desde el panel (o el de por defecto), oscurecido para que el texto se lea */}
+          <Image
+            src={promo.card_image || DEFAULT_PROMO_BACKGROUND}
+            alt=""
+            fill
+            sizes={promotions.length > 1 ? "(min-width: 1024px) 50vw, 100vw" : "100vw"}
+            className="-z-10 object-cover"
+          />
+          <span className="absolute inset-0 -z-10 bg-gradient-to-r from-primary-deep/95 via-primary-deep/80 to-primary-deep/45" aria-hidden />
           <div className="flex flex-col items-start gap-4">
             <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-bold">
               <Gift size={16} weight="bold" aria-hidden />

@@ -400,6 +400,8 @@ export type PublicPromotion = {
   starts_at: string;
   ends_at: string | null;
   product_count: number;
+  /** Imagen de fondo de la card; null = la imagen por defecto (DEFAULT_PROMO_BACKGROUND). */
+  card_image: string | null;
 };
 
 export type ProductPageData = {
@@ -470,6 +472,8 @@ export type PromotionForEdit = {
   cardTitle: string | null;
   cardText: string | null;
   cardCta: string | null;
+  /** null = imagen de fondo por defecto. */
+  cardImage: string | null;
   items: PromotionItemForEdit[];
 };
 

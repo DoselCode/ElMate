@@ -10,9 +10,9 @@ const MAX_SOURCE_BYTES = 15 * 1024 * 1024;
 const MAX_SIDE = 1600;
 
 /** Reduce a 1600px de lado mayor y recodifica (WebP, o JPEG si el navegador no lo soporta) para no subir fotos de 8 MB. */
-async function compressImage(file: File): Promise<{ blob: Blob; ext: "webp" | "jpg" }> {
+export async function compressImage(file: File, maxSide = MAX_SIDE): Promise<{ blob: Blob; ext: "webp" | "jpg" }> {
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(bitmap.width * scale));
   canvas.height = Math.max(1, Math.round(bitmap.height * scale));

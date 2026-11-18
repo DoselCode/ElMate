@@ -44,7 +44,7 @@ export async function getPromotionForEdit(id: string): Promise<PromotionForEdit 
     Promise.all([
       supabase
         .from("promotions")
-        .select("id, name, description, active, starts_at, ends_at, show_card, card_title, card_text, card_cta")
+        .select("id, name, description, active, starts_at, ends_at, show_card, card_title, card_text, card_cta, card_image")
         .eq("id", id)
         .maybeSingle(),
       supabase.from("promotion_items").select("variant_id, promo_price").eq("promotion_id", id),
@@ -77,6 +77,7 @@ export async function getPromotionForEdit(id: string): Promise<PromotionForEdit 
     cardTitle: promo.card_title,
     cardText: promo.card_text,
     cardCta: promo.card_cta,
+    cardImage: promo.card_image,
     items: items
       .map((i) => {
         const d = byId.get(i.variant_id);
