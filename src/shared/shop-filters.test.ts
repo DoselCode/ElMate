@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ShopFilters } from "./types";
-import { activeFilterCount, parseShopFilters, shopQuery, toggleValue } from "./shop-filters";
+import { activeFilterCount, offerableFacets, parseShopFilters, shopQuery, toggleValue } from "./shop-filters";
+import { EMPTY_FACETS } from "./types";
 
 const full: ShopFilters = {
   q: "mate",
@@ -91,5 +92,19 @@ describe("helpers", () => {
     const f = parseShopFilters({ categoria: "yerbas", marca: "a,b", precio: "1-", promo: "x" });
     expect(activeFilterCount(f)).toBe(5);
     expect(activeFilterCount(full)).toBe(9);
+  });
+});
+
+describe("offerableFacets", () => {
+  it("drops options whose key clashes with a reserved param", () => {
+    const values = [{ value: "Rojo", key: "rojo", count: 1 }];
+    const f = offerableFacets({
+      ...EMPTY_FACETS,
+      options: [
+        { name: "Precio", key: "precio", values },
+        { name: "Color", key: "color", values },
+      ],
+    });
+    expect(f.options.map((o) => o.key)).toEqual(["color"]);
   });
 });

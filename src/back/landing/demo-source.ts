@@ -1,6 +1,6 @@
 import { slugify } from "@/shared/slug";
-import type { PublicCategory, PublicProduct, PublicVariant } from "@/shared/types";
-import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
+import type { FacetValue, PublicCategory, PublicProduct, PublicVariant, ShopFacets } from "@/shared/types";
+import { EMPTY_STORE, type CatalogSource, type FacetQuery, type ProductQuery } from "./source";
 
 /**
  * Catálogo de ejemplo en memoria, para ver y probar la web sin base de datos (ELMATE_DEMO=1).
@@ -13,6 +13,7 @@ type DemoProduct = {
   category: string;
   description: string;
   options?: string[];
+  brand?: string;
   variants: DemoVariant[];
   badge?: string;
   daysAgo: number;
@@ -29,6 +30,7 @@ const CATEGORIES: Omit<PublicCategory, "product_count">[] = [
 const PRODUCTS: DemoProduct[] = [
   {
     name: "Mate imperial de calabaza con virola de alpaca",
+    brand: "El Mate",
     category: "mates",
     description: "Calabaza seleccionada, forrada en cuero y con virola de alpaca cincelada a mano.",
     options: ["Color"],
@@ -41,6 +43,7 @@ const PRODUCTS: DemoProduct[] = [
   },
   {
     name: "Termo de acero inoxidable 1 L con pico cebador",
+    brand: "Waterdog",
     category: "termos",
     description: "Doble pared de acero: mantiene el agua caliente todo el día. Pico cebador de precisión.",
     options: ["Color"],
@@ -53,6 +56,7 @@ const PRODUCTS: DemoProduct[] = [
   },
   {
     name: "Yerba mate orgánica despalada 1 kg",
+    brand: "Aguantadora",
     category: "yerbas",
     description: "Yerba sin palo, de cultivo orgánico. Sabor intenso y parejo.",
     variants: [{ price: 6490, compareAt: 7990 }],
@@ -60,6 +64,7 @@ const PRODUCTS: DemoProduct[] = [
   },
   {
     name: "Bombilla pico de loro de alpaca",
+    brand: "El Mate",
     category: "bombillas",
     description: "Filtrado perfecto y brillo que dura. Ideal para yerbas con palo.",
     variants: [{ price: 12900, compareAt: 14900 }],
@@ -75,6 +80,7 @@ const PRODUCTS: DemoProduct[] = [
   },
   {
     name: "Mate camionero de calabaza forrado en cuero",
+    brand: "El Mate",
     category: "mates",
     description: "Boca ancha y base firme, el clásico de la ruta.",
     options: ["Tamaño"],
@@ -86,6 +92,7 @@ const PRODUCTS: DemoProduct[] = [
   },
   {
     name: "Yerba barbacuá misionera 500 g",
+    brand: "Ajedrez",
     category: "yerbas",
     description: "Secado barbacuá con leña: notas ahumadas y cuerpo pleno.",
     variants: [{ price: 3890, compareAt: 4490 }],
@@ -100,6 +107,7 @@ const PRODUCTS: DemoProduct[] = [
   },
   {
     name: "Termo media manija 750 ml verde",
+    brand: "Waterdog",
     category: "termos",
     description: "Compacto y liviano, con manija plegable.",
     variants: [{ price: 54900, compareAt: 59900 }],
@@ -114,6 +122,7 @@ const PRODUCTS: DemoProduct[] = [
   },
   {
     name: "Yerba orgánica suave 1 kg",
+    brand: "Aguantadora",
     category: "yerbas",
     description: "Molienda suave, ideal para empezar el día.",
     variants: [{ price: 6990, compareAt: 7490 }],
@@ -144,6 +153,14 @@ const VARIANTS: PublicVariant[] = PRODUCTS.flatMap((p, pi) =>
   })),
 );
 
+/** "opción:valor" de las variantes (como la columna option_tags de public_products). */
+function optionTags(variants: PublicVariant[], onlyInStock: boolean): string[] {
+  const tags = variants
+    .filter((v) => !onlyInStock || v.in_stock)
+    .flatMap((v) => Object.entries(v.attributes).map(([k, val]) => `${slugify(k)}:${slugify(val)}`));
+  return [...new Set(tags)].sort();
+}
+
 const ALL: PublicProduct[] = PRODUCTS.map((p, pi) => {
   const variants = VARIANTS.filter((v) => v.product_id === `p-${pi}`);
   const cheapest = [...variants].sort((a, b) => a.price - b.price)[0];
@@ -157,7 +174,10 @@ const ALL: PublicProduct[] = PRODUCTS.map((p, pi) => {
     badge: p.badge ?? null,
     option_names: p.options ?? [],
     created_at: new Date(NOW - p.daysAgo * 86_400_000).toISOString(),
-    brand: null,
+    brand: p.brand ?? null,
+    brand_key: p.brand ? slugify(p.brand) : null,
+    option_tags: optionTags(variants, false),
+    option_tags_in_stock: optionTags(variants, true),
     unit: "unidad",
     category_name: category.name,
     category_slug: category.slug,
@@ -177,16 +197,79 @@ const ALL: PublicProduct[] = PRODUCTS.map((p, pi) => {
 
 const BEST_SELLERS = ["p-4", "p-0", "p-1", "p-6"];
 
-function matches(p: PublicProduct, q: ProductQuery) {
+/** Filtro que se deja afuera al contar su propia faceta. */
+type Skip = "category" | "brands" | "price" | "offers" | "stock" | { option: string } | null;
+
+/** Mismas reglas que la vista + shop_facets: O dentro de cada filtro, Y entre filtros. */
+function passes(p: PublicProduct, q: FacetQuery, skip: Skip = null): boolean {
   const text = (s: string) => slugify(s).replace(/-/g, " ");
   if (q.q && !text(q.q).split(" ").filter(Boolean).every((w) => text(p.name).includes(w))) return false;
-  if (q.category && p.category_slug !== q.category) return false;
-  if (q.onlyOffers && p.compare_at_price === null) return false;
+  if (q.ids && !q.ids.includes(p.id)) return false;
+  if (skip !== "category" && q.category && p.category_slug !== q.category) return false;
+  if (skip !== "brands" && q.brands?.length && !q.brands.includes(p.brand_key ?? "")) return false;
+  if (skip !== "price" && q.priceMin != null && p.price < q.priceMin) return false;
+  if (skip !== "price" && q.priceMax != null && p.price > q.priceMax) return false;
+  if (skip !== "offers" && q.onlyOffers && p.compare_at_price === null) return false;
+  if (skip !== "stock" && q.inStock && !p.in_stock) return false;
+  const tags = q.inStock && skip !== "stock" ? p.option_tags_in_stock : p.option_tags;
+  for (const [key, values] of Object.entries(q.options ?? {})) {
+    if (typeof skip === "object" && skip?.option === key) continue;
+    if (values.length && !values.some((v) => tags.includes(`${key}:${v}`))) return false;
+  }
+  return true;
+}
+
+function matches(p: PublicProduct, q: ProductQuery) {
+  if (!passes(p, q)) return false;
   if (q.featuredOnly && !p.is_featured) return false;
   if (q.inNewsOnly && !p.show_in_news) return false;
-  if (q.ids && !q.ids.includes(p.id)) return false;
   if (q.excludeId && p.id === q.excludeId) return false;
   return true;
+}
+
+/** Cuenta por clave, sin ceros, de mayor a menor y después por nombre. */
+function countBy(items: { key: string; value: string }[]): FacetValue[] {
+  const map = new Map<string, FacetValue>();
+  for (const { key, value } of items) {
+    const prev = map.get(key);
+    map.set(key, { key, value: prev?.value ?? value, count: (prev?.count ?? 0) + 1 });
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+}
+
+const OPTION_NAMES = new Map(
+  VARIANTS.flatMap((v) => Object.entries(v.attributes)).flatMap(([k, val]) => [
+    [slugify(k), k] as const,
+    [`${slugify(k)}:${slugify(val)}`, val] as const,
+  ]),
+);
+
+function facets(q: FacetQuery): ShopFacets {
+  const where = (skip: Skip) => ALL.filter((p) => passes(p, q, skip));
+  const priced = where("price").map((p) => p.price);
+  const optionKeys = [...new Set(ALL.flatMap((p) => p.option_tags.map((t) => t.split(":")[0])))];
+  return {
+    categories: CATEGORIES.map((c) => ({ slug: c.slug, name: c.name, count: where("category").filter((p) => p.category_slug === c.slug).length }))
+      .filter((c) => c.count > 0),
+    brands: countBy(where("brands").filter((p) => p.brand_key).map((p) => ({ key: p.brand_key!, value: p.brand! }))),
+    options: optionKeys
+      .map((key) => ({
+        key,
+        name: OPTION_NAMES.get(key) ?? key,
+        values: countBy(
+          where({ option: key }).flatMap((p) =>
+            (q.inStock ? p.option_tags_in_stock : p.option_tags)
+              .filter((t) => t.startsWith(`${key}:`))
+              .map((t) => ({ key: t.slice(key.length + 1), value: OPTION_NAMES.get(t) ?? t })),
+          ),
+        ),
+      }))
+      .filter((o) => o.values.length > 0)
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    price: priced.length ? { min: Math.min(...priced), max: Math.max(...priced) } : null,
+    offers: where("offers").filter((p) => p.compare_at_price !== null).length,
+    inStock: ALL.filter((p) => passes(p, { ...q, inStock: true }, null)).length,
+  };
 }
 
 const SORTS: Record<ProductQuery["sort"], (a: PublicProduct, b: PublicProduct) => number> = {
@@ -215,6 +298,9 @@ export const demoSource: CatalogSource = {
     const filtered = ALL.filter((p) => matches(p, q)).sort(SORTS[q.sort]);
     const offset = q.offset ?? 0;
     return { rows: filtered.slice(offset, offset + q.limit), total: filtered.length };
+  },
+  async facets(q) {
+    return facets(q);
   },
   async productBySlug(slug) {
     return ALL.find((p) => p.slug === slug) ?? null;

@@ -1,4 +1,4 @@
-import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, ShopSort, StoreInfo } from "@/shared/types";
+import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, ShopFacets, ShopSort, StoreInfo } from "@/shared/types";
 
 /**
  * Consultas básicas del catálogo público. Hay dos implementaciones con el mismo contrato:
@@ -15,10 +15,22 @@ export type ProductQuery = {
   inNewsOnly?: boolean;
   ids?: string[];
   excludeId?: string;
+  /** Claves de marca (brand_key): cualquiera de ellas. */
+  brands?: string[];
+  /** Sobre el precio de la tarjeta (la variante más barata). */
+  priceMin?: number;
+  priceMax?: number;
+  /** clave de opción -> valores: O dentro de cada opción, Y entre opciones. */
+  options?: Record<string, string[]>;
+  /** Solo con stock; las opciones se miran en las variantes con stock. */
+  inStock?: boolean;
   sort: ShopSort | "mayor-descuento";
   limit: number;
   offset?: number;
 };
+
+/** Filtros con los que se cuentan las facetas de la tienda. */
+export type FacetQuery = Pick<ProductQuery, "q" | "category" | "onlyOffers" | "ids" | "brands" | "priceMin" | "priceMax" | "options" | "inStock">;
 
 export interface CatalogSource {
   storeInfo(): Promise<StoreInfo>;
@@ -28,6 +40,8 @@ export interface CatalogSource {
   /** ids de los productos de una promoción vigente. */
   promotionProductIds(slug: string): Promise<string[]>;
   products(query: ProductQuery): Promise<{ rows: PublicProduct[]; total: number }>;
+  /** Opciones de cada filtro de la tienda con su cantidad (facetas disyuntivas). */
+  facets(query: FacetQuery): Promise<ShopFacets>;
   productBySlug(slug: string): Promise<PublicProduct | null>;
   variants(productId: string): Promise<PublicVariant[]>;
   /** ids de los más vendidos, en orden */

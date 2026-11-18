@@ -314,6 +314,12 @@ export type PublicProduct = {
   web_order: number | null;
   /** Si tiene texto, la web pide un detalle (grabado, dedicatoria…) al agregar al carrito. */
   customization_label: string | null;
+  /** Marca como clave de URL (web_key), para filtrar. */
+  brand_key: string | null;
+  /** "opción:valor" de sus variantes activas (ej. "color:rojo"). */
+  option_tags: string[];
+  /** Lo mismo, solo de las variantes con stock. */
+  option_tags_in_stock: string[];
 };
 
 export type PublicVariant = {

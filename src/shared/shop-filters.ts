@@ -1,5 +1,5 @@
 import { buildQuery, pageParam, param, safeSearch, type SearchParams } from "./query";
-import type { PriceRange, ShopFilters, ShopSort } from "./types";
+import type { PriceRange, ShopFacets, ShopFilters, ShopSort } from "./types";
 
 /**
  * Filtros de /tienda en la URL. Los links viejos (?categoria, ?ofertas, ?promo, ?q, ?orden, ?page)
@@ -87,4 +87,9 @@ export function activeFilterCount(f: ShopFilters): number {
   const optionValues = Object.values(f.options).reduce((n, v) => n + v.length, 0);
   const price = f.price.min !== null || f.price.max !== null ? 1 : 0;
   return Number(Boolean(f.category)) + f.brands.length + optionValues + price + Number(f.offers) + Number(f.inStock) + Number(Boolean(f.promo));
+}
+
+/** Saca las opciones de variante que no se pueden usar en la URL (clave reservada o inválida). */
+export function offerableFacets(f: ShopFacets): ShopFacets {
+  return { ...f, options: f.options.filter((o) => OPTION_KEY.test(o.key) && !RESERVED_PARAMS.includes(o.key)) };
 }

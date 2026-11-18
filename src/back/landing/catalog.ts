@@ -1,10 +1,11 @@
 import "server-only";
 import { cache } from "react";
 import { safeSearch } from "@/shared/query";
+import { offerableFacets } from "@/shared/shop-filters";
 export { parseShopFilters } from "@/shared/shop-filters";
-import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, SearchResult, ShopFilters, StoreInfo } from "@/shared/types";
+import { EMPTY_FACETS, type HomeData, type ProductPageData, type PublicCategory, type PublicPaymentMethod, type PublicProduct, type PublicPromotion, type PublicVariant, type SearchResult, type ShopFacets, type ShopFilters, type StoreInfo } from "@/shared/types";
 import { demoSource } from "./demo-source";
-import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
+import { EMPTY_STORE, type CatalogSource, type FacetQuery, type ProductQuery } from "./source";
 import { supabaseSource } from "./supabase-source";
 
 /**
@@ -68,21 +69,37 @@ export async function getPromotionShowcase(slug: string): Promise<PublicProduct[
   return rows.filter((p) => p.images.length > 0).slice(0, 4);
 }
 
-export async function listShopProducts(f: ShopFilters): Promise<{ rows: PublicProduct[]; total: number }> {
+/** Filtros de la tienda en el formato de las consultas; null si la promo pedida no tiene productos. */
+async function shopQueryFilters(f: ShopFilters): Promise<FacetQuery | null> {
   let ids: string[] | undefined;
   if (f.promo) {
     ids = await safe("los productos de la promoción", [] as string[], () => source.promotionProductIds(f.promo));
-    if (ids.length === 0) return { rows: [], total: 0 };
+    if (ids.length === 0) return null;
   }
-  return products({
+  return {
     ids,
     q: f.q || undefined,
     category: f.category || undefined,
     onlyOffers: f.offers,
-    sort: f.sort,
-    limit: SHOP_PAGE_SIZE,
-    offset: (f.page - 1) * SHOP_PAGE_SIZE,
-  });
+    brands: f.brands,
+    priceMin: f.price.min ?? undefined,
+    priceMax: f.price.max ?? undefined,
+    options: f.options,
+    inStock: f.inStock,
+  };
+}
+
+export async function listShopProducts(f: ShopFilters): Promise<{ rows: PublicProduct[]; total: number }> {
+  const query = await shopQueryFilters(f);
+  if (!query) return { rows: [], total: 0 };
+  return products({ ...query, sort: f.sort, limit: SHOP_PAGE_SIZE, offset: (f.page - 1) * SHOP_PAGE_SIZE });
+}
+
+/** Opciones de los filtros laterales con su cantidad. Si fallan, la tienda se ve sin barra lateral. */
+export async function getShopFacets(f: ShopFilters): Promise<ShopFacets> {
+  const query = await shopQueryFilters(f);
+  if (!query) return EMPTY_FACETS;
+  return offerableFacets(await safe("filtros", EMPTY_FACETS, () => source.facets(query)));
 }
 
 export const SEARCH_LIMIT = 6;
