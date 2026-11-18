@@ -503,6 +503,14 @@ dialog::backdrop {
     background-size: 100% 38%;
   }
 }
+/* Ventanita de WhatsApp: aparece desde el botón flotante */
+@keyframes wa-pop {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.96);
+  }
+}
+
 @keyframes fx-vapor {
   from {
     opacity: 0;

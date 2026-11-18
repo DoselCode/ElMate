@@ -140,6 +140,7 @@ const VARIANTS: PublicVariant[] = PRODUCTS.flatMap((p, pi) =>
     compare_at_price: v.compareAt ?? null,
     image: null,
     in_stock: v.inStock ?? true,
+    max_quantity: (v.inStock ?? true) ? 10 : 0,
   })),
 );
 

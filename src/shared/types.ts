@@ -326,6 +326,8 @@ export type PublicVariant = {
   compare_at_price: number | null;
   image: string | null;
   in_stock: boolean;
+  /** Cuánto se puede sumar al carrito según el stock (máx. 99); null = no lleva control de stock. */
+  max_quantity: number | null;
 };
 
 export type PublicCategory = {
@@ -423,6 +425,8 @@ export type CartItem = {
   quantity: number;
   /** Detalle que escribió el cliente (grabado, dedicatoria…). La misma variante con otro detalle es otra línea. */
   note?: string;
+  /** Tope por stock de la variante al agregarla (entre todas sus líneas). Sin tope: MAX_QUANTITY. */
+  max?: number;
 };
 
 // ---- Acciones ------------------------------------------------------------------------------

@@ -737,3 +737,31 @@ describe("promociones: imagen de fondo de la card", () => {
     await expect(save({ ...card, slug: "promo-mala", card_image: "javascript:alert(1)" })).rejects.toThrow();
   });
 });
+
+describe("web pública: tope de cantidad por stock", () => {
+  it("publica cuánto se puede sumar (entero, máx. 99) y null si no lleva stock", async () => {
+    await saveProduct(adminId, {
+      name: "Bombilla tope", slug: "bombilla-tope", option_names: ["Modelo"],
+      variants: [
+        { sku: "TOPE-POCO", attributes: { Modelo: "Pico" }, price: 5000, initial_stock: 3 },
+        { sku: "TOPE-MUCHO", attributes: { Modelo: "Resorte" }, price: 5000, initial_stock: 250 },
+        { sku: "TOPE-NADA", attributes: { Modelo: "Recta" }, price: 5000, initial_stock: 0 },
+      ],
+    });
+    await saveProduct(adminId, { name: "Grabado tope", slug: "grabado-tope", track_stock: false, variants: [{ sku: "TOPE-GRAB", price: 3000 }] });
+
+    const tope = async (slug: string) =>
+      (await as("anon", () =>
+        rows(
+          "select v.label, v.max_quantity from public.public_variants v join public.public_products p on p.id = v.product_id where p.slug = $1 order by v.label",
+          [slug],
+        ),
+      ));
+    expect(await tope("bombilla-tope")).toEqual([
+      { label: "Pico", max_quantity: 3 },
+      { label: "Recta", max_quantity: 0 },
+      { label: "Resorte", max_quantity: 99 },
+    ]);
+    expect(await tope("grabado-tope")).toEqual([{ label: "", max_quantity: null }]);
+  });
+});

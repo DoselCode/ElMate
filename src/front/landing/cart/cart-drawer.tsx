@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Minus, Plus, ShoppingCart, Trash, WhatsappLogo, X } from "@phosphor-icons/react";
 import { inputClass } from "@/front/shared/ui/field";
 import { formatMoney } from "@/shared/format";
-import { lineKey, MAX_QUANTITY } from "@/shared/cart";
+import { lineKey, MAX_QUANTITY, remainingFor } from "@/shared/cart";
 import { buildOrderMessage, whatsappLink } from "@/shared/whatsapp";
 import { ProductThumb } from "../catalog/product-image";
 import { useCart } from "./cart-provider";
@@ -93,6 +93,7 @@ export function CartDrawer({ whatsapp, storeName }: { whatsapp: string | null; s
                         value={item.quantity}
                         onChange={(q) => cart.setQty(lineKey(item), q)}
                         label={item.name}
+                        max={remainingFor(cart.items, item.variantId, item.max, lineKey(item))}
                       />
                       <p className="font-bold tabular-nums">{formatMoney(item.price * item.quantity)}</p>
                     </div>
@@ -169,10 +170,13 @@ export function QuantityStepper({
   value,
   onChange,
   label,
+  max = MAX_QUANTITY,
 }: {
   value: number;
   onChange: (n: number) => void;
   label: string;
+  /** Tope (stock disponible). Llegado ahí, "+" se deshabilita. */
+  max?: number;
 }) {
   const btn =
     "grid size-8 cursor-pointer place-items-center rounded-full text-foreground hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40";
@@ -184,7 +188,7 @@ export function QuantityStepper({
       <span className="min-w-7 text-center text-sm font-bold tabular-nums" aria-live="polite">
         {value}
       </span>
-      <button type="button" className={btn} onClick={() => onChange(value + 1)} disabled={value >= MAX_QUANTITY} aria-label="Sumar uno">
+      <button type="button" className={btn} onClick={() => onChange(Math.min(value + 1, max))} disabled={value >= Math.min(max, MAX_QUANTITY)} aria-label="Sumar uno">
         <Plus size={14} weight="bold" aria-hidden />
       </button>
     </div>
