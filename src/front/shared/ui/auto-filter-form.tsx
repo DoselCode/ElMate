@@ -87,7 +87,6 @@ export function AutoFilterForm({
           Limpiar
         </Button>
       )}
-      <p role="status" className="pb-2.5 text-sm text-muted">{pending ? "Actualizando…" : ""}</p>
     </form>
   );
 }

@@ -11,11 +11,7 @@ import { Modal } from "@/front/shared/ui/modal";
 import { inputClass } from "@/front/shared/ui/field";
 import { formatMoney, formatQuantity, parseDecimal } from "@/shared/format";
 import type { PaymentMethod, SellableItem } from "@/shared/types";
-
-type DiscountType = "pct" | "amount";
-
-/** Línea del carrito de venta. Cantidad y descuento se guardan como texto (lo que tipea quien vende). */
-type Line = { item: SellableItem; qty: string; discountType: DiscountType; discount: string; showDiscount: boolean };
+import { clearPosDraft, updatePosDraft, usePosDraft, type DiscountType, type Line } from "./pos-draft";
 
 /**
  * Descuento como lo calcula la base (create_sale): en % sobre el importe o en monto fijo,
@@ -49,17 +45,41 @@ function totalFor(base: number, method: PaymentMethod | undefined) {
 
 const pct = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)} %`;
 
-export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[]; methods: PaymentMethod[]; cashOpen: boolean }) {
+export function PosScreen({
+  items,
+  methods,
+  cashOpen,
+  isAdmin,
+}: {
+  items: SellableItem[];
+  methods: PaymentMethod[];
+  cashOpen: boolean;
+  isAdmin: boolean;
+}) {
   const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [lines, setLines] = useState<Line[]>([]);
-  const [discount, setDiscount] = useState("");
-  const [discountType, setDiscountType] = useState<DiscountType>("amount");
-  const [methodId, setMethodId] = useState(methods.find((m) => m.is_cash)?.id ?? methods[0]?.id ?? "");
-  const [customer, setCustomer] = useState("");
-  const [notes, setNotes] = useState("");
+  // La venta en curso vive en pos-draft: sobrevive a cambiar de módulo y a recargar la página
+  const draft = usePosDraft();
+  // Las líneas guardadas se actualizan con el precio y el stock de ahora; si un producto ya no se vende, sale
+  const lines = useMemo(() => {
+    const byId = new Map(items.map((i) => [i.variant_id, i]));
+    return draft.lines.flatMap((l) => {
+      const item = byId.get(l.item.variant_id);
+      return item ? [{ ...l, item }] : [];
+    });
+  }, [draft.lines, items]);
+  const { discount, discountType, customer, notes } = draft;
+  const defaultMethodId = methods.find((m) => m.is_cash)?.id ?? methods[0]?.id ?? "";
+  const methodId = draft.methodId && methods.some((m) => m.id === draft.methodId) ? draft.methodId : defaultMethodId;
+  const setLines = (next: Line[] | ((ls: Line[]) => Line[])) =>
+    updatePosDraft((d) => ({ ...d, lines: typeof next === "function" ? next(d.lines) : next }));
+  const setDiscount = (value: string) => updatePosDraft((d) => ({ ...d, discount: value }));
+  const setDiscountType = (value: DiscountType) => updatePosDraft((d) => ({ ...d, discountType: value }));
+  const setMethodId = (value: string) => updatePosDraft((d) => ({ ...d, methodId: value }));
+  const setCustomer = (value: string) => updatePosDraft((d) => ({ ...d, customer: value }));
+  const setNotes = (value: string) => updatePosDraft((d) => ({ ...d, notes: value }));
   const [error, setError] = useState<string>();
   /** Aviso al intentar agregar algo sin stock (se muestra bajo el buscador). */
   const [notice, setNotice] = useState<string>();
@@ -163,11 +183,7 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
         return;
       }
       setDone({ saleId: res.saleId, ticketNumber: res.ticketNumber, total });
-      setLines([]);
-      setDiscount("");
-      setDiscountType("amount");
-      setCustomer("");
-      setNotes("");
+      clearPosDraft();
       router.refresh(); // stock actualizado para la próxima venta
       searchRef.current?.focus();
     });
@@ -177,9 +193,11 @@ export function PosScreen({ items, methods, cashOpen }: { items: SellableItem[];
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold">Nueva venta</h1>
-        <Link href="/admin/ventas" className={buttonClass("ghost")}>
-          <Receipt size={18} aria-hidden /> Ventas del día
-        </Link>
+        {isAdmin && (
+          <Link href="/admin/ventas" className={buttonClass("ghost")}>
+            <Receipt size={18} aria-hidden /> Ventas del día
+          </Link>
+        )}
       </header>
 
       {!cashOpen && (

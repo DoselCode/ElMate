@@ -92,8 +92,9 @@ export function StockScreen({
         </label>
       </AutoFilterForm>
 
-      {/* key: al cambiar un filtro o de página vuelve a mostrar el esqueleto mientras llegan las filas */}
-      <Suspense key={JSON.stringify(filters)} fallback={<TableSkeleton />}>
+      {/* Sin key: al filtrar, limpiar o cambiar de página la tabla anterior queda a la vista hasta que llegan
+          las filas nuevas, sin esqueleto de "cargando" en el medio. El esqueleto sale solo en la primera carga. */}
+      <Suspense fallback={<TableSkeleton />}>
         <StockResults list={list} hasFilters={hasFilters} isAdmin={isAdmin} page={page} filterParams={filterParams} />
       </Suspense>
     </div>

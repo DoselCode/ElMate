@@ -45,8 +45,8 @@ export function MovementsScreen({ list, filters }: { list: Promise<Paged<Movemen
         </FilterField>
       </AutoFilterForm>
 
-      {/* key: al cambiar un filtro o de página vuelve a mostrar el esqueleto mientras llegan las filas */}
-      <Suspense key={JSON.stringify(filters)} fallback={<TableSkeleton />}>
+      {/* Sin key: al filtrar, la tabla anterior queda a la vista hasta que llegan las filas nuevas (sin esqueleto) */}
+      <Suspense fallback={<TableSkeleton />}>
         <MovementsResults list={list} hasFilters={hasFilters} page={page} q={q} type={type} />
       </Suspense>
     </div>

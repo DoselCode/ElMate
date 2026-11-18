@@ -160,10 +160,11 @@ export function ProductForm({
   const [brand, setBrand] = useState(initial?.brand ?? "");
   const [unit, setUnit] = useState<Unit>(initial?.unit ?? "unidad");
   const [trackStock, setTrackStock] = useState(initial?.trackStock ?? true);
-  const [badge, setBadge] = useState(initial?.badge ?? "");
+  // Etiqueta y "Mostrar en Novedades" ya no se editan en el formulario: se conserva lo que tenía el producto
+  const badge = initial?.badge ?? "";
   const [isVisible, setIsVisible] = useState(initial?.isVisible ?? true);
   const [isFeatured, setIsFeatured] = useState(initial?.isFeatured ?? false);
-  const [showInNews, setShowInNews] = useState(initial?.showInNews ?? true);
+  const showInNews = initial?.showInNews ?? true;
   const [webOrder, setWebOrder] = useState(initial?.webOrder === null || initial?.webOrder === undefined ? "" : String(initial.webOrder));
   const [customizationLabel, setCustomizationLabel] = useState(initial?.customizationLabel ?? "");
   const [images, setImages] = useState<string[]>(initial?.images ?? []);
@@ -398,23 +399,6 @@ export function ProductForm({
               disabled={!isVisible}
               title="Destacado en la home"
               hint="Aparece en la sección “Productos destacados” y primero en la tienda. Podés marcar todos los que quieras."
-            />
-            <WebOption
-              checked={showInNews}
-              onChange={setShowInNews}
-              disabled={!isVisible}
-              title="Mostrar en Novedades"
-              hint="Si lo destildás, no sale en la sección de novedades aunque sea de los últimos que cargaste."
-            />
-            <TextField
-              id="badge"
-              label="Etiqueta sobre la foto"
-              value={badge}
-              maxLength={50}
-              placeholder="Ej: Novedad, Más vendido"
-              hint="Un cartelito corto que se ve sobre la imagen del producto."
-              error={err("badge")}
-              onChange={(e) => setBadge(e.target.value)}
             />
             <TextField
               id="customization-label"

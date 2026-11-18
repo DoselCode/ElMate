@@ -94,9 +94,9 @@ Detalle, reglas de qué puede importar qué y dónde va cada cosa nueva: [docs/E
 
 | | Admin | Empleado |
 |---|---|---|
-| Ver inventario, movimientos, ventas | ✅ | ✅ (sin costos) |
+| Ver inventario, movimientos e historial de ventas | ✅ | — (el panel solo le muestra Nueva venta y Caja) |
 | Crear/editar productos, ingresos, ajustes, recuento | ✅ | — |
-| Registrar ventas, abrir/cerrar caja | ✅ | ✅ |
+| Registrar ventas, ver e imprimir su ticket, abrir/cerrar caja | ✅ | ✅ |
 | Anular ventas, ver costos y ganancias | ✅ | — |
 
 ## Pendiente / a definir

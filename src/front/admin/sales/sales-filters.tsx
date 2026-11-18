@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { buttonClass } from "@/front/shared/ui/button";
+import { DateInput } from "@/front/shared/ui/date-input";
 import { inputClass } from "@/front/shared/ui/field";
 import { FilterField } from "@/front/shared/ui/filter-field";
 import { buildQuery } from "@/shared/query";
 import type { PaymentMethod, SalesFilters } from "@/shared/types";
+import { saveSalesQuery } from "./sales-last-query";
 
 type Values = Pick<SalesFilters, "from" | "to" | "method" | "status">;
 
@@ -28,7 +30,6 @@ export function SalesFilterBar({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [pending, startTransition] = useTransition();
   const [values, setValues] = useState<Values>(filters);
   const [seen, setSeen] = useState(filters);
 
@@ -38,12 +39,19 @@ export function SalesFilterBar({
     setValues(filters);
   }
 
+  // Se recuerdan los filtros de la lista que se está viendo: el link "Ventas" del menú vuelve a ella
+  const { from, to, method, status, page } = filters;
+  useEffect(() => {
+    const isDefault = from === today && to === today && !method && !status && page <= 1;
+    saveSalesQuery(isDefault ? "" : buildQuery({ from, to, method, status, page: page > 1 ? page : undefined }));
+  }, [from, to, method, status, page, today]);
+
   function apply(next: Values) {
     setValues(next);
     // Con una fecha borrada o incompleta no se busca todavía
     if (!next.from || !next.to) return;
     const query = buildQuery({ from: next.from, to: next.to, method: next.method, status: next.status });
-    startTransition(() => router.replace(`${pathname}${query}`, { scroll: false }));
+    router.replace(`${pathname}${query}`, { scroll: false });
   }
 
   // Si el rango queda al revés, la otra fecha lo acompaña
@@ -51,12 +59,12 @@ export function SalesFilterBar({
   const setTo = (to: string) => apply({ ...values, to, from: to && values.from && to < values.from ? to : values.from });
 
   return (
-    <div role="search" aria-busy={pending} className="flex flex-wrap items-end gap-3">
+    <div role="search" className="flex flex-wrap items-end gap-3">
       <FilterField id="from" label="Desde">
-        <input id="from" type="date" value={values.from} max={today} onChange={(e) => setFrom(e.target.value)} className={inputClass} />
+        <DateInput id="from" value={values.from} max={today} onChange={setFrom} />
       </FilterField>
       <FilterField id="to" label="Hasta">
-        <input id="to" type="date" value={values.to} max={today} onChange={(e) => setTo(e.target.value)} className={inputClass} />
+        <DateInput id="to" value={values.to} max={today} onChange={setTo} />
       </FilterField>
       <FilterField id="method" label="Forma de pago">
         <select id="method" value={values.method} onChange={(e) => apply({ ...values, method: e.target.value })} className={inputClass}>
@@ -81,7 +89,6 @@ export function SalesFilterBar({
       {showReset && (
         <Link href="/admin/ventas" className={buttonClass("ghost")}>Ver hoy</Link>
       )}
-      <p role="status" className="pb-2.5 text-sm text-muted">{pending ? "Actualizando…" : ""}</p>
     </div>
   );
 }

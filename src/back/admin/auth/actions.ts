@@ -35,7 +35,8 @@ export async function signInAction(_prev: LoginState, formData: FormData): Promi
   // Mensaje único: no revela si el email existe
   if (error) return { error: "Email o contraseña incorrectos", email };
 
-  redirect("/admin/stock");
+  // /admin manda a cada rol a su pantalla de inicio
+  redirect("/admin");
 }
 
 export async function signOutAction() {
