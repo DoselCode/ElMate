@@ -1,12 +1,30 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { PaperPlaneRight, WhatsappLogo, X } from "@phosphor-icons/react";
+import { PaperPlaneRight, X } from "@phosphor-icons/react";
 import { whatsappLink } from "@/shared/whatsapp";
 
 /** Verde de WhatsApp oscurecido: el ícono y el texto blancos mantienen contraste (≈4:1). */
 const GREEN_BG = "bg-[#158f4a]";
 const GREEN = `${GREEN_BG} hover:bg-[#117a3e]`;
+
+/** Ícono de chat de WhatsApp (trazo, toma el color del texto). */
+function ChatIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 21a8.962 8.962 0 01-4.57-1.24L3 21l1.28-4.29A8.963 8.963 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9-4.03 9-9 9z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9.75 8.75s.5 1.75 1.5 2.75 2.75 1.5 2.75 1.5l1.25-1.25s.75.25 1.5 1-.75 2.25-.75 2.25c-1 1-3.5.5-6-2s-3-5-2-6c0 0 1.25-1.5 2.25-.75s1 1.5 1 1.5l-1.5 1z"
+      />
+    </svg>
+  );
+}
 
 const TOPICS = [
   "Quiero consultar por un producto",
@@ -63,7 +81,7 @@ export function WhatsappFloat({ whatsapp, storeName, hours }: { whatsapp: string
         >
           <header className={`flex items-center gap-3 px-5 py-4 text-white ${GREEN_BG}`}>
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/15" aria-hidden>
-              <WhatsappLogo size={24} weight="fill" />
+              <ChatIcon size={24} />
             </span>
             <div className="min-w-0 flex-1">
               <h2 id={`${id}-title`} className="truncate font-bold leading-tight">{storeName}</h2>
@@ -158,7 +176,7 @@ export function WhatsappFloat({ whatsapp, storeName, hours }: { whatsapp: string
         title={open ? undefined : "Escribinos por WhatsApp"}
         className={`grid size-14 cursor-pointer place-items-center rounded-full text-white shadow-lg ring-4 ring-white/70 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-primary/50 ${GREEN}`}
       >
-        {open ? <X size={26} weight="bold" aria-hidden /> : <WhatsappLogo size={30} weight="fill" aria-hidden />}
+        {open ? <X size={26} weight="bold" aria-hidden /> : <ChatIcon size={30} />}
       </button>
     </div>
   );
