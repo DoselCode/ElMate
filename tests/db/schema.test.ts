@@ -2,6 +2,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { slugify } from "../../src/shared/slug";
 
 const root = path.resolve(__dirname, "../..");
 const migrationsDir = path.join(root, "supabase/migrations");
@@ -763,5 +764,100 @@ describe("web pública: tope de cantidad por stock", () => {
       { label: "Resorte", max_quantity: 99 },
     ]);
     expect(await tope("grabado-tope")).toEqual([{ label: "", max_quantity: null }]);
+  });
+});
+
+describe("shop facets", () => {
+  // Los productos de este bloque llevan "Facetado" en el nombre: las facetas se piden con q para no contar los de otros tests
+  let categoryA: string;
+  let categoryB: string;
+  const facets = async (filters: Row) =>
+    (await as("anon", () => rows("select public.shop_facets($1::jsonb) as f", [JSON.stringify({ q: "facetado", ...filters })])))[0].f;
+
+  beforeAll(async () => {
+    [{ id: categoryA }] = await rows("insert into public.categories (name, slug, sort_order) values ('Facetas A', 'facetas-a', 90) returning id");
+    [{ id: categoryB }] = await rows("insert into public.categories (name, slug, sort_order) values ('Facetas B', 'facetas-b', 91) returning id");
+    await saveProduct(adminId, {
+      name: "Termo Facetado Uno", slug: "termo-facetado-uno", brand: "Waterdog", category_id: categoryA, option_names: ["Color"],
+      variants: [
+        { sku: "FAC-1-ROJO", attributes: { Color: "Rojo" }, price: 30000, initial_stock: 0 },
+        { sku: "FAC-1-NEGRO", attributes: { Color: "Negro" }, price: 32000, initial_stock: 3 },
+      ],
+    });
+    await saveProduct(adminId, {
+      name: "Termo Facetado Dos", slug: "termo-facetado-dos", brand: "waterdog ", category_id: categoryB, option_names: ["Color"],
+      variants: [{ sku: "FAC-2-ROJO", attributes: { Color: "rojo" }, price: 10000, initial_stock: 2 }],
+    });
+    await saveProduct(adminId, {
+      name: "Mate Facetado", slug: "mate-facetado", brand: "El Mate", category_id: categoryB,
+      variants: [{ sku: "FAC-3", price: 5000, initial_stock: 1 }],
+    });
+    await saveProduct(adminId, {
+      name: "Bombilla Facetado", slug: "bombilla-facetado", category_id: categoryA,
+      variants: [{ sku: "FAC-4", price: 2000, initial_stock: 1 }],
+    });
+  });
+
+  it("web_key da lo mismo que slugify", async () => {
+    for (const text of ["El Mate", "Tamaño", "  Rojo  ", "Waterdog", "Ñandú Café", "a--b__c", "Ça va? ¡Sí!"]) {
+      const [r] = await rows("select public.web_key($1) as k", [text]);
+      expect(r.k, text).toBe(slugify(text));
+    }
+  });
+
+  it("public_products publica la clave de marca y las opciones (todas y con stock)", async () => {
+    const [p] = await as("anon", () =>
+      rows("select brand_key, option_tags, option_tags_in_stock from public.public_products where slug = 'termo-facetado-uno'"),
+    );
+    expect(p.brand_key).toBe("waterdog");
+    expect([...p.option_tags].sort()).toEqual(["color:negro", "color:rojo"]);
+    expect(p.option_tags_in_stock).toEqual(["color:negro"]);
+  });
+
+  it("cuenta cada faceta sin aplicar su propio filtro", async () => {
+    const f = await facets({ brands: ["waterdog"] });
+    expect(f.brands).toEqual([
+      { value: "Waterdog", key: "waterdog", count: 2 },
+      { value: "El Mate", key: "el-mate", count: 1 },
+    ]);
+    expect(f.categories).toEqual([
+      { slug: "facetas-a", name: "Facetas A", count: 1 },
+      { slug: "facetas-b", name: "Facetas B", count: 1 },
+    ]);
+    expect(f.options).toEqual([
+      { name: "Color", key: "color", values: [{ value: "Negro", key: "negro", count: 1 }, { value: "Rojo", key: "rojo", count: 2 }].sort((a, b) => b.count - a.count) },
+    ]);
+  });
+
+  it("no devuelve opciones en cero ni 'sin marca'", async () => {
+    const f = await facets({ category: "facetas-a" });
+    expect(f.brands).toEqual([{ value: "Waterdog", key: "waterdog", count: 1 }]);
+    for (const list of [f.brands, f.categories, ...f.options.map((o: Row) => o.values)]) {
+      for (const item of list) expect(item.count).toBeGreaterThan(0);
+    }
+  });
+
+  it("el rango de precio no se achica con el propio filtro de precio", async () => {
+    const all = await facets({});
+    expect(all.price).toEqual({ min: 2000, max: 30000 });
+    expect((await facets({ price_min: 9000 })).price).toEqual(all.price);
+    expect((await facets({ price_min: 9000 })).brands).toEqual([{ value: "Waterdog", key: "waterdog", count: 2 }]);
+  });
+
+  it("con 'en stock' las opciones cuentan solo variantes disponibles", async () => {
+    const f = await facets({ in_stock: true, options: { color: ["rojo"] } });
+    expect(f.options[0].values).toEqual([
+      { value: "Negro", key: "negro", count: 1 },
+      { value: "Rojo", key: "rojo", count: 1 },
+    ]);
+    expect(f.brands).toEqual([{ value: "Waterdog", key: "waterdog", count: 1 }]);
+    expect(f.in_stock).toBe(1);
+  });
+
+  it("filtra por ids (promo) y cuenta ofertas", async () => {
+    const [{ id }] = await rows("select id from public.products where slug = 'mate-facetado'");
+    const f = await facets({ ids: [id] });
+    expect(f.brands).toEqual([{ value: "El Mate", key: "el-mate", count: 1 }]);
+    expect(f.offers).toBe(0);
   });
 });
