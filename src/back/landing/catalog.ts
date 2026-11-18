@@ -31,23 +31,27 @@ const products = (q: ProductQuery) => safe("productos", { rows: [], total: 0 }, 
 
 // cache(): el layout y la página piden lo mismo en una visita; se consulta una sola vez
 export const getStoreInfo = cache((): Promise<StoreInfo> => safe("datos del local", EMPTY_STORE, () => source.storeInfo()));
-export const getCategories = cache((): Promise<PublicCategory[]> => safe("categorías", [], () => source.categories()));
+/** Categorías con al menos un producto en la web: una vacía no se muestra (menú, home) porque llevaría a una lista vacía. */
+export const getCategories = cache(
+  async (): Promise<PublicCategory[]> => (await safe("categorías", [], () => source.categories())).filter((c) => c.product_count > 0),
+);
 /** Promociones vigentes ahora. */
 export const getPromotions = cache((): Promise<PublicPromotion[]> => safe("promociones", [], () => source.promotions()));
 
 export async function getHomeData(): Promise<HomeData> {
   const [featured, offers, bestIds] = await Promise.all([
-    products({ featuredOnly: true, sort: "destacados", limit: 8 }),
-    products({ onlyOffers: true, sort: "mayor-descuento", limit: 4 }),
+    // Las vidrieras de la home muestran solo productos con foto real
+    products({ featuredOnly: true, withImages: true, sort: "destacados", limit: 8 }),
+    products({ onlyOffers: true, withImages: true, sort: "mayor-descuento", limit: 4 }),
     safe("más vendidos", [] as string[], () => source.bestSellerIds()),
   ]);
 
   // Más vendidos según las ventas; si todavía hay pocas, se completa con destacados
   const ids = bestIds.slice(0, 4);
-  const best = ids.length ? (await products({ ids, sort: "destacados", limit: 4 })).rows : [];
+  const best = ids.length ? (await products({ ids, withImages: true, sort: "destacados", limit: 4 })).rows : [];
   best.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
   if (best.length < 4) {
-    const fill = await products({ sort: "destacados", limit: 8 });
+    const fill = await products({ withImages: true, sort: "destacados", limit: 8 });
     for (const p of fill.rows) {
       if (best.length >= 4) break;
       if (!best.some((b) => b.id === p.id)) best.push(p);
