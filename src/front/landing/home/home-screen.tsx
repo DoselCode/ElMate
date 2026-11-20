@@ -335,12 +335,13 @@ function Ritual({ combosHref }: { combosHref: string }) {
         aria-hidden
       />
       <div className="grid items-center gap-12 py-6 lg:grid-cols-2">
+        {/* Fotos reales: un combo armado (canasto, termo, mate y yerbera) y un mate imperial de algarrobo */}
         <div className="flex items-center justify-center gap-3 px-2 sm:gap-4" aria-hidden>
           <div className={`${photo} fx-split-a -rotate-[5deg] translate-y-3`}>
-            <Image src="/landing/ritual-yerba.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
+            <Image src="/landing/ritual-combo.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
           </div>
           <div className={`${photo} fx-split-b rotate-[3deg]`}>
-            <Image src="/landing/ritual-termos.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
+            <Image src="/landing/ritual-mate.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
           </div>
         </div>
         <div className="px-2">
