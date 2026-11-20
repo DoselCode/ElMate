@@ -70,6 +70,7 @@ export const supabaseSource: CatalogSource = {
     if (q.onlyOffers) query = query.not("compare_at_price", "is", null);
     if (q.featuredOnly) query = query.eq("is_featured", true);
     if (q.inNewsOnly) query = query.eq("show_in_news", true);
+    if (q.withImages) query = query.not("images", "eq", "{}");
     if (q.ids) query = query.in("id", q.ids);
     if (q.excludeId) query = query.neq("id", q.excludeId);
     if (q.brands?.length) query = query.in("brand_key", q.brands);

@@ -13,6 +13,8 @@ export type ProductQuery = {
   featuredOnly?: boolean;
   /** Deja afuera los que se sacaron de "Novedades". */
   inNewsOnly?: boolean;
+  /** Solo los que tienen al menos una foto (vidrieras de la home: destacados, ofertas, más vendidos). */
+  withImages?: boolean;
   ids?: string[];
   excludeId?: string;
   /** Claves de marca (brand_key): cualquiera de ellas. */

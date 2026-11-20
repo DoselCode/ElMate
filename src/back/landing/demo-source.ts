@@ -223,6 +223,7 @@ function matches(p: PublicProduct, q: ProductQuery) {
   if (!passes(p, q)) return false;
   if (q.featuredOnly && !p.is_featured) return false;
   if (q.inNewsOnly && !p.show_in_news) return false;
+  // withImages no se aplica: el catálogo de ejemplo no tiene fotos (se ilustra con dibujos)
   if (q.excludeId && p.id === q.excludeId) return false;
   return true;
 }
