@@ -5,17 +5,24 @@ export function ShopLoading() {
   return (
     <LoadingRegion className="mx-auto max-w-[85rem] px-4 pt-10 sm:px-6">
       <Skeleton className="h-4 w-32" />
-      <Skeleton className="mt-4 h-10 w-48" />
-      <div className="mt-6 flex gap-2">
-        {Array.from({ length: 6 }, (_, i) => (
-          <Skeleton key={i} className="h-9 w-24 rounded-full" />
-        ))}
+      <div className="mt-4 flex items-center justify-between gap-4">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-10 w-40 rounded-full" />
       </div>
-      <Skeleton className="mt-6 h-16 w-full rounded-3xl" />
-      <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 8 }, (_, i) => (
-          <ProductCardSkeleton key={i} />
-        ))}
+      <div className="mt-6 lg:grid lg:grid-cols-[16rem_1fr] lg:gap-10">
+        <div className="hidden space-y-6 lg:block">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+        <div>
+          <Skeleton className="h-11 w-full rounded-full" />
+          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }, (_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
       </div>
     </LoadingRegion>
   );

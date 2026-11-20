@@ -314,6 +314,12 @@ export type PublicProduct = {
   web_order: number | null;
   /** Si tiene texto, la web pide un detalle (grabado, dedicatoria…) al agregar al carrito. */
   customization_label: string | null;
+  /** Marca como clave de URL (web_key), para filtrar. */
+  brand_key: string | null;
+  /** "opción:valor" de sus variantes activas (ej. "color:rojo"). */
+  option_tags: string[];
+  /** Lo mismo, solo de las variantes con stock. */
+  option_tags_in_stock: string[];
 };
 
 export type PublicVariant = {
@@ -366,7 +372,30 @@ export type ShopFilters = {
   /** slug de una promoción vigente: muestra solo sus productos */
   promo: string;
   page: number;
+  /** claves de marca (web_key) */
+  brands: string[];
+  price: PriceRange;
+  /** clave de opción de variante -> claves de valores elegidos (ej. { color: ["rojo"] }) */
+  options: Record<string, string[]>;
+  inStock: boolean;
 };
+
+export type PriceRange = { min: number | null; max: number | null };
+
+/** Una opción de un filtro con cuántos productos quedan si se elige. */
+export type FacetValue = { value: string; key: string; count: number };
+
+/** Filtros de la tienda generados desde los datos (función shop_facets). */
+export type ShopFacets = {
+  categories: { slug: string; name: string; count: number }[];
+  brands: FacetValue[];
+  options: { name: string; key: string; values: FacetValue[] }[];
+  price: { min: number; max: number } | null;
+  offers: number;
+  inStock: number;
+};
+
+export const EMPTY_FACETS: ShopFacets = { categories: [], brands: [], options: [], price: null, offers: 0, inStock: 0 };
 
 /** Secciones de productos de la home. */
 export type HomeData = { featured: PublicProduct[]; offers: PublicProduct[]; bestSellers: PublicProduct[] };

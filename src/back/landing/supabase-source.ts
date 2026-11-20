@@ -1,7 +1,7 @@
 import "server-only";
 import { createPublicClient } from "@/back/shared/supabase/public";
-import type { PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, StoreInfo } from "@/shared/types";
-import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
+import { EMPTY_FACETS, type PublicCategory, type PublicPaymentMethod, type PublicProduct, type PublicPromotion, type PublicVariant, type ShopFacets, type StoreInfo } from "@/shared/types";
+import { EMPTY_STORE, type CatalogSource, type FacetQuery, type ProductQuery } from "./source";
 
 /** Catálogo real: solo lee las vistas public_* (nunca las tablas, que tienen costos y stock exacto). */
 
@@ -17,6 +17,21 @@ const toVariant = (r: PublicVariant): PublicVariant => ({
   price: Number(r.price),
   compare_at_price: r.compare_at_price === null ? null : Number(r.compare_at_price),
 });
+
+type RawFacets = Omit<ShopFacets, "price" | "inStock"> & { price: { min: number | string; max: number | string } | null; in_stock: number };
+
+// numeric llega como texto desde PostgREST
+const toFacets = (r: RawFacets | null): ShopFacets =>
+  r
+    ? {
+        categories: r.categories,
+        brands: r.brands,
+        options: r.options,
+        price: r.price ? { min: Number(r.price.min), max: Number(r.price.max) } : null,
+        offers: r.offers,
+        inStock: r.in_stock,
+      }
+    : EMPTY_FACETS;
 
 export const supabaseSource: CatalogSource = {
   async storeInfo(): Promise<StoreInfo> {
@@ -58,6 +73,15 @@ export const supabaseSource: CatalogSource = {
     if (q.withImages) query = query.not("images", "eq", "{}");
     if (q.ids) query = query.in("id", q.ids);
     if (q.excludeId) query = query.neq("id", q.excludeId);
+    if (q.brands?.length) query = query.in("brand_key", q.brands);
+    if (q.priceMin != null) query = query.gte("price", q.priceMin);
+    if (q.priceMax != null) query = query.lte("price", q.priceMax);
+    if (q.inStock) query = query.eq("in_stock", true);
+    // O dentro de cada opción (overlaps), Y entre opciones; con "en stock" se miran solo variantes disponibles
+    const tagColumn = q.inStock ? "option_tags_in_stock" : "option_tags";
+    for (const [key, values] of Object.entries(q.options ?? {})) {
+      if (values.length) query = query.overlaps(tagColumn, values.map((v) => `${key}:${v}`));
+    }
 
     if (q.sort === "precio-asc") query = query.order("price", { ascending: true });
     else if (q.sort === "precio-desc") query = query.order("price", { ascending: false });
@@ -76,6 +100,24 @@ export const supabaseSource: CatalogSource = {
     const { data, count, error } = await query.range(offset, offset + q.limit - 1);
     if (error) throw error;
     return { rows: ((data ?? []) as PublicProduct[]).map(toProduct), total: count ?? 0 };
+  },
+
+  async facets(q: FacetQuery) {
+    const { data, error } = await createPublicClient().rpc("shop_facets", {
+      p_filters: {
+        q: q.q,
+        category: q.category,
+        ids: q.ids,
+        brands: q.brands,
+        price_min: q.priceMin,
+        price_max: q.priceMax,
+        options: q.options,
+        offers: q.onlyOffers,
+        in_stock: q.inStock,
+      },
+    });
+    if (error) throw error;
+    return toFacets(data as RawFacets);
   },
 
   async productBySlug(slug: string) {

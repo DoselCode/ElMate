@@ -7,6 +7,19 @@ export function parseMoney(text: string): number {
   return Number(match[1].replace(/\./g, "").replace(",", "."));
 }
 
+/** Sidebar of shop filters (desktop) or the open mobile panel. */
+export function filtersPanel(page: Page): Locator {
+  return page.getByRole("navigation", { name: "Filtros" }).filter({ visible: true });
+}
+
+/** Total shown next to the shop title: "Tienda (12)" -> 12. */
+export async function shopTotal(page: Page): Promise<number> {
+  const text = await page.getByRole("heading", { level: 1 }).innerText();
+  const match = text.match(/\((\d+)\)/);
+  if (!match) throw new Error(`No total in "${text}"`);
+  return Number(match[1]);
+}
+
 export function productCards(page: Page): Locator {
   return page.locator("main article").filter({ has: page.locator('h3 a[href^="/producto/"]') });
 }

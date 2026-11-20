@@ -146,6 +146,37 @@ dialog::backdrop {
   }
 }
 
+/* ---- Filtros de la tienda en el celular: panel que entra desde la izquierda ---- */
+.filters-drawer {
+  translate: -100% 0;
+  transition:
+    translate 0.28s cubic-bezier(0.55, 0, 0.75, 0),
+    display 0.28s allow-discrete,
+    overlay 0.28s allow-discrete;
+}
+.filters-drawer[open] {
+  translate: 0 0;
+  transition:
+    translate 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    display 0.45s allow-discrete,
+    overlay 0.45s allow-discrete;
+}
+@starting-style {
+  .filters-drawer[open] {
+    translate: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .filters-drawer,
+  .filters-drawer[open] {
+    transition: none;
+  }
+}
+/* Con el panel abierto, la página de atrás no se mueve */
+html:has(.filters-drawer[open]) {
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   /* Los productos se reparten como cartas, uno tras otro, y el total sube desde abajo */
   .cart-drawer[open] .cart-item {

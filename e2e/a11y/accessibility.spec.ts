@@ -44,6 +44,16 @@ test.describe("Accessibility (WCAG 2.1 AA, axe)", () => {
     expect(blocking, found.join("\n")).toEqual([]);
   });
 
+  test("mobile filters panel has no critical or serious violations @mobile", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "The panel only exists on small screens");
+    await page.goto("/tienda");
+    await page.getByRole("button", { name: /^Filtros/ }).click();
+    await expect(page.getByRole("dialog", { name: "Filtros" })).toBeVisible();
+    const found = await audit(page);
+    const blocking = found.filter((v) => v.startsWith("critical") || v.startsWith("serious"));
+    expect(blocking, found.join("\n")).toEqual([]);
+  });
+
   test("closing the search panel with Escape returns focus to its toggle", async ({ page }) => {
     await page.goto("/tienda");
     const toggle = page.locator("[data-search-toggle]");

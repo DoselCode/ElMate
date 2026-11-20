@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cardPrice, productCards } from "../support/shop";
+import { cardPrice, filtersPanel, productCards, shopTotal } from "../support/shop";
 
 test.describe("Shop", () => {
   test("CU-02 navigates from the header to the product list @mobile", async ({ page, isMobile }) => {
@@ -11,12 +11,12 @@ test.describe("Shop", () => {
     }
     await expect(page).toHaveURL(/\/tienda/);
     await expect(productCards(page).first()).toBeVisible();
-    await expect(page.getByText(/\d+ productos?/).first()).toBeVisible();
+    expect(await shopTotal(page)).toBeGreaterThan(0);
   });
 
   test("CU-03 filters by category", async ({ page }) => {
     await page.goto("/tienda");
-    await page.getByRole("link", { name: "Yerbas", exact: true }).first().click();
+    await filtersPanel(page).getByRole("link", { name: /^Yerbas \(\d+\)$/ }).click();
     await expect(page).toHaveURL(/categoria=yerbas/);
     const cards = productCards(page);
     await expect(cards.first()).toBeVisible();
@@ -64,6 +64,99 @@ test.describe("Shop", () => {
 
     await page.goto("/tienda?q=zzzxxxnoexiste");
     await expect(page.getByText("No encontramos productos con esos filtros")).toBeVisible();
+  });
+
+  test("CU-15 filters by brand from the sidebar and removes it with its chip", async ({ page }) => {
+    await page.goto("/tienda");
+    const before = await shopTotal(page);
+    const panel = filtersPanel(page);
+    await panel.getByText("Marca", { exact: true }).click();
+    const brand = panel.getByRole("checkbox").first();
+    const label = (await brand.locator("xpath=..").innerText()).replace(/\s*\(\d+\)\s*$/, "").trim();
+    // El checkbox refleja la URL: se marca cuando termina la navegación
+    await brand.click();
+    await expect(page).toHaveURL(/marca=/);
+    await expect(brand).toBeChecked();
+    const chip = page.getByRole("button", { name: `Quitar filtro ${label}` });
+    await expect(chip).toBeVisible();
+    expect(await shopTotal(page)).toBeLessThanOrEqual(before);
+
+    await chip.click();
+    await expect(page).not.toHaveURL(/marca=/);
+    await expect.poll(() => shopTotal(page)).toBe(before);
+  });
+
+  test("CU-16 legacy links keep working", async ({ page }) => {
+    await page.goto("/tienda?categoria=yerbas");
+    await expect(productCards(page).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Quitar filtro Yerbas/ })).toBeVisible();
+
+    await page.goto("/tienda?ofertas=1");
+    await expect(productCards(page).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Quitar filtro Solo ofertas" })).toBeVisible();
+  });
+
+  test("CU-17 an empty result keeps the selection and offers to clear everything", async ({ page }) => {
+    await page.goto("/tienda?ofertas=1&precio=999999999-");
+    await expect(page.getByText("No encontramos productos con esos filtros")).toBeVisible();
+    await expect(filtersPanel(page).getByRole("checkbox", { name: /Solo ofertas/ })).toBeChecked();
+    await page.getByRole("button", { name: "Limpiar todo" }).click();
+    await expect(page).toHaveURL(/\/tienda$/);
+    await expect(productCards(page).first()).toBeVisible();
+  });
+
+  test("CU-18 invalid filter params do not break the page", async ({ page }) => {
+    const response = await page.goto("/tienda?precio=abc&marca=,,&color=%3Cscript%3E&Precio=1");
+    expect(response?.status()).toBe(200);
+    await expect(productCards(page).first()).toBeVisible();
+  });
+
+  test("CU-19 mobile filters panel closes with Escape and returns focus @mobile", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "The panel only exists on small screens");
+    await page.goto("/tienda");
+    const opener = page.getByRole("button", { name: /^Filtros/ });
+    await opener.click();
+    const dialog = page.getByRole("dialog", { name: "Filtros" });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(opener).toBeFocused();
+  });
+
+  test("CU-20 typing a multi-word search keeps focus and every character", async ({ page }) => {
+    await page.goto("/tienda");
+    const box = page.getByRole("main").getByRole("searchbox", { name: "Buscar productos" });
+    await box.click();
+    await box.pressSequentially("mate de", { delay: 150 });
+    await page.waitForTimeout(600); // la URL ya cambió con "mate de"
+    await box.pressSequentially(" calabaza", { delay: 150 });
+    await expect(box).toBeFocused();
+    await expect(box).toHaveValue("mate de calabaza");
+    await expect(page).toHaveURL(/q=mate\+de\+calabaza|q=mate%20de%20calabaza/);
+  });
+
+  test("CU-21 tabbing from minimum to maximum price keeps the maximum field usable", async ({ page }) => {
+    await page.goto("/tienda");
+    const panel = filtersPanel(page);
+    await panel.getByText("Precio", { exact: true }).click();
+    await panel.getByLabel("Precio mínimo").fill("5000");
+    await page.keyboard.press("Tab");
+    await expect(page).toHaveURL(/precio=5000-/);
+    const max = panel.getByLabel("Precio máximo");
+    await expect(max).toBeFocused();
+    await page.keyboard.type("90000");
+    await expect(max).toHaveValue("90000");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/precio=5000-90000/);
+  });
+
+  test("CU-22 unknown query params (marketing links) do not filter the store", async ({ page }) => {
+    await page.goto("/tienda");
+    const total = await shopTotal(page);
+    await page.goto("/tienda?ref=instagram&utm_source=ig&si=abc");
+    await expect(productCards(page).first()).toBeVisible();
+    expect(await shopTotal(page)).toBe(total);
+    await expect(page.getByRole("button", { name: /^Quitar filtro/ })).toHaveCount(0);
   });
 
   test("CU-07 opens a product page with prices per payment method", async ({ page }) => {
