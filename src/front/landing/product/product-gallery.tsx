@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { CategoryImage } from "../catalog/category-art";
 import { ProductImage } from "../catalog/product-image";
 
-/** Foto grande con flechas + miniaturas para cambiarla. Sin fotos, muestra el fondo de marca. */
-export function ProductGallery({ images, name }: { images: string[]; name: string }) {
+/** Foto grande con flechas + miniaturas para cambiarla. Sin fotos, la ilustración de su categoría. */
+export function ProductGallery({ images, name, category }: { images: string[]; name: string; category: string }) {
   const [index, setIndex] = useState(0);
   const current = images[index] ?? null;
   const many = images.length > 1;
@@ -24,7 +25,8 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
           if (e.key === "ArrowRight") go(1);
         }}
       >
-        <ProductImage
+        <CategoryImage
+          slug={category}
           src={current}
           alt={current ? `${name}, foto ${index + 1} de ${images.length}` : ""}
           sizes="(min-width: 1024px) 560px, 92vw"

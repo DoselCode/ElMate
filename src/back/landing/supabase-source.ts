@@ -63,43 +63,13 @@ export const supabaseSource: CatalogSource = {
   },
 
   async products(q: ProductQuery) {
-    let query = createPublicClient().from("public_products").select("*", { count: "exact" });
-    // Cada palabra tiene que aparecer en el nombre, en cualquier orden ("mate algarrobo")
-    for (const word of (q.q ?? "").split(/\s+/).filter(Boolean)) query = query.ilike("name", `%${word}%`);
-    if (q.category) query = query.eq("category_slug", q.category);
-    if (q.onlyOffers) query = query.not("compare_at_price", "is", null);
-    if (q.featuredOnly) query = query.eq("is_featured", true);
-    if (q.inNewsOnly) query = query.eq("show_in_news", true);
-    if (q.withImages) query = query.not("images", "eq", "{}");
-    if (q.ids) query = query.in("id", q.ids);
-    if (q.excludeId) query = query.neq("id", q.excludeId);
-    if (q.brands?.length) query = query.in("brand_key", q.brands);
-    if (q.priceMin != null) query = query.gte("price", q.priceMin);
-    if (q.priceMax != null) query = query.lte("price", q.priceMax);
-    if (q.inStock) query = query.eq("in_stock", true);
-    // O dentro de cada opción (overlaps), Y entre opciones; con "en stock" se miran solo variantes disponibles
-    const tagColumn = q.inStock ? "option_tags_in_stock" : "option_tags";
-    for (const [key, values] of Object.entries(q.options ?? {})) {
-      if (values.length) query = query.overlaps(tagColumn, values.map((v) => `${key}:${v}`));
+    try {
+      return await productsQuery(q, true);
+    } catch (error) {
+      // Base sin la migración 20261121000000 (todavía no tiene has_images): se ordena como antes
+      if ((error as { code?: string }).code === "42703") return productsQuery(q, false);
+      throw error;
     }
-
-    if (q.sort === "precio-asc") query = query.order("price", { ascending: true });
-    else if (q.sort === "precio-desc") query = query.order("price", { ascending: false });
-    else if (q.sort === "nuevos") query = query.order("created_at", { ascending: false });
-    else if (q.sort === "mayor-descuento") query = query.order("discount_pct", { ascending: false, nullsFirst: false });
-    // Destacados primero y, entre ellos, el orden manual del panel (los sin orden van al final)
-    else {
-      query = query
-        .order("is_featured", { ascending: false })
-        .order("web_order", { ascending: true, nullsFirst: false })
-        .order("in_stock", { ascending: false });
-    }
-    query = query.order("name");
-
-    const offset = q.offset ?? 0;
-    const { data, count, error } = await query.range(offset, offset + q.limit - 1);
-    if (error) throw error;
-    return { rows: ((data ?? []) as PublicProduct[]).map(toProduct), total: count ?? 0 };
   },
 
   async facets(q: FacetQuery) {
@@ -148,3 +118,46 @@ export const supabaseSource: CatalogSource = {
     return ((data ?? []) as PublicPaymentMethod[]).map((m) => ({ ...m, adjustment_pct: Number(m.adjustment_pct) }));
   },
 };
+
+/** Productos de la tienda según los filtros. `withPhotoFirst` ordena primero los que tienen foto. */
+async function productsQuery(q: ProductQuery, withPhotoFirst: boolean) {
+  let query = createPublicClient().from("public_products").select("*", { count: "exact" });
+  // Cada palabra tiene que aparecer en el nombre, en cualquier orden ("mate algarrobo")
+  for (const word of (q.q ?? "").split(/\s+/).filter(Boolean)) query = query.ilike("name", `%${word}%`);
+  if (q.category) query = query.eq("category_slug", q.category);
+  if (q.onlyOffers) query = query.not("compare_at_price", "is", null);
+  if (q.featuredOnly) query = query.eq("is_featured", true);
+  if (q.inNewsOnly) query = query.eq("show_in_news", true);
+  if (q.withImages) query = query.not("images", "eq", "{}");
+  if (q.ids) query = query.in("id", q.ids);
+  if (q.excludeId) query = query.neq("id", q.excludeId);
+  if (q.brands?.length) query = query.in("brand_key", q.brands);
+  if (q.priceMin != null) query = query.gte("price", q.priceMin);
+  if (q.priceMax != null) query = query.lte("price", q.priceMax);
+  if (q.inStock) query = query.eq("in_stock", true);
+  // O dentro de cada opción (overlaps), Y entre opciones; con "en stock" se miran solo variantes disponibles
+  const tagColumn = q.inStock ? "option_tags_in_stock" : "option_tags";
+  for (const [key, values] of Object.entries(q.options ?? {})) {
+    if (values.length) query = query.overlaps(tagColumn, values.map((v) => `${key}:${v}`));
+  }
+
+  // Con foto primero, cualquiera sea el orden elegido: los que no tienen foto van al final
+  if (withPhotoFirst) query = query.order("has_images", { ascending: false });
+  if (q.sort === "precio-asc") query = query.order("price", { ascending: true });
+  else if (q.sort === "precio-desc") query = query.order("price", { ascending: false });
+  else if (q.sort === "nuevos") query = query.order("created_at", { ascending: false });
+  else if (q.sort === "mayor-descuento") query = query.order("discount_pct", { ascending: false, nullsFirst: false });
+  // Destacados primero y, entre ellos, el orden manual del panel (los sin orden van al final)
+  else {
+    query = query
+      .order("is_featured", { ascending: false })
+      .order("web_order", { ascending: true, nullsFirst: false })
+      .order("in_stock", { ascending: false });
+  }
+  query = query.order("name");
+
+  const offset = q.offset ?? 0;
+  const { data, count, error } = await query.range(offset, offset + q.limit - 1);
+  if (error) throw error;
+  return { rows: ((data ?? []) as PublicProduct[]).map(toProduct), total: count ?? 0 };
+}

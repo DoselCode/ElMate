@@ -6,7 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ArrowRight, CircleNotch, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { formatMoney } from "@/shared/format";
 import type { SearchResult } from "@/shared/types";
-import { ProductImage } from "../catalog/product-image";
+import { CategoryImage } from "../catalog/category-art";
 
 type State =
   | { status: "idle" }
@@ -164,7 +164,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
                   onMouseEnter={() => setActive(i)}
                   className={`flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors ${i === active ? "bg-primary-soft" : "hover:bg-primary-soft/60"}`}
                 >
-                  <ProductImage src={r.image} alt="" sizes="48px" className="size-12 shrink-0 rounded-xl" />
+                  <CategoryImage src={r.image} slug={r.category_name ?? r.name} sizes="48px" className="size-12 shrink-0 rounded-xl" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">
                       <Highlight text={r.name} query={state.status === "done" ? state.query : ""} />

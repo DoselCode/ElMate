@@ -861,3 +861,17 @@ describe("shop facets", () => {
     expect(f.offers).toBe(0);
   });
 });
+
+describe("tienda: productos con foto primero", () => {
+  it("public_products informa si el producto tiene foto", async () => {
+    await saveProduct(adminId, { name: "Con foto orden", slug: "con-foto-orden", images: ["https://example.com/a.webp"], variants: [{ sku: "ORD-FOTO", price: 1000 }] });
+    await saveProduct(adminId, { name: "Sin foto orden", slug: "sin-foto-orden", variants: [{ sku: "ORD-SIN", price: 1000 }] });
+    const rowsBySlug = await as("anon", () =>
+      rows("select slug, has_images from public.public_products where slug in ('con-foto-orden', 'sin-foto-orden') order by has_images desc, slug"),
+    );
+    expect(rowsBySlug).toEqual([
+      { slug: "con-foto-orden", has_images: true },
+      { slug: "sin-foto-orden", has_images: false },
+    ]);
+  });
+});

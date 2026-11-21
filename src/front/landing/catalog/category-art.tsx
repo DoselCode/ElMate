@@ -143,14 +143,18 @@ export function CategoryImage({
   src,
   slug,
   sizes,
+  alt = "",
+  priority = false,
   className = "",
 }: {
   src: string | null | undefined;
   slug: string;
   sizes: string;
+  alt?: string;
+  priority?: boolean;
   className?: string;
 }) {
-  if (src) return <ProductImage src={src} alt="" sizes={sizes} className={className} />;
+  if (src) return <ProductImage src={src} alt={alt} sizes={sizes} priority={priority} className={className} />;
   return (
     <div className={`overflow-hidden bg-[#0b1119] ${className}`}>
       <CategoryArt slug={slug} className="size-full" />

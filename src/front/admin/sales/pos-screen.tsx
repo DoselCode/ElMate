@@ -92,11 +92,14 @@ export function PosScreen({
   // ---- búsqueda ---------------------------------------------------------------------------
   const filtered = useMemo(() => {
     const words = normalize(query).split(/\s+/).filter(Boolean);
-    if (!words.length) return items;
-    return items.filter((i) => {
-      const text = normalize(`${i.product_name} ${i.variant_label} ${i.sku} ${i.barcode ?? ""} ${i.brand ?? ""}`);
-      return words.every((w) => text.includes(w));
-    });
+    const found = words.length
+      ? items.filter((i) => {
+          const text = normalize(`${i.product_name} ${i.variant_label} ${i.sku} ${i.barcode ?? ""} ${i.brand ?? ""}`);
+          return words.every((w) => text.includes(w));
+        })
+      : items;
+    // Los que no tienen stock van al final (el orden entre los demás se mantiene)
+    return [...found].sort((a, b) => Number(outOfStock(a)) - Number(outOfStock(b)));
   }, [items, query]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
