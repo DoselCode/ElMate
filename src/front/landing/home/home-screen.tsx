@@ -168,7 +168,16 @@ function PromoCollage({ href, name, products }: { href: string; name: string; pr
 function Engraving({ href }: { href: string }) {
   return (
     <section id="grabado" className={`${container} mt-24 scroll-mt-28`}>
-      <div className="fx-vapor grid items-center gap-8 rounded-[2rem] bg-surface p-8 sm:p-12 lg:grid-cols-[auto_1fr_auto]">
+      <div className="fx-vapor relative isolate grid items-center gap-8 overflow-hidden rounded-[2rem] bg-surface p-8 sm:p-12 lg:grid-cols-[auto_1fr_auto]">
+        {/* Fondo: virola de alpaca cincelada (foto real), fundida con la tarjeta para que el texto se lea */}
+        {/* En pantallas grandes la foto ocupa la mitad derecha; en celulares, toda la tarjeta (más tapada) */}
+        <div className="absolute inset-0 -z-10 lg:left-auto lg:w-1/2" aria-hidden>
+          <Image src="/landing/grabado-fondo.jpg" alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover object-[center_24%]" />
+        </div>
+        <span
+          className="absolute inset-0 -z-10 bg-surface/85 lg:bg-transparent lg:bg-gradient-to-r lg:from-surface lg:from-50% lg:via-surface/75 lg:via-70% lg:to-surface/5"
+          aria-hidden
+        />
         <span className="grid size-20 place-items-center rounded-full bg-primary-soft text-primary" aria-hidden>
           <PencilSimpleLine size={40} weight="duotone" />
         </span>
@@ -178,7 +187,7 @@ function Engraving({ href }: { href: string }) {
           <p className="mt-3 max-w-2xl text-muted">{t("engraving.text")}</p>
         </div>
         <Link href={href} className={btnPrimary}>
-          Ver productos <ArrowRight size={18} weight="bold" aria-hidden />
+          Ver grabados <ArrowRight size={18} weight="bold" aria-hidden />
         </Link>
       </div>
     </section>
