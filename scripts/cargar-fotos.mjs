@@ -15,7 +15,8 @@
 //   BOL011_portafolio-termo-cuero-negro_2.jpg       → si el producto tiene una opción "Negro", esa foto
 //                                                      también queda como foto de esa variante
 // El código se compara con el SKU de las variantes ignorando guiones, espacios y mayúsculas
-// (MAT011 = mat-011). Los archivos sin código (ej. PARTE_…) se listan y no se tocan.
+// (MAT011 = mat-011). Las fotos "PARTE_<nombre>_N" se agrupan por nombre (PARTE_<NOMBRE>) y solo se usan
+// si ese grupo está en el mapa. Los archivos sin código se listan y no se tocan.
 //
 // - Es idempotente: cada foto se sube siempre a la misma ruta (productos/<código>/<archivo>), así que
 //   volver a correrlo no duplica nada.
@@ -56,14 +57,18 @@ for (const file of readdirSync(folder).sort()) {
   const ext = path.extname(file).slice(1).toLowerCase();
   if (!MIME[ext]) continue;
   const base = path.basename(file, path.extname(file)).trim();
-  const m = /^([A-Za-z]+\d+)(.*)$/.exec(base);
-  if (!m) {
+  // "PARTE_mate-imperial-algarrobo_2" no trae código: el grupo es el nombre (PARTE_MATE-IMPERIAL-ALGARROBO),
+  // y solo se usa si está en el mapa
+  const parte = /^PARTE[_-](.+?)(?:[-_ ]\d{1,2})?$/i.exec(base);
+  const m = parte ? null : /^([A-Za-z]+\d+)(.*)$/.exec(base);
+  if (!parte && !m) {
     sinCodigo.push(file);
     continue;
   }
-  const raw = m[1].toUpperCase();
+  const raw = parte ? `PARTE_${parte[1]}`.toUpperCase() : m[1].toUpperCase();
   const code = ALIASES[raw] ?? raw;
-  const rest = m[2];
+  // Lo que sigue al código: "_imperial-algarrobo_2" (o, en PARTE, solo el "_2")
+  const rest = parte ? base.slice("PARTE_".length + parte[1].length) : m[2];
   const num = /[-_ ](\d{1,2})$/.exec(rest);
   const order = num ? Number(num[1]) : 0; // sin número = foto principal
   const descriptor = (num ? rest.slice(0, num.index) : rest).replace(/^[-_ ]+/, "");
