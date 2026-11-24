@@ -7,9 +7,13 @@ import type { PublicCategory } from "@/shared/types";
 import { CategoryImage } from "../catalog/category-art";
 
 /**
- * Carrusel de categorías del diseño: 4 tarjetas por vista en escritorio, deslizable en celular,
- * con flechas a los costados (solo aparecen si hay más para ver). Usa scroll nativo (touch, rueda y teclado).
+ * Carrusel de categorías del diseño: 4 tarjetas por vista en escritorio, deslizable en celular.
+ * La flecha derecha aparece si hay más para ver; la izquierda, recién después de avanzar, y vuelve al
+ * principio. Usa scroll nativo (touch, rueda y teclado), solo horizontal.
  */
+
+/** Margen para no confundir el pequeño ajuste del encastre (snap) con un desplazamiento real. */
+const EDGE = 8;
 export function CategoryCarousel({ categories }: { categories: PublicCategory[] }) {
   const trackRef = useRef<HTMLUListElement>(null);
   const [canPrev, setCanPrev] = useState(false);
@@ -18,8 +22,8 @@ export function CategoryCarousel({ categories }: { categories: PublicCategory[] 
   const measure = useCallback(() => {
     const el = trackRef.current;
     if (!el) return;
-    setCanPrev(el.scrollLeft > 1);
-    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    setCanPrev(el.scrollLeft > EDGE);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - EDGE);
   }, []);
 
   useEffect(() => {
@@ -30,10 +34,11 @@ export function CategoryCarousel({ categories }: { categories: PublicCategory[] 
     return () => observer.disconnect();
   }, [measure]);
 
-  const scrollByPage = (dir: 1 | -1) => {
+  const next = () => {
     const el = trackRef.current;
-    el?.scrollBy({ left: dir * el.clientWidth, behavior: "smooth" });
+    el?.scrollBy({ left: el.clientWidth, behavior: "smooth" });
   };
+  const backToStart = () => trackRef.current?.scrollTo({ left: 0, behavior: "smooth" });
 
   const arrow =
     "absolute top-1/2 z-10 grid size-10 -translate-y-1/2 cursor-pointer place-items-center rounded-full border-2 border-white/80 bg-primary-deep text-white shadow-lg transition-transform hover:scale-110 hover:bg-foreground";
@@ -41,14 +46,15 @@ export function CategoryCarousel({ categories }: { categories: PublicCategory[] 
   return (
     <div className="relative">
       {canPrev && (
-        <button type="button" onClick={() => scrollByPage(-1)} aria-label="Ver categorías anteriores" className={`${arrow} -left-4`}>
+        <button type="button" onClick={backToStart} aria-label="Volver al principio de las categorías" className={`${arrow} -left-4`}>
           <CaretLeft size={20} weight="bold" aria-hidden />
         </button>
       )}
       <ul
         ref={trackRef}
         onScroll={measure}
-        className="scrollbar-none -mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-1"
+        // Solo scroll horizontal: overflow-y-hidden + espacio arriba para que la tarjeta suba al pasar el mouse
+        className="scrollbar-none -mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden px-1 pb-2 pt-2"
         aria-label="Categorías"
       >
         {categories.map((c, i) => (
@@ -65,7 +71,7 @@ export function CategoryCarousel({ categories }: { categories: PublicCategory[] 
       </ul>
 
       {canNext && (
-        <button type="button" onClick={() => scrollByPage(1)} aria-label="Ver más categorías" className={`${arrow} -right-4`}>
+        <button type="button" onClick={next} aria-label="Ver más categorías" className={`${arrow} -right-4`}>
           <CaretRight size={20} weight="bold" aria-hidden />
         </button>
       )}

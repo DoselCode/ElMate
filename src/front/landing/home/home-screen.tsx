@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  CaretDoubleDown,
   CaretRight,
   InstagramLogo,
   PencilSimpleLine,
@@ -310,8 +309,8 @@ function Categories({ categories }: { categories: PublicCategory[] }) {
       <div className={categories.length > 0 ? "grid items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]" : ""}>
         {categories.length > 0 && (
           <div className="fx-pour relative min-w-0 px-1 sm:px-4">
-            <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
-            <SectionHeading title={t("categories.title")} text={t("categories.text")} compact />
+            {/* Mismo encabezado que Ofertas: "— 🍃 CATEGORÍAS —" y el título debajo */}
+            <SectionHeading eyebrow={t("categories.eyebrow")} title={t("categories.title")} text={t("categories.text")} compact />
             <CategoryCarousel categories={categories} />
           </div>
         )}
