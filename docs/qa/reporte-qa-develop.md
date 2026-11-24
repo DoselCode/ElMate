@@ -1,6 +1,6 @@
 # Reporte de QA — develop (2026-11-17)
 
-Entorno: Coolify `ElMate / develop` → app `el-mate:develop` (http://u0k9wpc6hc9inleg5jc4h3fb.187.41.122.109.sslip.io), servicio `Base-Develop` healthy.
+Entorno: Coolify `ElMate / develop` → app `el-mate:develop` (https://develop.187.41.122.109.sslip.io), servicio `Base-Develop` healthy.
 Alcance: web pública completa y panel admin (stock, ventas, caja, promociones, datos del local, ingresos) con usuario admin.
 Casos: [casos-de-uso.md](casos-de-uso.md).
 
@@ -109,7 +109,7 @@ Casos: [casos-de-uso.md](casos-de-uso.md).
 ## Cómo repetir la corrida E2E
 
 ```bash
-E2E_BASE_URL=http://u0k9wpc6hc9inleg5jc4h3fb.187.41.122.109.sslip.io npm run test:e2e
+E2E_BASE_URL=https://develop.187.41.122.109.sslip.io npm run test:e2e
 ```
 
 Con `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD` en `.env.local` corren también las pantallas del panel. Si además se agrega `E2E_ALLOW_WRITES=1`, corre el circuito completo de stock y ventas. Ese circuito crea datos: usarlo solo contra develop.

@@ -1,6 +1,6 @@
 # Reporte de pruebas no funcionales — develop (2026-11-17)
 
-Entorno: Coolify `ElMate / develop` (http://u0k9wpc6hc9inleg5jc4h3fb.187.41.122.109.sslip.io).
+Entorno: Coolify `ElMate / develop` (https://develop.187.41.122.109.sslip.io).
 Alcance: **seguridad**, **rendimiento** y **accesibilidad**. Todo en modo lectura, salvo 23 intentos de login fallidos con un email inexistente para probar el límite de intentos.
 Fuera de alcance: carga/estrés y backups (ver "Pendiente").
 
@@ -106,5 +106,5 @@ Teclado (manual):
 ## Cómo repetir
 
 ```bash
-E2E_BASE_URL=http://u0k9wpc6hc9inleg5jc4h3fb.187.41.122.109.sslip.io npx playwright test e2e/a11y
+E2E_BASE_URL=https://develop.187.41.122.109.sslip.io npx playwright test e2e/a11y
 ```

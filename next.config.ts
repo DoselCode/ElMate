@@ -45,15 +45,14 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // http y https: las fotos subidas antes de pasar Supabase a https quedaron guardadas con http://
     remotePatterns: supabaseUrl
-      ? [
-          {
-            protocol: supabaseUrl.protocol.replace(":", "") as "http" | "https",
-            hostname: supabaseUrl.hostname,
-            port: supabaseUrl.port,
-            pathname: "/storage/v1/object/public/**",
-          },
-        ]
+      ? (["https", "http"] as const).map((protocol) => ({
+          protocol,
+          hostname: supabaseUrl.hostname,
+          port: supabaseUrl.port,
+          pathname: "/storage/v1/object/public/**",
+        }))
       : [],
     // Supabase local corre en 127.0.0.1; el optimizador bloquea IPs privadas salvo en desarrollo
     dangerouslyAllowLocalIP: isDev,

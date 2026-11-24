@@ -2,7 +2,7 @@
 
 Objective: use-case document, manual QA run against the Coolify `develop` environment with a bug report, and Playwright E2E specs for the critical flows.
 Branch: `feature/qa-e2e` · Delivery: ask-on-risk · Runners: Vitest (unit/db), Playwright (E2E, new).
-Target: http://u0k9wpc6hc9inleg5jc4h3fb.187.41.122.109.sslip.io (Coolify app `el-mate:develop`).
+Target: https://develop.187.41.122.109.sslip.io (Coolify app `el-mate:develop`).
 
 ## Specs
 
