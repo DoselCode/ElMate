@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ProductImage } from "./product-image";
 
-type Kind = "mate" | "termo" | "bombilla" | "yerba" | "yerbera" | "combo" | "bolso" | "grabado" | "default";
+type Kind = "mate" | "termo" | "bombilla" | "yerba" | "yerbera" | "combo" | "bolso" | "grabado" | "asador" | "default";
 
 /** Elige la ilustración según el nombre/slug de la categoría ("bolsos-materos" → bolso). El orden importa: "yerbera" antes que "yerba". */
 function kindOf(slug: string): Kind {
@@ -13,6 +13,7 @@ function kindOf(slug: string): Kind {
   if (s.includes("termo") || s.includes("termic")) return "termo";
   if (s.includes("bolso") || s.includes("mochila") || s.includes("matera")) return "bolso";
   if (s.includes("grabado") || s.includes("personaliz")) return "grabado";
+  if (s.includes("asad") || s.includes("parrill") || s.includes("cuchill")) return "asador";
   if (s.includes("mate")) return "mate";
   return "default";
 }
@@ -102,6 +103,21 @@ const ART: Record<Kind, ReactNode> = {
       <path d="M52 150 62 112 88 138Z" fill="#0b1119" />
       <path d="M40 176h120" stroke="#1a7fc7" strokeWidth="5" fill="none" />
       <path d="M44 100l-8-8M36 116H24M50 86l-4-10" stroke="#7cc4ff" strokeWidth="4" fill="none" />
+    </g>
+  ),
+  // Tabla de madera con cuchillo y tenedor de asador
+  asador: (
+    <g strokeLinecap="round" strokeLinejoin="round">
+      <rect x="38" y="62" width="124" height="96" rx="18" fill={LEATHER} />
+      <rect x="148" y="98" width="26" height="24" rx="12" fill={LEATHER} />
+      <circle cx="161" cy="110" r="5" fill="#0b1119" />
+      <path d="M50 76h100" stroke="#fff" strokeWidth="3" opacity="0.18" fill="none" />
+      <path d="M72 128 130 70C136 64 144 66 140 74L84 140Z" fill="#e9eef4" stroke="#9aa7b6" strokeWidth="2" />
+      <path d="M48 152 74 126" stroke="#0b1119" strokeWidth="13" fill="none" />
+      <path d="M92 154 118 128" stroke="#1a7fc7" strokeWidth="10" fill="none" />
+      <path d="M118 128 142 104" stroke="#d7dde4" strokeWidth="6" fill="none" />
+      <path d="M134 96 150 112" stroke="#d7dde4" strokeWidth="5" fill="none" />
+      <path d="M134 96 150 80M142 104 158 88M150 112 166 96" stroke="#d7dde4" strokeWidth="4" fill="none" />
     </g>
   ),
   default: (
