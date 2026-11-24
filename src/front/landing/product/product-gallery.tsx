@@ -4,13 +4,27 @@ import { useState } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { CategoryImage } from "../catalog/category-art";
 import { ProductImage } from "../catalog/product-image";
+import { useSelectedImage } from "./selected-image";
 
 /** Foto grande con flechas + miniaturas para cambiarla. Sin fotos, la ilustración de su categoría. */
 export function ProductGallery({ images, name, category }: { images: string[]; name: string; category: string }) {
-  const [index, setIndex] = useState(0);
-  const current = images[index] ?? null;
+  // Al elegir un color, la galería salta a su foto (o la muestra, si no está entre las del producto)
+  const { image: selected } = useSelectedImage();
+  const [index, setIndex] = useState(() => Math.max(0, selected ? images.indexOf(selected) : 0));
+  const [override, setOverride] = useState<string | null>(() => (selected && !images.includes(selected) ? selected : null));
+  const [seen, setSeen] = useState(selected);
+  if (selected !== seen) {
+    setSeen(selected);
+    const i = selected ? images.indexOf(selected) : -1;
+    if (i >= 0) setIndex(i);
+    setOverride(selected && i < 0 ? selected : null);
+  }
+  const current = override ?? images[index] ?? null;
   const many = images.length > 1;
-  const go = (dir: 1 | -1) => setIndex((i) => (i + dir + images.length) % images.length);
+  const go = (dir: 1 | -1) => {
+    setOverride(null);
+    setIndex((i) => (i + dir + images.length) % images.length);
+  };
 
   const arrow =
     "absolute top-1/2 z-10 grid size-11 -translate-y-1/2 cursor-pointer place-items-center rounded-full border-2 border-white/80 bg-primary-deep text-white shadow-lg transition-transform hover:scale-110 hover:bg-primary";
@@ -53,7 +67,10 @@ export function ProductGallery({ images, name, category }: { images: string[]; n
             <li key={src} className="shrink-0">
               <button
                 type="button"
-                onClick={() => setIndex(i)}
+                onClick={() => {
+                  setOverride(null);
+                  setIndex(i);
+                }}
                 aria-label={`Ver foto ${i + 1}`}
                 aria-current={i === index}
                 className={`block cursor-pointer overflow-hidden rounded-2xl border-2 ${i === index ? "border-primary" : "border-transparent hover:border-border-strong"}`}

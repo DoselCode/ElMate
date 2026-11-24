@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -35,6 +36,8 @@ type VariantDraft = {
   active: boolean;
   /** Solo variantes existentes: el stock se mueve desde Inventario, no desde acá. */
   currentStock?: number;
+  /** Foto de la variante, elegida entre las del producto ("" = ninguna). */
+  image: string;
 };
 
 const OPTION_SUGGESTIONS = ["Color", "Tamaño", "Material", "Talle"];
@@ -57,6 +60,7 @@ function emptyVariant(from?: VariantDraft): VariantDraft {
     minStock: from?.minStock ?? "0",
     initialStock: "0",
     active: true,
+    image: "",
   };
 }
 
@@ -78,6 +82,7 @@ function toDraft(v: VariantForEdit, cashAdjustmentPct: number): VariantDraft {
     initialStock: "0",
     active: v.active,
     currentStock: v.stock,
+    image: v.image ?? "",
   };
 }
 
@@ -242,6 +247,8 @@ export function ProductForm({
         minStock: v.minStock.trim() === "" ? 0 : num(v.minStock),
         initialStock: v.initialStock.trim() === "" ? 0 : num(v.initialStock),
         active: v.active,
+        // Si se borró esa foto del producto, la variante queda sin foto propia
+        image: images.includes(v.image) ? v.image : "",
       })),
     };
   }
@@ -542,6 +549,16 @@ export function ProductForm({
                   </div>
                 )}
 
+                {hasOptions && images.length > 0 && (
+                  <VariantPhotoPicker
+                    idp={idp}
+                    images={images}
+                    value={images.includes(v.image) ? v.image : ""}
+                    label={label}
+                    onChange={(image) => patchVariant(v.key, { image })}
+                  />
+                )}
+
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-6">
                   <TextField
                     id={`${idp}-sku`}
@@ -772,6 +789,53 @@ function PriceField({
       <button type="button" className={toggle} onClick={() => onChange({ manualPrice: false })}>
         <Calculator size={12} weight="bold" aria-hidden /> Calcular con la ganancia
       </button>
+    </div>
+  );
+}
+
+/**
+ * Foto de una variante, elegida entre las fotos del producto. En la web, al tocar ese color la galería
+ * salta a esta foto, y es la que va al carrito. Tocar la elegida otra vez la deja sin foto propia.
+ */
+function VariantPhotoPicker({
+  idp,
+  images,
+  value,
+  label,
+  onChange,
+}: {
+  idp: string;
+  images: string[];
+  value: string;
+  label: string;
+  onChange: (image: string) => void;
+}) {
+  return (
+    <div className="mb-3">
+      <p id={`${idp}-photo-label`} className="mb-1.5 text-sm font-medium">
+        Foto de esta variante <span className="font-normal text-muted">(la que se ve en la web al elegirla)</span>
+      </p>
+      <ul aria-labelledby={`${idp}-photo-label`} className="flex flex-wrap gap-2">
+        {images.map((src, i) => {
+          const selected = src === value;
+          return (
+            <li key={src}>
+              <button
+                type="button"
+                aria-pressed={selected}
+                aria-label={`Usar la foto ${i + 1}${label ? ` para ${label}` : ""}`}
+                onClick={() => onChange(selected ? "" : src)}
+                className={`relative block size-16 cursor-pointer overflow-hidden rounded-xl border-2 bg-surface transition ${
+                  selected ? "border-primary ring-2 ring-primary/30" : "border-border opacity-70 hover:opacity-100"
+                }`}
+              >
+                <Image src={src} alt="" fill sizes="64px" className="object-cover" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {!value && <p className="mt-1 text-xs text-muted">Sin foto propia: la web muestra las fotos del producto.</p>}
     </div>
   );
 }

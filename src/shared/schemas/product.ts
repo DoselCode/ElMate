@@ -36,6 +36,8 @@ export const variantSchema = z
     /** Solo se usa al crear la variante; después el stock se mueve con ingresos y ajustes. */
     initialStock: quantity,
     active: z.boolean(),
+    /** Foto propia de la variante (una de las del producto): la web la muestra al elegir ese color. Vacío = ninguna. */
+    image: z.union([z.literal(""), httpUrl("Imagen inválida")]).default(""),
   })
   .refine((v) => v.compareAtPrice === null || v.compareAtPrice > v.price, {
     path: ["compareAtPrice"],
@@ -164,6 +166,7 @@ export function toSavePayload(p: ProductData, slug: string) {
       margin_pct: v.marginPct,
       min_stock: p.trackStock ? v.minStock : 0,
       active: v.active,
+      image: v.image || null,
       // Sin control de stock no hay stock inicial (la base lo rechazaría)
       ...(v.id ? {} : { initial_stock: p.trackStock ? v.initialStock : 0 }),
     })),

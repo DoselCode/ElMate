@@ -259,6 +259,8 @@ export type VariantForEdit = {
   minStock: number;
   stock: number;
   active: boolean;
+  /** Foto propia de la variante (la que muestra la web al elegirla); null = ninguna. */
+  image: string | null;
 };
 
 export type ProductForEdit = {

@@ -3,11 +3,14 @@ import type { ProductPageData } from "@/shared/types";
 import { ProductGrid } from "../catalog/product-card";
 import { SectionHeading } from "../home/section-heading";
 import { ProductGallery } from "./product-gallery";
+import { SelectedImageProvider } from "./selected-image";
 import { VariantPicker } from "./variant-picker";
 
 /** /producto/[slug]: fotos, opciones, precio, agregar al carrito y productos relacionados. */
 export function ProductScreen({ data }: { data: ProductPageData }) {
   const { product, variants, related, paymentMethods } = data;
+  // La misma variante con la que arranca el selector (la primera con stock): la galería abre en su foto
+  const initialVariant = variants.find((v) => v.in_stock) ?? variants[0];
 
   return (
     <div className="mx-auto max-w-[85rem] px-4 pt-10 sm:px-6">
@@ -24,6 +27,7 @@ export function ProductScreen({ data }: { data: ProductPageData }) {
         <span>{product.name}</span>
       </nav>
 
+      <SelectedImageProvider initial={initialVariant?.image ?? null}>
       <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-14">
         <ProductGallery images={product.images} name={product.name} category={product.category_slug ?? product.name} />
 
@@ -49,6 +53,7 @@ export function ProductScreen({ data }: { data: ProductPageData }) {
           </p>
         </div>
       </div>
+      </SelectedImageProvider>
 
       {related.length > 0 && (
         <section className="mt-24">

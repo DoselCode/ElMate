@@ -10,6 +10,7 @@ import { useCart } from "../cart/cart-provider";
 import { formatMoney } from "@/shared/format";
 import { discountPct } from "@/shared/pricing";
 import { DiscountBadge, Price } from "../catalog/price";
+import { useSelectedImage } from "./selected-image";
 
 /**
  * Elección de variante (una fila de botones por opción: Color, Tamaño…), cantidad y "Agregar al carrito".
@@ -25,6 +26,7 @@ export function VariantPicker({
   paymentMethods: PublicPaymentMethod[];
 }) {
   const { add, items, open } = useCart();
+  const { setImage } = useSelectedImage();
   const options = product.option_names;
   const initial = variants.find((v) => v.in_stock) ?? variants[0];
   const [selected, setSelected] = useState<Record<string, string>>(initial?.attributes ?? {});
@@ -44,13 +46,16 @@ export function VariantPicker({
   const exists = (option: string, value: string) => variants.some((v) => matches(v, { ...selected, [option]: value }));
 
   function choose(option: string, value: string) {
-    const next = { ...selected, [option]: value };
+    let next = { ...selected, [option]: value };
     // Si la combinación no existe, salta a la primera variante con ese valor
     if (!variants.some((v) => matches(v, next))) {
       const fallback = variants.find((v) => v.attributes[option] === value);
-      if (fallback) return setSelected(fallback.attributes);
+      if (fallback) next = fallback.attributes;
     }
     setSelected(next);
+    // La galería muestra la foto de la variante elegida (si tiene una propia)
+    const picked = variants.find((v) => matches(v, next));
+    if (picked?.image) setImage(picked.image);
   }
 
   const shown = variant ?? initial;
