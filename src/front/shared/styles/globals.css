@@ -260,6 +260,10 @@ html:has(.filters-drawer[open]) {
   .brew-letter {
     animation: brew-letter 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) calc(3.5s + var(--k, 0) * 0.16s) both;
   }
+  /* Sobre el video de la portada no hay cebada que esperar: las letras caen enseguida */
+  .brew-letters-only .brew-letter {
+    animation-delay: calc(0.6s + var(--k, 0) * 0.16s);
+  }
   .brew-vapor {
     animation: brew-vapor 3.6s ease-in-out calc(4.8s + var(--d, 0s)) infinite both;
   }

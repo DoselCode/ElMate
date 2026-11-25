@@ -19,7 +19,7 @@ import { ProductGrid } from "../catalog/product-card";
 import { makeT, type HomeT } from "@/shared/home-content";
 import { BENEFITS, HERO, INSTAGRAM_URL } from "../content";
 import { CategoryCarousel } from "./category-carousel";
-import { HeroBrew } from "./hero-brew";
+import { HeroBrew, HeroLetters } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
 
 // 82rem de contenido (igual que el header) + el padding lateral: el contenido queda alineado con los bordes del header
@@ -239,17 +239,15 @@ function Hero({ t, video }: { t: HomeT; video: string | null }) {
         {/* La foto no pasa del alto de la pantalla: al cargar se ve entera, con el cartel de WhatsApp */}
         <div className="fx-hero-out relative w-full max-w-[min(38rem,calc(100svh-9rem))] max-lg:mx-auto">
           <div className="fx-infuse relative aspect-square overflow-hidden rounded-[2rem] bg-primary-deep shadow-[0_20px_50px_rgb(11_17_25/0.14)]">
-            {/* Video cargado en "Datos del local"; sin video, la animación del termo cebando */}
+            {/* Video cargado en "Datos del local": reemplaza el fondo (termo y mate) y las letras del logo
+                quedan encima. Sin video, la animación del termo cebando. Con "reducir movimiento", la animación quieta. */}
             {video ? (
-              <video
-                src={video}
-                autoPlay
-                muted
-                loop
-                playsInline
-                aria-label={HERO.imageAlt}
-                className="size-full object-cover motion-reduce:hidden"
-              />
+              <div className="relative size-full motion-reduce:hidden">
+                <video src={video} autoPlay muted loop playsInline aria-label={HERO.imageAlt} className="size-full object-cover" />
+                <div className="absolute inset-0">
+                  <HeroLetters />
+                </div>
+              </div>
             ) : null}
             <div className={video ? "hidden size-full motion-reduce:block" : "size-full"}>
               <HeroBrew label={HERO.imageAlt} />
