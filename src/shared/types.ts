@@ -360,6 +360,10 @@ export type StoreInfo = {
   hours_sunday: string | null;
   /** Links de publicaciones de Instagram para incrustar en la home (la más nueva primero). */
   instagram_posts: string[];
+  /** Textos de la home cambiados desde el panel, por clave (ver shared/home-content.ts). */
+  home_texts: Record<string, string>;
+  /** Video de la portada; null = la animación de siempre. */
+  hero_video: string | null;
 };
 
 export type ShopSort = "destacados" | "precio-asc" | "precio-desc" | "nuevos";

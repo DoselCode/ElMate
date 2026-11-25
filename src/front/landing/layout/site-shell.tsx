@@ -39,7 +39,7 @@ export function SiteShell({
       >
         Saltar al contenido
       </a>
-      <SiteHeader storeName={store.name} links={links} />
+      <SiteHeader storeName={store.name} logo={store.logo} links={links} />
       <main id="contenido" className="flex-1 overflow-x-clip">
         {children}
       </main>

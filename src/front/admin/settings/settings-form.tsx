@@ -6,8 +6,10 @@ import { Button } from "@/front/shared/ui/button";
 import { Field, TextField, inputClass, inputErrorClass } from "@/front/shared/ui/field";
 import { fieldErrors } from "@/shared/schemas/product";
 import { storeSettingsSchema, type StoreSettingsInput } from "@/shared/schemas/settings";
+import { HeroVideoField, HomeTextsFields, LogoField } from "./web-media-fields";
 
-type Key = keyof StoreSettingsInput;
+/** Campos de texto simples (los de logo, video y textos de la web tienen su propio control). */
+type Key = Exclude<keyof StoreSettingsInput, "homeTexts" | "logo" | "heroVideo">;
 
 const SECTIONS: { title: string; description: string; fields: { key: Key; label: string; placeholder?: string; type?: string }[] }[] = [
   {
@@ -76,8 +78,31 @@ export function SettingsForm({ initial }: { initial: StoreSettingsInput }) {
     <form onSubmit={submit} noValidate className="space-y-6 pb-10">
       <header>
         <h1 className="font-display text-2xl font-bold">Datos del local</h1>
-        <p className="mt-1 text-sm text-muted">Lo que ven los clientes en la web: contacto, redes, horarios y el WhatsApp de pedidos.</p>
+        <p className="mt-1 text-sm text-muted">Lo que ven los clientes en la web: logo, textos, video de portada, contacto, redes, horarios y el WhatsApp de pedidos.</p>
       </header>
+
+      <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
+        <h2 className="font-display text-lg font-bold">Logo</h2>
+        <p className="mb-4 mt-0.5 text-sm text-muted">Se muestra en el encabezado y el pie de la web, y en el menú del panel.</p>
+        <LogoField value={values.logo} onChange={(logo) => setValues((v) => ({ ...v, logo }))} />
+        {errors.logo && <p role="alert" className="mt-2 text-xs font-medium text-danger">{errors.logo}</p>}
+      </section>
+
+      <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
+        <h2 className="font-display text-lg font-bold">Video de la portada</h2>
+        <p className="mb-4 mt-0.5 text-sm text-muted">Reemplaza la animación del termo en la portada de la web.</p>
+        <HeroVideoField value={values.heroVideo} onChange={(heroVideo) => setValues((v) => ({ ...v, heroVideo }))} />
+        {errors.heroVideo && <p role="alert" className="mt-2 text-xs font-medium text-danger">{errors.heroVideo}</p>}
+      </section>
+
+      <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
+        <h2 className="font-display text-lg font-bold">Textos de la web</h2>
+        <p className="mb-4 mt-0.5 text-sm text-muted">
+          Cada campo muestra en gris el texto que hoy se ve en la home. Escribí uno nuevo para reemplazarlo; vacío vuelve al original.
+        </p>
+        <HomeTextsFields value={values.homeTexts} errors={errors} onChange={(homeTexts) => setValues((v) => ({ ...v, homeTexts }))} />
+        {errors.homeTexts && <p role="alert" className="mt-2 text-xs font-medium text-danger">{errors.homeTexts}</p>}
+      </section>
 
       {SECTIONS.map((section) => (
         <section key={section.title} className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">

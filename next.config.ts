@@ -15,6 +15,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob:${supabaseUrl ? ` ${supabaseUrl.origin}` : ""}`,
   "font-src 'self' data:",
+  // Video de la portada (subido desde "Datos del local" al Storage de Supabase)
+  `media-src 'self' blob:${supabaseUrl ? ` ${supabaseUrl.origin}` : ""}`,
   `connect-src 'self'${supabaseUrl ? ` ${supabaseUrl.origin}` : ""}${isDev ? " ws: wss:" : ""}`,
   "frame-src https://www.instagram.com",
   "object-src 'none'",

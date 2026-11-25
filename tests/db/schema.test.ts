@@ -875,3 +875,13 @@ describe("tienda: productos con foto primero", () => {
     ]);
   });
 });
+
+describe("web editable desde Datos del local", () => {
+  it("la vista pública trae los textos de la home y el video de la portada", async () => {
+    await rows(`update public.store_settings set home_texts = '{"hero.text": "Texto del panel"}', hero_video = 'https://cdn.example.com/portada.mp4' where id = 1`);
+    const [s] = await as("anon", () => rows("select home_texts, hero_video from public.public_store_info"));
+    expect(s).toEqual({ home_texts: { "hero.text": "Texto del panel" }, hero_video: "https://cdn.example.com/portada.mp4" });
+    await expect(rows("update public.store_settings set hero_video = 'javascript:alert(1)' where id = 1")).rejects.toThrow();
+    await expect(rows("update public.store_settings set home_texts = '[]' where id = 1")).rejects.toThrow();
+  });
+});

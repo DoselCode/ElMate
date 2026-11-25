@@ -35,6 +35,8 @@ Landing + catálogo web + sistema de stock/caja en un solo proyecto.
    - `supabase/migrations/20261118000001_web_tope_de_stock.sql`
    - `supabase/migrations/20261119000000_tienda_filtros.sql`
    - `supabase/migrations/20261121000000_tienda_con_foto_primero.sql`
+   - `supabase/migrations/20261125000000_web_editable.sql`
+   - `supabase/migrations/20261125000001_storage_videos.sql`
 
    Una migración ya aplicada en la base real no se edita: los cambios van siempre en una migración nueva.
 4. Crear el primer usuario en **Authentication → Users → Add user** (con "Auto Confirm"). Será el admin.

@@ -64,4 +64,6 @@ export const EMPTY_STORE: StoreInfo = {
   hours_saturday: null,
   hours_sunday: null,
   instagram_posts: [],
+  home_texts: {},
+  hero_video: null,
 };

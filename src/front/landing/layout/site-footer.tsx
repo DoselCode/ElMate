@@ -41,7 +41,7 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
     <footer id="contacto" className="mt-16 scroll-mt-24 bg-primary-soft">
       <div className="mx-auto grid max-w-[85rem] gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <Logo name={store.name} className="h-14 w-52" />
+          <Logo name={store.name} src={store.logo} className="h-14 w-52" />
           <p className="mt-4 text-sm leading-relaxed text-muted">
             {store.tagline}
           </p>
@@ -88,7 +88,20 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
 
         {hasContact && (
           <FooterColumn title="Contacto">
-            {store.address && <ContactItem Icon={MapPin}>{store.address}</ContactItem>}
+            {store.address && (
+              <ContactItem Icon={MapPin}>
+                {/* Abre la dirección en Google Maps (en el celular, en la app de mapas) */}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline-offset-2 hover:text-primary hover:underline"
+                >
+                  {store.address}
+                  <span className="sr-only"> (abre Google Maps en otra pestaña)</span>
+                </a>
+              </ContactItem>
+            )}
             {store.phone && (
               <ContactItem Icon={Phone}>
                 <a href={`tel:${store.phone.replace(/[^\d+]/g, "")}`} className="hover:text-primary">{store.phone}</a>

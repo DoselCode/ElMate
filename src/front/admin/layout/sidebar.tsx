@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
@@ -56,7 +57,7 @@ function subscribe(listener: () => void) {
   };
 }
 
-export function Sidebar({ userName, role }: { userName: string; role: Role }) {
+export function Sidebar({ userName, role, logo }: { userName: string; role: Role; logo: string | null }) {
   const pathname = usePathname();
   // En el servidor y en la primera pintada el menú está desplegado; después se lee lo guardado
   const collapsed = useSyncExternalStore(subscribe, readCollapsed, () => false);
@@ -96,7 +97,13 @@ export function Sidebar({ userName, role }: { userName: string; role: Role }) {
             collapsed ? "size-11 p-1.5" : "size-12 p-2 lg:size-24 lg:p-3.5"
           }`}
         >
-          <BrandLetters fill="#1c1c1c" className="h-full w-auto" />
+          {logo ? (
+            <span className="relative block size-full">
+              <Image src={logo} alt="" fill sizes="96px" className="object-contain" />
+            </span>
+          ) : (
+            <BrandLetters fill="#1c1c1c" className="h-full w-auto" />
+          )}
         </div>
         <div className={`font-display text-lg leading-tight tracking-wide ${collapsed ? "lg:hidden" : ""}`}>
           El Mate

@@ -16,7 +16,7 @@ import { instagramEmbedUrl, isInstagramUrl, normalizeInstagramPost } from "@/sha
 import { badgePct } from "@/shared/pricing";
 import { DEFAULT_PROMO_BACKGROUND } from "@/shared/schemas/promotion";
 import { ProductGrid } from "../catalog/product-card";
-import { t } from "@/shared/home-content";
+import { makeT, type HomeT } from "@/shared/home-content";
 import { BENEFITS, HERO, INSTAGRAM_URL } from "../content";
 import { CategoryCarousel } from "./category-carousel";
 import { HeroBrew } from "./hero-brew";
@@ -35,8 +35,8 @@ function categoryHref(categories: PublicCategory[], keyword: string) {
   return c ? `/tienda?categoria=${c.slug}` : "/tienda";
 }
 
-/** Título, etiqueta y texto de una sección (ver shared/home-content.ts). */
-const heading = (id: "featured" | "offers" | "instagram"): SectionHeadingProps => ({
+/** Título, etiqueta y texto de una sección (ver shared/home-content.ts; se pueden cambiar desde el panel). */
+const heading = (t: HomeT, id: "featured" | "offers" | "instagram"): SectionHeadingProps => ({
   eyebrow: t(`${id}.eyebrow`),
   title: t(`${id}.title`),
   text: t(`${id}.text`),
@@ -58,17 +58,19 @@ export function HomeScreen({
 }) {
   // Destacados; si todavía no hay ninguno, los más vendidos para que la sección no quede vacía
   const highlighted = data.featured.length > 0 ? data.featured : data.bestSellers;
+  // Textos de la home: los cargados en "Datos del local" y, si están vacíos, los de shared/home-content.ts
+  const t = makeT(store.home_texts);
   return (
     <>
-      <Hero />
+      <Hero t={t} video={store.hero_video} />
       {/* Primero lo urgente (promos de temporada y ofertas), después se alternan listados (categorías, productos) con secciones de contenido (ritual, grabado) */}
       <PromoCards promotions={promotions.filter((p) => p.show_card)} showcase={promoShowcase} fallback={data.offers} />
-      <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
-      <Categories categories={categories} />
-      <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
-      <Ritual combosHref={categoryHref(categories, "combo")} />
-      <Engraving href={categoryHref(categories, "grabado")} />
-      <Instagram posts={store.instagram_posts} profileUrl={store.instagram_url && isInstagramUrl(store.instagram_url) ? store.instagram_url : INSTAGRAM_URL} />
+      <ProductSection id="ofertas" heading={heading(t, "offers")} products={data.offers.slice(0, 4)} />
+      <Categories t={t} categories={categories} />
+      <ProductSection id="destacados" heading={heading(t, "featured")} products={highlighted.slice(0, 8)} />
+      <Ritual t={t} combosHref={categoryHref(categories, "combo")} />
+      <Engraving t={t} href={categoryHref(categories, "grabado")} />
+      <Instagram t={t} posts={store.instagram_posts} profileUrl={store.instagram_url && isInstagramUrl(store.instagram_url) ? store.instagram_url : INSTAGRAM_URL} />
     </>
   );
 }
@@ -164,7 +166,7 @@ function PromoCollage({ href, name, products }: { href: string; name: string; pr
 }
 
 /** Invitación al grabado personalizado: lleva a los productos que se pueden grabar. */
-function Engraving({ href }: { href: string }) {
+function Engraving({ t, href }: { t: HomeT; href: string }) {
   return (
     <section id="grabado" className={`${container} mt-24 scroll-mt-28`}>
       <div className="fx-vapor relative isolate grid items-center gap-8 overflow-hidden rounded-[2rem] bg-surface p-8 sm:p-12 lg:grid-cols-[auto_1fr_auto]">
@@ -194,13 +196,13 @@ function Engraving({ href }: { href: string }) {
 }
 
 /** Publicaciones de Instagram incrustadas: se cargan en el panel pegando solo el link de cada una. */
-function Instagram({ posts: links, profileUrl }: { posts: string[]; profileUrl: string }) {
+function Instagram({ t, posts: links, profileUrl }: { t: HomeT; posts: string[]; profileUrl: string }) {
   // Solo links que son de una publicación de Instagram: lo demás no se incrusta
   const posts = links.map(normalizeInstagramPost).filter((p): p is string => p !== null);
   if (posts.length === 0) return null;
   return (
     <section id="instagram" className={`${container} mt-24 scroll-mt-28`}>
-      <SectionHeading {...heading("instagram")} />
+      <SectionHeading {...heading(t, "instagram")} />
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {posts.slice(0, 6).map((post, i) => (
           <li key={post} style={{ "--i": i } as React.CSSProperties} className="fx-vapor">
@@ -225,7 +227,7 @@ function Instagram({ posts: links, profileUrl }: { posts: string[]; profileUrl: 
   );
 }
 
-function Hero() {
+function Hero({ t, video }: { t: HomeT; video: string | null }) {
   return (
     <section className="relative isolate">
       {/* Brillo verde suave detrás de la foto, como en el diseño */}
@@ -237,7 +239,21 @@ function Hero() {
         {/* La foto no pasa del alto de la pantalla: al cargar se ve entera, con el cartel de WhatsApp */}
         <div className="fx-hero-out relative w-full max-w-[min(38rem,calc(100svh-9rem))] max-lg:mx-auto">
           <div className="fx-infuse relative aspect-square overflow-hidden rounded-[2rem] bg-primary-deep shadow-[0_20px_50px_rgb(11_17_25/0.14)]">
-            <HeroBrew label={HERO.imageAlt} />
+            {/* Video cargado en "Datos del local"; sin video, la animación del termo cebando */}
+            {video ? (
+              <video
+                src={video}
+                autoPlay
+                muted
+                loop
+                playsInline
+                aria-label={HERO.imageAlt}
+                className="size-full object-cover motion-reduce:hidden"
+              />
+            ) : null}
+            <div className={video ? "hidden size-full motion-reduce:block" : "size-full"}>
+              <HeroBrew label={HERO.imageAlt} />
+            </div>
           </div>
           <p className="fx-pop absolute -bottom-5 left-6 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold shadow-md">
             <WhatsappLogo size={18} weight="fill" className="text-primary" aria-hidden />
@@ -303,7 +319,7 @@ function BenefitsCard() {
 }
 
 /** Categorías a la izquierda y la card de beneficios al lado (debajo en pantallas chicas). */
-function Categories({ categories }: { categories: PublicCategory[] }) {
+function Categories({ t, categories }: { t: HomeT; categories: PublicCategory[] }) {
   return (
     <section id="categorias" className={`${container} mt-24 scroll-mt-28`}>
       <div className={categories.length > 0 ? "grid items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]" : ""}>
@@ -333,7 +349,7 @@ function ProductSection({ id, heading, products }: { id: string; heading: Sectio
   );
 }
 
-function Ritual({ combosHref }: { combosHref: string }) {
+function Ritual({ t, combosHref }: { t: HomeT; combosHref: string }) {
   const photo = "relative aspect-square w-1/2 max-w-60 overflow-hidden rounded-[1.75rem] bg-surface shadow-[0_14px_30px_rgb(11_17_25/0.14)]";
   return (
     <section className={`${container} relative isolate mt-24`}>

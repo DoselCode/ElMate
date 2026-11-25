@@ -33,6 +33,10 @@ export async function saveStoreSettingsAction(input: unknown): Promise<ActionRes
       hours_weekdays: orNull(s.hoursWeekdays),
       hours_saturday: orNull(s.hoursSaturday),
       hours_sunday: orNull(s.hoursSunday),
+      logo: orNull(s.logo),
+      hero_video: orNull(s.heroVideo),
+      // Solo los textos cambiados: los vacíos vuelven al texto por defecto de la web
+      home_texts: Object.fromEntries(Object.entries(s.homeTexts).filter(([, v]) => v !== "")),
     })
     .eq("id", 1)
     .select("id");

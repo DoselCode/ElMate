@@ -1,5 +1,6 @@
 import * as z from "zod";
-import { plainText } from "./text";
+import { httpUrl, plainText } from "./text";
+import { isHomeTextKey } from "../home-content";
 import { isInstagramUrl, MAX_INSTAGRAM_POSTS, parseInstagramPosts } from "../instagram";
 import { normalizeWhatsappNumber } from "../whatsapp";
 
@@ -30,6 +31,14 @@ export const storeSettingsSchema = z.object({
   hoursWeekdays: optionalText(60),
   hoursSaturday: optionalText(60),
   hoursSunday: optionalText(60),
+  /** Logo subido (va en la web y en el panel). Vacío = el de siempre. */
+  logo: z.union([z.literal(""), httpUrl("Logo inválido")]),
+  /** Video de la portada. Vacío = la animación de siempre. */
+  heroVideo: z.union([z.literal(""), httpUrl("Video inválido")]),
+  /** Textos de la home que reemplazan a los de por defecto; vacío = el de por defecto. */
+  homeTexts: z
+    .record(z.string(), plainText().max(300, { error: "Máximo 300 caracteres" }))
+    .refine((texts) => Object.keys(texts).every(isHomeTextKey), { error: "Hay un texto que no existe en la web" }),
 });
 
 export type StoreSettingsInput = z.input<typeof storeSettingsSchema>;

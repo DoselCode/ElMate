@@ -37,6 +37,19 @@ function validQty(n: number, unit: SellableItem["unit"]) {
   return Number.isFinite(n) && n > 0 && (unit === "kg" ? Math.abs(n * 1000 - Math.round(n * 1000)) < 1e-6 : Number.isInteger(n));
 }
 
+/**
+ * Descuento en pesos del efectivo: `pesos` es lo que baja el total a cobrar; `listAmount`, su equivalente
+ * sobre el precio de lista (la base aplica el descuento antes del % de la forma de pago).
+ */
+function cashDiscountOf(subtotal: number, method: PaymentMethod, text: string) {
+  if (text.trim() === "") return { ok: true, pesos: 0, listAmount: 0 };
+  const pesos = parseDecimal(text);
+  const factor = 1 + method.adjustment_pct / 100;
+  const max = totalFor(subtotal, method).total;
+  if (!Number.isFinite(pesos) || pesos < 0 || pesos > max || factor <= 0) return { ok: false, pesos: 0, listAmount: 0 };
+  return { ok: true, pesos: cents(pesos), listAmount: Math.min(subtotal, cents(pesos / factor)) };
+}
+
 /** Total con el ajuste de una forma de pago, igual que la base (create_sale). */
 function totalFor(base: number, method: PaymentMethod | undefined) {
   const adjustment = method ? cents((base * method.adjustment_pct) / 100) : 0;
@@ -70,14 +83,15 @@ export function PosScreen({
       return item ? [{ ...l, item }] : [];
     });
   }, [draft.lines, items]);
-  const { discount, discountType, customer, notes } = draft;
+  const { discount, customer, notes } = draft;
   const defaultMethodId = methods.find((m) => m.is_cash)?.id ?? methods[0]?.id ?? "";
   const methodId = draft.methodId && methods.some((m) => m.id === draft.methodId) ? draft.methodId : defaultMethodId;
   const setLines = (next: Line[] | ((ls: Line[]) => Line[])) =>
     updatePosDraft((d) => ({ ...d, lines: typeof next === "function" ? next(d.lines) : next }));
   const setDiscount = (value: string) => updatePosDraft((d) => ({ ...d, discount: value }));
-  const setDiscountType = (value: DiscountType) => updatePosDraft((d) => ({ ...d, discountType: value }));
-  const setMethodId = (value: string) => updatePosDraft((d) => ({ ...d, methodId: value }));
+  // El descuento en pesos es solo para efectivo: al pasar a otra forma de pago se borra
+  const setMethodId = (value: string) =>
+    updatePosDraft((d) => ({ ...d, methodId: value, discount: methods.find((m) => m.id === value)?.is_cash ? d.discount : "" }));
   const setCustomer = (value: string) => updatePosDraft((d) => ({ ...d, customer: value }));
   const setNotes = (value: string) => updatePosDraft((d) => ({ ...d, notes: value }));
   const [error, setError] = useState<string>();
@@ -155,10 +169,12 @@ export function PosScreen({
     return { ...l, qtyNumber: qty, ok, over, gross, lineDiscount, lineTotal: cents(gross - (lineDiscount ?? 0)) };
   });
   const subtotal = cents(parsedLines.reduce((s, l) => s + l.lineTotal, 0));
-  const discountAmount = discountOf(subtotal, discountType, discount);
-  const discountOk = discountAmount !== null;
-  const base = cents(subtotal - (discountAmount ?? 0));
   const method = methods.find((m) => m.id === methodId);
+  // Descuento general: solo pagando en efectivo y solo en pesos. Lo que se escribe es cuánto baja el
+  // total a cobrar (ya con el % del efectivo); a la base se manda el equivalente sobre el precio de lista.
+  const cashDiscount = method?.is_cash ? cashDiscountOf(subtotal, method, discount) : { ok: true, pesos: 0, listAmount: 0 };
+  const discountOk = cashDiscount.ok;
+  const base = cents(subtotal - cashDiscount.listAmount);
   const { adjustment, total } = totalFor(base, method);
   const hasOver = parsedLines.some((l) => l.over);
   const canCharge =
@@ -177,7 +193,7 @@ export function PosScreen({
           quantity: l.qtyNumber,
           discount: l.lineDiscount ? { type: l.discountType, value: parseDecimal(l.discount) } : null,
         })),
-        discount: { type: discountType, value: discountAmount ? parseDecimal(discount) : 0 },
+        discount: { type: "amount", value: cashDiscount.listAmount },
         customer,
         notes,
       });
@@ -529,35 +545,12 @@ export function PosScreen({
             </div>
           </dl>
 
-          <div>
-            <p id="pos-discount-label" className="mb-1 text-xs font-bold uppercase tracking-wide text-muted">Descuento sobre el total</p>
-            <div className="flex items-center gap-2">
-              <DiscountInput
-                id="pos-discount"
-                label="Descuento sobre el total"
-                type={discountType}
-                value={discount}
-                invalid={!discountOk}
-                wide
-                onChange={(type, value) => {
-                  setDiscountType(type);
-                  setDiscount(value);
-                }}
-              />
-              {discountAmount ? <span className="text-sm text-muted tabular-nums">−{formatMoney(discountAmount)}</span> : null}
-            </div>
-            {!discountOk && (
-              <p role="alert" className="mt-1 text-xs font-medium text-danger">
-                {discountType === "pct" ? "Entre 0 y 100 %" : "No puede superar el subtotal"}
-              </p>
-            )}
-          </div>
-
           <fieldset>
             <legend className="mb-1.5 text-xs font-bold uppercase tracking-wide text-muted">Forma de pago</legend>
             <div className="space-y-1.5">
               {methods.map((m) => {
-                const t = totalFor(base, m).total;
+                // El descuento en pesos solo baja el total en efectivo
+                const t = m.id === methodId ? total : totalFor(subtotal, m).total;
                 return (
                   <label
                     key={m.id}
@@ -584,6 +577,34 @@ export function PosScreen({
             </div>
           </fieldset>
 
+          {method?.is_cash && (
+            <div>
+              <label htmlFor="pos-cash-discount" className="mb-1 block text-xs font-bold uppercase tracking-wide text-muted">
+                Descuento en efectivo ($)
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="relative w-40">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted" aria-hidden>$</span>
+                  <input
+                    id="pos-cash-discount"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={discount}
+                    placeholder="0"
+                    aria-invalid={!discountOk}
+                    aria-describedby="pos-cash-discount-hint"
+                    onChange={(e) => setDiscount(e.target.value)}
+                    className={`${inputClass} pl-7 tabular-nums ${discountOk ? "" : "border-danger"}`}
+                  />
+                </div>
+                {cashDiscount.pesos > 0 && <span className="text-sm text-muted tabular-nums">−{formatMoney(cashDiscount.pesos)}</span>}
+              </div>
+              <p id="pos-cash-discount-hint" className={`mt-1 text-xs ${discountOk ? "text-muted" : "font-medium text-danger"}`}>
+                {discountOk ? "Se descuenta del total a cobrar en efectivo." : "Ingresá un monto en pesos que no supere el total."}
+              </p>
+            </div>
+          )}
+
           <div className="grid gap-2">
             <label htmlFor="pos-customer" className="sr-only">Cliente (opcional)</label>
             <input
@@ -606,6 +627,12 @@ export function PosScreen({
           </div>
 
           <div className="border-t border-dashed border-border pt-4">
+            {cashDiscount.pesos > 0 && (
+              <p className="flex justify-between text-sm text-muted">
+                <span>Descuento en efectivo</span>
+                <span className="tabular-nums">−{formatMoney(cashDiscount.pesos)}</span>
+              </p>
+            )}
             {adjustment !== 0 && method && (
               <p className="flex justify-between text-sm text-muted">
                 <span>{method.name} {pct(method.adjustment_pct)}</span>

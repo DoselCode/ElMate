@@ -3,10 +3,26 @@ import Link from "next/link";
 import { BrandLetterRow } from "./brand-letters";
 
 /**
- * Logo de la marca: ELMATE en una línea sobre la foto de un mate real (el cuerpo de calabaza de
- * /landing/hero.jpg, ampliado), con la A azul inclinada como en el logo original.
+ * Logo de la marca. Si se cargó uno en "Datos del local", se muestra ese; si no, ELMATE en una línea
+ * sobre la foto de un mate real (el cuerpo de calabaza de /landing/hero.jpg, ampliado), con la A azul.
  */
-export function Logo({ name = "ElMate", className = "h-12 w-44" }: { name?: string; className?: string }) {
+export function Logo({
+  name = "ElMate",
+  src,
+  className = "h-12 w-44",
+}: {
+  name?: string;
+  /** Logo subido desde el panel (null = el de siempre). */
+  src?: string | null;
+  className?: string;
+}) {
+  if (src) {
+    return (
+      <Link href="/" aria-label={`${name}, ir al inicio`} className={`relative flex shrink-0 items-center justify-center ${className}`}>
+        <Image src={src} alt="" fill sizes="208px" className="object-contain" priority />
+      </Link>
+    );
+  }
   return (
     <Link
       href="/"
