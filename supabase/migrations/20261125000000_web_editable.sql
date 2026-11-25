@@ -5,12 +5,18 @@
 --   * hero_video: video de la portada (URL subida al Storage). null = la animación de siempre.
 
 alter table public.store_settings
-  add column home_texts jsonb not null default '{}' check (jsonb_typeof(home_texts) = 'object'),
-  add column hero_video text check (hero_video is null or (char_length(hero_video) <= 500 and hero_video ~* '^https?://'));
+  add column if not exists home_texts jsonb not null default '{}' check (jsonb_typeof(home_texts) = 'object'),
+  add column if not exists hero_video text check (hero_video is null or (char_length(hero_video) <= 500 and hero_video ~* '^https?://'));
 
--- Misma vista que en 20261116000001, con las dos columnas nuevas al final (los permisos se conservan).
-create or replace view public.public_store_info as
+-- Misma vista que en 20261116000001, con las dos columnas nuevas al final. Se borra y se vuelve a crear
+-- (no "create or replace"): en alguna base la vista quedó con otro orden de columnas (con email y
+-- facebook_url en el medio) y Postgres no deja reemplazarla así. Nada depende de esta vista.
+drop view if exists public.public_store_info;
+create view public.public_store_info as
 select name, tagline, logo, phone, whatsapp_number, address, instagram_url,
        hours_weekdays, hours_saturday, hours_sunday, instagram_posts,
        home_texts, hero_video
 from public.store_settings;
+
+revoke all on public.public_store_info from anon, authenticated;
+grant select on public.public_store_info to anon, authenticated;
