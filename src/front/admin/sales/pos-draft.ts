@@ -18,6 +18,8 @@ export type PosDraft = {
   lines: Line[];
   discount: string;
   discountType: DiscountType;
+  /** Descuento extra en pesos, solo pagando en efectivo. */
+  cashDiscount: string;
   /** null = la forma de pago por defecto (efectivo). */
   methodId: string | null;
   customer: string;
@@ -26,7 +28,15 @@ export type PosDraft = {
 
 const STORAGE_KEY = "elmate-pos-draft-v1";
 
-export const EMPTY_DRAFT: PosDraft = { lines: [], discount: "", discountType: "amount", methodId: null, customer: "", notes: "" };
+export const EMPTY_DRAFT: PosDraft = {
+  lines: [],
+  discount: "",
+  discountType: "amount",
+  cashDiscount: "",
+  methodId: null,
+  customer: "",
+  notes: "",
+};
 
 let cache: PosDraft | null = null;
 const listeners = new Set<() => void>();
@@ -39,6 +49,7 @@ function sanitize(value: unknown): PosDraft {
     lines: Array.isArray(v.lines) ? v.lines.filter((l) => l && typeof l === "object" && l.item?.variant_id) : [],
     discount: str(v.discount),
     discountType: v.discountType === "pct" ? "pct" : "amount",
+    cashDiscount: str(v.cashDiscount),
     methodId: typeof v.methodId === "string" ? v.methodId : null,
     customer: str(v.customer),
     notes: str(v.notes),
