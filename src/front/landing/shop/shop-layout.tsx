@@ -132,7 +132,8 @@ export function ShopLayout({
       <div className={`mt-6 ${showSidebar && !hidden ? "lg:grid lg:grid-cols-[16rem_1fr] lg:gap-10" : ""}`}>
         {showSidebar && !hidden && (
           <aside id="shop-sidebar" className="hidden lg:block">
-            <div className="sticky top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto pr-2">
+            {/* pl/-ml: el scroll recorta en el borde; sin ese margen los checks y su contorno de foco quedan cortados */}
+            <div className="sticky top-24 -ml-1.5 max-h-[calc(100dvh-7rem)] overflow-y-auto pl-1.5 pr-2">
               <ShopSidebar filters={filters} facets={facets} />
             </div>
           </aside>
