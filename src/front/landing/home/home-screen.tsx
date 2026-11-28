@@ -12,7 +12,7 @@ import {
   WhatsappLogo,
 } from "@phosphor-icons/react/dist/ssr";
 import type { HomeData, PublicCategory, PublicProduct, PublicPromotion, StoreInfo } from "@/shared/types";
-import { instagramEmbedUrl, isInstagramUrl, normalizeInstagramPost } from "@/shared/instagram";
+import { isInstagramUrl, normalizeInstagramPost } from "@/shared/instagram";
 import { badgePct } from "@/shared/pricing";
 import { DEFAULT_PROMO_BACKGROUND } from "@/shared/schemas/promotion";
 import { ProductGrid } from "../catalog/product-card";
@@ -20,6 +20,7 @@ import { makeT, type HomeT } from "@/shared/home-content";
 import { BENEFITS, HERO, INSTAGRAM_URL } from "../content";
 import { CategoryCarousel } from "./category-carousel";
 import { HeroBrew, HeroLetters } from "./hero-brew";
+import { InstagramPost } from "./instagram-post";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
 
 // 82rem de contenido (igual que el header) + el padding lateral: el contenido queda alineado con los bordes del header
@@ -206,15 +207,7 @@ function Instagram({ t, posts: links, profileUrl }: { t: HomeT; posts: string[];
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {posts.slice(0, 6).map((post, i) => (
           <li key={post} style={{ "--i": i } as React.CSSProperties} className="fx-vapor">
-            <iframe
-              src={instagramEmbedUrl(post)}
-              title={`Publicación ${i + 1} de Instagram`}
-              loading="lazy"
-              scrolling="no"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-              referrerPolicy="strict-origin-when-cross-origin"
-              className="aspect-[5/7] w-full rounded-2xl border border-border bg-surface"
-            />
+            <InstagramPost post={post} title={`Publicación ${i + 1} de Instagram`} />
           </li>
         ))}
       </ul>

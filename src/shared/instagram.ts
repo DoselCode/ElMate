@@ -31,6 +31,34 @@ export function isInstagramUrl(raw: string): boolean {
  */
 export const instagramEmbedUrl = (post: string): string => `${post.replace("/reel/", "/p/")}embed`;
 
+export const INSTAGRAM_ORIGIN = "https://www.instagram.com";
+
+/**
+ * Dirección del iframe con los mismos parámetros que arma el embed.js oficial de Instagram
+ * (`cr=1` y compañía): así el iframe se comporta como un embed oficial y avisa a la página cuando carga.
+ */
+export function instagramEmbedSrc(post: string, page: { width: number; origin: string; path: string }): string {
+  const params = new URLSearchParams({ cr: "1", v: "14", wp: String(Math.round(page.width)), rd: page.origin, rp: page.path.slice(0, 200) });
+  return `${instagramEmbedUrl(post)}/?${params}`;
+}
+
+/** Tipos de aviso que el iframe de Instagram le manda a la página cuando la publicación carga. */
+const EMBED_MESSAGE_TYPES = new Set(["LOADING", "MEASURE", "MOUNTED"]);
+
+/**
+ * ¿Es un aviso del embed de Instagram? Llegan como JSON desde www.instagram.com. Si Instagram bloquea
+ * el embed (redirige al login, que no se deja incrustar) no llega ninguno.
+ */
+export function isInstagramEmbedMessage(origin: string, data: unknown): boolean {
+  if (origin !== INSTAGRAM_ORIGIN || typeof data !== "string") return false;
+  try {
+    const msg: unknown = JSON.parse(data);
+    return typeof msg === "object" && msg !== null && EMBED_MESSAGE_TYPES.has(String((msg as { type?: unknown }).type));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Interpreta el texto del formulario (un link por línea o separados por espacios/comas).
  * `invalid`: lo que no es un link de publicación; `urls`: los válidos, sin repetir y en el orden en que se pegaron.

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { instagramEmbedUrl, isInstagramUrl, normalizeInstagramPost, parseInstagramPosts } from "./instagram";
+import {
+  instagramEmbedSrc,
+  instagramEmbedUrl,
+  isInstagramEmbedMessage,
+  isInstagramUrl,
+  normalizeInstagramPost,
+  parseInstagramPosts,
+} from "./instagram";
 
 describe("normalizeInstagramPost", () => {
   it("acepta posts, reels y links con perfil o parámetros", () => {
@@ -47,5 +54,31 @@ describe("instagramEmbedUrl", () => {
 
   it("los reels se incrustan por /p/ para que se reproduzcan en la web", () => {
     expect(instagramEmbedUrl("https://www.instagram.com/reel/Bbbbb22222/")).toBe("https://www.instagram.com/p/Bbbbb22222/embed");
+  });
+});
+
+describe("instagramEmbedSrc", () => {
+  it("usa los parámetros del embed oficial", () => {
+    const src = new URL(
+      instagramEmbedSrc("https://www.instagram.com/reel/Bbbbb22222/", { width: 313.6, origin: "https://elmate.com.ar", path: "/?a=1" }),
+    );
+    expect(src.origin + src.pathname).toBe("https://www.instagram.com/p/Bbbbb22222/embed/");
+    expect(Object.fromEntries(src.searchParams)).toEqual({ cr: "1", v: "14", wp: "314", rd: "https://elmate.com.ar", rp: "/?a=1" });
+  });
+});
+
+describe("isInstagramEmbedMessage", () => {
+  it("acepta los avisos del embed de Instagram", () => {
+    for (const type of ["LOADING", "MEASURE", "MOUNTED"]) {
+      expect(isInstagramEmbedMessage("https://www.instagram.com", JSON.stringify({ type, details: {} }))).toBe(true);
+    }
+  });
+
+  it("ignora otros orígenes, otros tipos y datos que no son JSON", () => {
+    expect(isInstagramEmbedMessage("https://evil.example", JSON.stringify({ type: "MEASURE" }))).toBe(false);
+    expect(isInstagramEmbedMessage("https://www.instagram.com", JSON.stringify({ type: "OTRO" }))).toBe(false);
+    expect(isInstagramEmbedMessage("https://www.instagram.com", "no es json")).toBe(false);
+    expect(isInstagramEmbedMessage("https://www.instagram.com", { type: "MEASURE" })).toBe(false);
+    expect(isInstagramEmbedMessage("https://www.instagram.com", "null")).toBe(false);
   });
 });
