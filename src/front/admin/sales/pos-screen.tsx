@@ -283,7 +283,8 @@ export function PosScreen({
         )}
       </Modal>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_27rem]">
+      {/* El carrito es ancho para que las formas de pago se lean enteras (a cambio, una columna menos de productos) */}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_30rem] 2xl:grid-cols-[minmax(0,1fr)_32rem]">
         <section aria-label="Productos de la venta" className="space-y-4">
           {/* Buscador */}
           <div>
@@ -323,7 +324,7 @@ export function PosScreen({
             ) : (
               <ul
                 key={currentPage}
-                className="grid max-h-[60svh] grid-cols-2 content-start gap-2 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-3 lg:max-h-[calc(100svh-17rem)] xl:grid-cols-4 2xl:grid-cols-5"
+                className="grid max-h-[60svh] grid-cols-2 content-start gap-2 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-3 lg:max-h-[calc(100svh-17rem)] lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
               >
                 {pageItems.map((i) => {
                   const out = outOfStock(i);
@@ -597,7 +598,7 @@ export function PosScreen({
                 return (
                   <div key={m.id}>
                     <label
-                      className={`flex cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/30 ${
+                      className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/30 ${
                         m.id === methodId ? "border-primary bg-primary-soft font-semibold" : "border-border hover:bg-background"
                       }`}
                     >
@@ -613,7 +614,7 @@ export function PosScreen({
                         {m.name}
                         {m.adjustment_pct !== 0 && <span className="text-xs font-normal text-muted">{pct(m.adjustment_pct)}</span>}
                       </span>
-                      <span className="tabular-nums">{formatMoney(t)}</span>
+                      <span className="shrink-0 whitespace-nowrap tabular-nums">{formatMoney(t)}</span>
                     </label>
                     {/* Efectivo elegido: debajo, el descuento particular de efectivo (solo en pesos) */}
                     {m.is_cash && m.id === methodId && (
