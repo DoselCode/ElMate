@@ -1,6 +1,7 @@
 import "server-only";
 import { guarded } from "@/back/admin/auth/guarded";
 import { requireAdmin, requireStaff } from "@/back/admin/auth/session";
+import { createClient } from "@/back/shared/supabase/server";
 import { PAGE_SIZE, pageParam, param, safeSearch, uuidParam, type SearchParams } from "@/shared/query";
 import type {
   MovementFilters,
@@ -101,19 +102,40 @@ export async function getCatalogOptions(): Promise<{ categories: Option[]; suppl
 
 // ---- Movimientos ---------------------------------------------------------------------------
 
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+/** Movimientos con los filtros aplicados, del más nuevo al más viejo (orden estable). */
+function movementsQuery(supabase: Supabase, f: MovementFilters, count?: "exact") {
+  let query = supabase.from("stock_movement_log").select("*", count ? { count } : undefined);
+  if (f.q) query = query.or(`product_name.ilike.%${f.q}%,sku.ilike.%${f.q}%`);
+  if (f.type) query = query.eq("type", f.type);
+  return query.order("created_at", { ascending: false }).order("id", { ascending: false });
+}
+
 export async function getMovements(f: MovementFilters): Promise<Paged<MovementRow>> {
   return guarded(requireStaff, async (supabase) => {
-    let query = supabase.from("stock_movement_log").select("*", { count: "exact" });
-    if (f.q) query = query.or(`product_name.ilike.%${f.q}%,sku.ilike.%${f.q}%`);
-    if (f.type) query = query.eq("type", f.type);
-
-    const { data, count, error } = await query
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .range(...pageRange(f.page));
-
+    const { data, count, error } = await movementsQuery(supabase, f, "exact").range(...pageRange(f.page));
     return { rows: (data ?? []) as MovementRow[], total: count ?? 0, error: Boolean(error) };
   });
+}
+
+/** Tope del Excel: muy por encima del historial real, frena una descarga desmedida. */
+export const MOVEMENTS_EXPORT_LIMIT = 50_000;
+const EXPORT_CHUNK = 1000; // PostgREST devuelve hasta 1000 filas por pedido
+
+/** Todos los movimientos que coinciden con los filtros (sin paginar), para exportar a Excel. Solo admin. */
+export async function getMovementsForExport(f: MovementFilters): Promise<{ rows: MovementRow[]; error: boolean }> {
+  // Primero el permiso (no en paralelo como guarded): pueden ser muchos pedidos seguidos
+  await requireAdmin();
+  const supabase = await createClient();
+  const rows: MovementRow[] = [];
+  while (rows.length < MOVEMENTS_EXPORT_LIMIT) {
+    const { data, error } = await movementsQuery(supabase, f).range(rows.length, rows.length + EXPORT_CHUNK - 1);
+    if (error) return { rows: [], error: true };
+    rows.push(...((data ?? []) as MovementRow[]));
+    if (!data || data.length < EXPORT_CHUNK) break;
+  }
+  return { rows: rows.slice(0, MOVEMENTS_EXPORT_LIMIT), error: false };
 }
 
 // ---- Producto para editar ------------------------------------------------------------------

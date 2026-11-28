@@ -1,13 +1,15 @@
 import { Suspense } from "react";
+import { MicrosoftExcelLogo } from "@phosphor-icons/react/dist/ssr";
 import { TableSkeleton } from "@/front/admin/layout/panel-loading";
 import { Badge } from "@/front/shared/ui/badge";
+import { buttonClass } from "@/front/shared/ui/button";
 import { AutoFilterForm } from "@/front/shared/ui/auto-filter-form";
 import { EmptyState, LoadError } from "@/front/shared/ui/empty-state";
 import { inputClass } from "@/front/shared/ui/field";
 import { FilterField } from "@/front/shared/ui/filter-field";
 import { Pagination } from "@/front/shared/ui/pagination";
 import { formatDateTime, formatQuantity } from "@/shared/format";
-import { PAGE_SIZE } from "@/shared/query";
+import { buildQuery, PAGE_SIZE } from "@/shared/query";
 import type { MovementFilters, MovementRow, MovementType, Paged } from "@/shared/types";
 
 const TYPES: Record<MovementType, { label: string; tone: "success" | "neutral" | "warning" }> = {
@@ -24,11 +26,17 @@ export function MovementsScreen({ list, filters }: { list: Promise<Paged<Movemen
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-2xl font-bold">Movimientos de stock</h1>
-        <p className="mt-1 text-sm text-muted">
-          Registro de todo lo que entró y salió. No se puede editar ni borrar: las correcciones se hacen con un ajuste.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold">Movimientos de stock</h1>
+          <p className="mt-1 text-sm text-muted">
+            Registro de todo lo que entró y salió. No se puede editar ni borrar: las correcciones se hacen con un ajuste.
+          </p>
+        </div>
+        {/* <a> y no <Link>: es una descarga, no una navegación. Exporta todo lo filtrado, no solo esta página */}
+        <a href={`/admin/stock/movements/excel${buildQuery({ q, type })}`} download className={buttonClass("secondary")}>
+          <MicrosoftExcelLogo size={18} weight="bold" aria-hidden /> Exportar a Excel
+        </a>
       </header>
 
       <AutoFilterForm action="/admin/stock/movements" hasFilters={hasFilters}>

@@ -238,6 +238,12 @@ function unitOf(embedded: unknown): Unit {
 // ---- Ingresos (solo admin) -----------------------------------------------------------------
 
 /** Ingresos de un año, mes por mes: ventas del sistema + totales importados del Excel. */
+/** Año pedido en ?year= (2000–2100), o el año actual. */
+export function incomeYearParam(sp: SearchParams, today = todayAR()): number {
+  const requested = Number.parseInt(param(sp, "year"), 10);
+  return Number.isFinite(requested) && requested >= 2000 && requested <= 2100 ? requested : Number(today.slice(0, 4));
+}
+
 export async function getIncomeReport(year: number): Promise<{ months: IncomeMonth[]; years: number[] }> {
   return guarded(requireAdmin, async (supabase) => {
     const start = `${year}-01-01`;

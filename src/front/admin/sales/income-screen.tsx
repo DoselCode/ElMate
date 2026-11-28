@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { MicrosoftExcelLogo } from "@phosphor-icons/react/dist/ssr";
 import { Badge } from "@/front/shared/ui/badge";
+import { buttonClass } from "@/front/shared/ui/button";
 import { formatMoney } from "@/shared/format";
 import type { IncomeMonth } from "@/shared/types";
 
@@ -25,20 +27,26 @@ export function IncomeScreen({ year, years, months, currentMonth }: { year: numb
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold">Ingresos {year}</h1>
-        {years.length > 1 && (
-          <nav aria-label="Año" className="flex gap-1 rounded-full bg-surface p-1 shadow-sm">
-            {years.map((y) => (
-              <Link
-                key={y}
-                href={`/admin/ingresos?year=${y}`}
-                aria-current={y === year ? "page" : undefined}
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold ${y === year ? "bg-primary text-white" : "text-muted hover:text-foreground"}`}
-              >
-                {y}
-              </Link>
-            ))}
-          </nav>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* <a> y no <Link>: es una descarga, no una navegación */}
+          <a href={`/admin/ingresos/excel?year=${year}`} download className={buttonClass("secondary")}>
+            <MicrosoftExcelLogo size={18} weight="bold" aria-hidden /> Exportar a Excel
+          </a>
+          {years.length > 1 && (
+            <nav aria-label="Año" className="flex gap-1 rounded-full bg-surface p-1 shadow-sm">
+              {years.map((y) => (
+                <Link
+                  key={y}
+                  href={`/admin/ingresos?year=${y}`}
+                  aria-current={y === year ? "page" : undefined}
+                  className={`rounded-full px-4 py-1.5 text-sm font-semibold ${y === year ? "bg-primary text-white" : "text-muted hover:text-foreground"}`}
+                >
+                  {y}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </div>
       </header>
 
       <section aria-label="Resumen del año" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
