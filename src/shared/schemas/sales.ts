@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { plainText } from "./text";
 
 const money = z
   .number({ error: "Ingresá un monto" })
@@ -25,7 +26,7 @@ export const closeCashSchema = z
     countedCash: money,
     /** Efectivo que queda en la caja para abrir mañana. */
     cashLeft: money,
-    notes: z.string().trim().max(300, { error: "Máximo 300 caracteres" }),
+    notes: plainText().max(300, { error: "Máximo 300 caracteres" }),
   })
   .refine((c) => c.cashLeft <= c.countedCash, {
     path: ["cashLeft"],
@@ -56,15 +57,15 @@ export const saleSchema = z.object({
     .max(100, { error: "Máximo 100 productos por venta" }),
   /** Descuento general sobre el subtotal, antes del ajuste de la forma de pago. */
   discount: discountSchema,
-  customer: z.string().trim().max(80, { error: "Máximo 80 caracteres" }),
-  notes: z.string().trim().max(300, { error: "Máximo 300 caracteres" }),
+  customer: plainText().max(80, { error: "Máximo 80 caracteres" }),
+  notes: plainText().max(300, { error: "Máximo 300 caracteres" }),
 });
 
 export type Discount = z.infer<typeof discountSchema>;
 
 export const voidSaleSchema = z.object({
   saleId: z.uuid(),
-  reason: z.string().trim().min(3, { error: "Indicá el motivo" }).max(200, { error: "Máximo 200 caracteres" }),
+  reason: plainText().min(3, { error: "Indicá el motivo" }).max(200, { error: "Máximo 200 caracteres" }),
 });
 
 export type SaleInput = z.input<typeof saleSchema>;

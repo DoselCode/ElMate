@@ -11,7 +11,7 @@ import { SearchPanel } from "./search-panel";
 /** Link del menú. Con `children` se muestra como desplegable (ej. "Categorías"). */
 export type NavLink = { href: string; label: string; children?: { href: string; label: string }[] };
 
-export function SiteHeader({ storeName, links }: { storeName: string; links: NavLink[] }) {
+export function SiteHeader({ storeName, logo, links }: { storeName: string; logo: string | null; links: NavLink[] }) {
   const pathname = usePathname();
   const cart = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -35,7 +35,7 @@ export function SiteHeader({ storeName, links }: { storeName: string; links: Nav
       <div className="relative mx-auto max-w-[82rem] rounded-[2rem] bg-surface/95 px-4 py-3 shadow-[0_6px_24px_rgb(16_21_28/0.06)] backdrop-blur sm:px-6">
         <div className="flex items-center justify-between gap-4">
           {/* El anillo del logo se completa a medida que se baja por la página */}
-          <Logo name={storeName} />
+          <Logo name={storeName} src={logo} />
 
           <nav aria-label="Principal" className="hidden lg:block">
             <ul className="flex items-center gap-1">

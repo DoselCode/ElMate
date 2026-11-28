@@ -6,6 +6,7 @@ import { friendlyDbError } from "@/back/shared/db-errors";
 import { createClient } from "@/back/shared/supabase/server";
 import { fieldErrors } from "@/shared/schemas/product";
 import { paymentMethodsSchema } from "@/shared/schemas/payment-methods";
+import { parseInstagramPosts } from "@/shared/instagram";
 import { storeSettingsSchema } from "@/shared/schemas/settings";
 import type { ActionResult } from "@/shared/types";
 
@@ -26,13 +27,16 @@ export async function saveStoreSettingsAction(input: unknown): Promise<ActionRes
       tagline: orNull(s.tagline),
       whatsapp_number: orNull(s.whatsappNumber),
       phone: orNull(s.phone),
-      email: orNull(s.email),
       address: orNull(s.address),
       instagram_url: orNull(s.instagramUrl),
-      facebook_url: orNull(s.facebookUrl),
+      instagram_posts: parseInstagramPosts(s.instagramPosts).urls,
       hours_weekdays: orNull(s.hoursWeekdays),
       hours_saturday: orNull(s.hoursSaturday),
       hours_sunday: orNull(s.hoursSunday),
+      logo: orNull(s.logo),
+      hero_video: orNull(s.heroVideo),
+      // Solo los textos cambiados: los vacíos vuelven al texto por defecto de la web
+      home_texts: Object.fromEntries(Object.entries(s.homeTexts).filter(([, v]) => v !== "")),
     })
     .eq("id", 1)
     .select("id");

@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { httpUrl, plainText } from "./text";
 
 /**
  * Promociones: un conjunto de variantes con precio especial, entre dos fechas, y una card opcional en la home.
@@ -6,6 +7,9 @@ import * as z from "zod";
  */
 
 const AR_OFFSET = "-03:00";
+
+/** Fondo de la card de la home cuando la promo no tiene imagen propia (public/promociones/). */
+export const DEFAULT_PROMO_BACKGROUND = "/promociones/fondo-por-defecto.jpg";
 
 /** "2026-11-30T09:00" (hora argentina) → ISO en UTC. Devuelve null si está vacío o es inválido. */
 export function localToIso(local: string): string | null {
@@ -32,17 +36,19 @@ export const promotionItemSchema = z.object({
 export const promotionSchema = z
   .object({
     id: z.uuid().optional(),
-    name: z.string().trim().min(2, { error: "Poné un nombre (mínimo 2 caracteres)" }).max(80, { error: "Máximo 80 caracteres" }),
-    description: z.string().trim().max(500, { error: "Máximo 500 caracteres" }),
+    name: plainText().min(2, { error: "Poné un nombre (mínimo 2 caracteres)" }).max(80, { error: "Máximo 80 caracteres" }),
+    description: plainText().max(500, { error: "Máximo 500 caracteres" }),
     /** Pausada = no se aplica aunque esté dentro de las fechas. */
     active: z.boolean(),
     startsAt: z.string().min(1, { error: "Elegí cuándo empieza" }),
     /** Vacío = sin fecha de fin. */
     endsAt: z.string(),
     showCard: z.boolean(),
-    cardTitle: z.string().trim().max(80, { error: "Máximo 80 caracteres" }),
-    cardText: z.string().trim().max(200, { error: "Máximo 200 caracteres" }),
-    cardCta: z.string().trim().max(30, { error: "Máximo 30 caracteres" }),
+    cardTitle: plainText().max(80, { error: "Máximo 80 caracteres" }),
+    cardText: plainText().max(200, { error: "Máximo 200 caracteres" }),
+    cardCta: plainText().max(30, { error: "Máximo 30 caracteres" }),
+    /** Imagen de fondo de la card (URL subida al Storage). Vacío = la imagen por defecto. */
+    cardImage: z.union([z.literal(""), httpUrl("Imagen inválida")]).default(""),
     items: z.array(promotionItemSchema).max(300, { error: "Máximo 300 productos por promoción" }),
   })
   .superRefine((p, ctx) => {
@@ -80,6 +86,7 @@ export function toPromotionPayload(p: PromotionData, slug: string) {
     card_title: p.cardTitle || null,
     card_text: p.cardText || null,
     card_cta: p.cardCta || null,
+    card_image: p.cardImage || null,
     items: p.items.map((i) => ({ variant_id: i.variantId, promo_price: i.promoPrice })),
   };
 }

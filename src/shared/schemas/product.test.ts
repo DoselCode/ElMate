@@ -177,3 +177,13 @@ describe("slugify", () => {
     expect(slugify("  --  ")).toBe("");
   });
 });
+
+describe("foto de la variante", () => {
+  it("viaja a la base (vacía = null) y rechaza lo que no es una URL", () => {
+    const url = "https://abc.supabase.co/storage/v1/object/public/product-images/a.webp";
+    const conFoto = toSavePayload(productSchema.parse(base({ images: [url], variants: [variant({ image: url })] })), "x");
+    expect(conFoto.variants[0].image).toBe(url);
+    expect(toSavePayload(productSchema.parse(base()), "x").variants[0].image).toBeNull();
+    expect(productSchema.safeParse(base({ variants: [variant({ image: "foto.jpg" })] })).success).toBe(false);
+  });
+});

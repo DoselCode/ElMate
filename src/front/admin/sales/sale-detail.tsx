@@ -15,14 +15,18 @@ import type { SaleDetail } from "@/shared/types";
 const pct = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)} %`;
 
 /** Ticket de una venta (imprimible, no válido como factura) y anulación para el admin. */
-export function SaleDetailScreen({ detail, isAdmin }: { detail: SaleDetail; isAdmin: boolean }) {
+export function SaleDetailScreen({ detail, isAdmin, backHref }: { detail: SaleDetail; isAdmin: boolean; backHref: string }) {
   const { sale, items, store } = detail;
   const [voiding, setVoiding] = useState(false);
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href="/admin/ventas" className={buttonClass("ghost")}>Volver a ventas</Link>
+        {isAdmin ? (
+          <Link href={backHref} className={buttonClass("ghost")}>Volver a ventas</Link>
+        ) : (
+          <Link href="/admin/ventas/nueva" className={buttonClass("ghost")}>Volver a nueva venta</Link>
+        )}
         <div className="flex gap-2">
           {isAdmin && sale.status === "pagada" && (
             <Button variant="secondary" onClick={() => setVoiding(true)}>

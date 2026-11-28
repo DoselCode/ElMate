@@ -36,12 +36,17 @@ export async function getStoreSettings(): Promise<StoreSettingsInput> {
     tagline: text(s.tagline),
     whatsappNumber: text(s.whatsapp_number),
     phone: text(s.phone),
-    email: text(s.email),
     address: text(s.address),
     instagramUrl: text(s.instagram_url),
-    facebookUrl: text(s.facebook_url),
+    instagramPosts: Array.isArray(s.instagram_posts) ? s.instagram_posts.join("\n") : "",
     hoursWeekdays: text(s.hours_weekdays),
     hoursSaturday: text(s.hours_saturday),
     hoursSunday: text(s.hours_sunday),
+    logo: text(s.logo),
+    heroVideo: text(s.hero_video),
+    homeTexts:
+      s.home_texts && typeof s.home_texts === "object" && !Array.isArray(s.home_texts)
+        ? Object.fromEntries(Object.entries(s.home_texts as Record<string, unknown>).map(([k, v]) => [k, text(v)]))
+        : {},
   };
 }

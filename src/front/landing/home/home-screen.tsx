@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  CaretDoubleDown,
   CaretRight,
   InstagramLogo,
   PencilSimpleLine,
@@ -12,12 +11,15 @@ import {
   Storefront,
   WhatsappLogo,
 } from "@phosphor-icons/react/dist/ssr";
-import type { HomeData, PublicCategory, PublicProduct, PublicPromotion } from "@/shared/types";
+import type { HomeData, PublicCategory, PublicProduct, PublicPromotion, StoreInfo } from "@/shared/types";
+import { instagramEmbedUrl, isInstagramUrl, normalizeInstagramPost } from "@/shared/instagram";
+import { badgePct } from "@/shared/pricing";
+import { DEFAULT_PROMO_BACKGROUND } from "@/shared/schemas/promotion";
 import { ProductGrid } from "../catalog/product-card";
-import { t } from "@/shared/home-content";
-import { BENEFITS, HERO, INSTAGRAM_POSTS, INSTAGRAM_URL } from "../content";
+import { makeT, type HomeT } from "@/shared/home-content";
+import { BENEFITS, HERO, INSTAGRAM_URL } from "../content";
 import { CategoryCarousel } from "./category-carousel";
-import { HeroBrew } from "./hero-brew";
+import { HeroBrew, HeroLetters } from "./hero-brew";
 import { SectionHeading, type SectionHeadingProps } from "./section-heading";
 
 // 82rem de contenido (igual que el header) + el padding lateral: el contenido queda alineado con los bordes del header
@@ -33,28 +35,42 @@ function categoryHref(categories: PublicCategory[], keyword: string) {
   return c ? `/tienda?categoria=${c.slug}` : "/tienda";
 }
 
-/** Título, etiqueta y texto de una sección (ver shared/home-content.ts). */
-const heading = (id: "featured" | "offers" | "instagram"): SectionHeadingProps => ({
+/** Título, etiqueta y texto de una sección (ver shared/home-content.ts; se pueden cambiar desde el panel). */
+const heading = (t: HomeT, id: "featured" | "offers" | "instagram"): SectionHeadingProps => ({
   eyebrow: t(`${id}.eyebrow`),
   title: t(`${id}.title`),
   text: t(`${id}.text`),
 });
 
-export function HomeScreen({ data, categories, promotions }: { data: HomeData; categories: PublicCategory[]; promotions: PublicPromotion[] }) {
+export function HomeScreen({
+  data,
+  categories,
+  promotions,
+  store,
+  promoShowcase,
+}: {
+  data: HomeData;
+  categories: PublicCategory[];
+  promotions: PublicPromotion[];
+  store: StoreInfo;
+  /** Productos con foto de cada promo con card (por slug), para ilustrarla. */
+  promoShowcase: Record<string, PublicProduct[]>;
+}) {
   // Destacados; si todavía no hay ninguno, los más vendidos para que la sección no quede vacía
   const highlighted = data.featured.length > 0 ? data.featured : data.bestSellers;
+  // Textos de la home: los cargados en "Datos del local" y, si están vacíos, los de shared/home-content.ts
+  const t = makeT(store.home_texts);
   return (
     <>
-      <Hero />
-      {/* Se alternan secciones de listado (productos, categorías) con las que no lo son (ritual, grabado, promos) */}
-      <ProductSection id="ofertas" heading={heading("offers")} products={data.offers.slice(0, 4)} />
-      <PromoCards promotions={promotions.filter((p) => p.show_card)} />
-      <Categories categories={categories} />
-      <Ritual combosHref={categoryHref(categories, "combo")} />
-      <ProductSection id="destacados" heading={heading("featured")} products={highlighted.slice(0, 8)} />
-      <Engraving href={categoryHref(categories, "grabado")} />
-      <Instagram />
-      <Promos bombillasHref={categoryHref(categories, "bombilla")} combosHref={categoryHref(categories, "combo")} />
+      <Hero t={t} video={store.hero_video} />
+      {/* Primero lo urgente (promos de temporada y ofertas), después se alternan listados (categorías, productos) con secciones de contenido (ritual, grabado) */}
+      <PromoCards promotions={promotions.filter((p) => p.show_card)} showcase={promoShowcase} fallback={data.offers} />
+      <ProductSection id="ofertas" heading={heading(t, "offers")} products={data.offers.slice(0, 4)} />
+      <Categories t={t} categories={categories} />
+      <ProductSection id="destacados" heading={heading(t, "featured")} products={highlighted.slice(0, 8)} />
+      <Ritual t={t} combosHref={categoryHref(categories, "combo")} />
+      <Engraving t={t} href={categoryHref(categories, "grabado")} />
+      <Instagram t={t} posts={store.instagram_posts} profileUrl={store.instagram_url && isInstagramUrl(store.instagram_url) ? store.instagram_url : INSTAGRAM_URL} />
     </>
   );
 }
@@ -62,7 +78,16 @@ export function HomeScreen({ data, categories, promotions }: { data: HomeData; c
 const dateFormat = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", timeZone: "America/Argentina/Buenos_Aires" });
 
 /** Cards de promociones vigentes (fecha especial, Cyber Monday…): se cargan en el panel y salen solas entre sus fechas. */
-function PromoCards({ promotions }: { promotions: PublicPromotion[] }) {
+function PromoCards({
+  promotions,
+  showcase,
+  fallback,
+}: {
+  promotions: PublicPromotion[];
+  showcase: Record<string, PublicProduct[]>;
+  /** Si la promo no tiene productos con foto, se ilustra con los productos en oferta. */
+  fallback: PublicProduct[];
+}) {
   if (promotions.length === 0) return null;
   return (
     <section id="promociones" className={`${container} mt-12 grid scroll-mt-28 gap-6 ${promotions.length > 1 ? "lg:grid-cols-2" : ""}`}>
@@ -70,31 +95,90 @@ function PromoCards({ promotions }: { promotions: PublicPromotion[] }) {
         <article
           key={promo.id}
           style={{ "--i": i } as React.CSSProperties}
-          className="fx-vapor flex flex-col items-start gap-4 rounded-[2rem] bg-primary-deep p-8 text-white sm:p-10"
+          className="fx-vapor relative isolate grid items-center gap-6 overflow-hidden rounded-[2rem] bg-primary-deep p-8 text-white sm:grid-cols-[minmax(0,1fr)_auto] sm:p-10"
         >
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-bold">
-            <Gift size={16} weight="bold" aria-hidden />
-            {promo.ends_at ? `Hasta el ${dateFormat.format(new Date(promo.ends_at))}` : "Promo vigente"}
-          </p>
-          <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.2rem]">{promo.card_title || promo.name}</h2>
-          {(promo.card_text || promo.description) && <p className="max-w-xl text-white/85">{promo.card_text || promo.description}</p>}
-          <Link
+          {/* Fondo configurable desde el panel (o el de por defecto), oscurecido para que el texto se lea */}
+          <Image
+            src={promo.card_image || DEFAULT_PROMO_BACKGROUND}
+            alt=""
+            fill
+            sizes={promotions.length > 1 ? "(min-width: 1024px) 50vw, 100vw" : "100vw"}
+            className="-z-10 object-cover"
+          />
+          <span className="absolute inset-0 -z-10 bg-gradient-to-r from-primary-deep/95 via-primary-deep/80 to-primary-deep/45" aria-hidden />
+          <div className="flex flex-col items-start gap-4">
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-bold">
+              <Gift size={16} weight="bold" aria-hidden />
+              {promo.ends_at ? `Hasta el ${dateFormat.format(new Date(promo.ends_at))}` : "Promo vigente"}
+            </p>
+            <h2 className="font-display text-3xl font-bold leading-tight sm:text-[2.2rem]">{promo.card_title || promo.name}</h2>
+            {(promo.card_text || promo.description) && <p className="max-w-xl text-white/85">{promo.card_text || promo.description}</p>}
+            <Link
+              href={`/tienda?promo=${promo.slug}`}
+              className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-primary-deep transition-colors hover:bg-primary-soft"
+            >
+              {promo.card_cta || "Ver promo"} <ArrowRight size={18} weight="bold" aria-hidden />
+            </Link>
+          </div>
+          <PromoCollage
             href={`/tienda?promo=${promo.slug}`}
-            className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-primary-deep transition-colors hover:bg-primary-soft"
-          >
-            {promo.card_cta || "Ver promo"} <ArrowRight size={18} weight="bold" aria-hidden />
-          </Link>
+            name={promo.card_title || promo.name}
+            products={showcase[promo.slug]?.length ? showcase[promo.slug] : fallback.filter((p) => p.images.length > 0).slice(0, 4)}
+          />
         </article>
       ))}
     </section>
   );
 }
 
+/** Fotos de los productos de la promo (con su % de descuento), como collage a la derecha de la card. */
+function PromoCollage({ href, name, products }: { href: string; name: string; products: PublicProduct[] }) {
+  if (products.length === 0) {
+    return (
+      <span className="hidden size-36 place-items-center rounded-3xl bg-white/10 text-white/80 sm:grid" aria-hidden>
+        <Gift size={64} weight="duotone" />
+      </span>
+    );
+  }
+  const single = products.length === 1;
+  return (
+    <Link href={href} className={`grid gap-2.5 ${single ? "w-44 grid-cols-1 sm:w-52" : "grid-cols-2 sm:w-60"}`}>
+      {/* Hidden prefix instead of aria-label: the accessible name must keep the visible "−22%" (WCAG 2.5.3) */}
+      <span className="sr-only">Ver los productos de {name}:</span>
+      {products.map((p, i) => {
+        const pct = badgePct(p.discount_pct);
+        return (
+          <span
+            key={p.id}
+            className={`relative aspect-square overflow-hidden rounded-2xl bg-white/10 shadow-lg ring-2 ring-white/30 transition-transform hover:scale-[1.03] ${i % 2 === 0 ? "-rotate-2" : "rotate-2"}`}
+          >
+            <Image src={p.images[0]} alt={p.name} fill sizes="(min-width: 640px) 120px, 45vw" className="object-cover" />
+            {pct ? (
+              <span className="absolute left-1.5 top-1.5 rounded-full bg-white px-2 py-0.5 text-xs font-extrabold text-primary-deep">
+                −{pct}%
+              </span>
+            ) : null}
+          </span>
+        );
+      })}
+    </Link>
+  );
+}
+
 /** Invitación al grabado personalizado: lleva a los productos que se pueden grabar. */
-function Engraving({ href }: { href: string }) {
+function Engraving({ t, href }: { t: HomeT; href: string }) {
   return (
     <section id="grabado" className={`${container} mt-24 scroll-mt-28`}>
-      <div className="fx-vapor grid items-center gap-8 rounded-[2rem] bg-surface p-8 sm:p-12 lg:grid-cols-[auto_1fr_auto]">
+      <div className="fx-vapor relative isolate grid items-center gap-8 overflow-hidden rounded-[2rem] bg-surface p-8 sm:p-12 lg:grid-cols-[auto_1fr_auto]">
+        {/* Fondo: virola de alpaca cincelada (foto real), fundida con la tarjeta para que el texto se lea */}
+        {/* En pantallas grandes la foto ocupa la mitad derecha; en celulares, toda la tarjeta (más tapada) */}
+        <div className="absolute inset-0 -z-10 lg:left-auto lg:w-1/2" aria-hidden>
+          <Image src="/landing/grabado-fondo.jpg" alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover object-[center_24%]" />
+        </div>
+        <span
+          className="absolute inset-0 -z-10 bg-surface/85 lg:bg-transparent lg:bg-gradient-to-r lg:from-surface lg:from-50% lg:via-surface/75 lg:via-70% lg:to-surface/5"
+          aria-hidden
+        />
         <span className="grid size-20 place-items-center rounded-full bg-primary-soft text-primary" aria-hidden>
           <PencilSimpleLine size={40} weight="duotone" />
         </span>
@@ -104,37 +188,38 @@ function Engraving({ href }: { href: string }) {
           <p className="mt-3 max-w-2xl text-muted">{t("engraving.text")}</p>
         </div>
         <Link href={href} className={btnPrimary}>
-          Ver productos <ArrowRight size={18} weight="bold" aria-hidden />
+          Ver grabados <ArrowRight size={18} weight="bold" aria-hidden />
         </Link>
       </div>
     </section>
   );
 }
 
-function Instagram() {
-  if (INSTAGRAM_POSTS.length === 0) return null;
+/** Publicaciones de Instagram incrustadas: se cargan en el panel pegando solo el link de cada una. */
+function Instagram({ t, posts: links, profileUrl }: { t: HomeT; posts: string[]; profileUrl: string }) {
+  // Solo links que son de una publicación de Instagram: lo demás no se incrusta
+  const posts = links.map(normalizeInstagramPost).filter((p): p is string => p !== null);
+  if (posts.length === 0) return null;
   return (
     <section id="instagram" className={`${container} mt-24 scroll-mt-28`}>
-      <SectionHeading {...heading("instagram")} />
-      <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
-        {INSTAGRAM_POSTS.slice(0, 6).map((post, i) => (
-          <li key={post.url} style={{ "--i": i } as React.CSSProperties} className="fx-vapor">
-            <a
-              href={post.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative block aspect-square overflow-hidden rounded-2xl bg-primary-soft"
-            >
-              <Image src={post.image} alt={post.alt} fill sizes="(min-width: 1024px) 14vw, (min-width: 768px) 30vw, 45vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
-              <span className="absolute inset-0 grid place-items-center bg-primary-deep/0 text-white opacity-0 transition group-hover:bg-primary-deep/50 group-hover:opacity-100">
-                <InstagramLogo size={32} weight="bold" aria-hidden />
-              </span>
-            </a>
+      <SectionHeading {...heading(t, "instagram")} />
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {posts.slice(0, 6).map((post, i) => (
+          <li key={post} style={{ "--i": i } as React.CSSProperties} className="fx-vapor">
+            <iframe
+              src={instagramEmbedUrl(post)}
+              title={`Publicación ${i + 1} de Instagram`}
+              loading="lazy"
+              scrolling="no"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="aspect-[5/7] w-full rounded-2xl border border-border bg-surface"
+            />
           </li>
         ))}
       </ul>
       <div className="mt-8 text-center">
-        <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className={btnOutline}>
+        <a href={profileUrl} target="_blank" rel="noopener noreferrer" className={btnOutline}>
           <InstagramLogo size={18} weight="bold" aria-hidden /> Ver más en Instagram
         </a>
       </div>
@@ -142,7 +227,7 @@ function Instagram() {
   );
 }
 
-function Hero() {
+function Hero({ t, video }: { t: HomeT; video: string | null }) {
   return (
     <section className="relative isolate">
       {/* Brillo verde suave detrás de la foto, como en el diseño */}
@@ -154,7 +239,19 @@ function Hero() {
         {/* La foto no pasa del alto de la pantalla: al cargar se ve entera, con el cartel de WhatsApp */}
         <div className="fx-hero-out relative w-full max-w-[min(38rem,calc(100svh-9rem))] max-lg:mx-auto">
           <div className="fx-infuse relative aspect-square overflow-hidden rounded-[2rem] bg-primary-deep shadow-[0_20px_50px_rgb(11_17_25/0.14)]">
-            <HeroBrew label={HERO.imageAlt} />
+            {/* Video cargado en "Datos del local": reemplaza el fondo (termo y mate) y las letras del logo
+                quedan encima. Sin video, la animación del termo cebando. Con "reducir movimiento", la animación quieta. */}
+            {video ? (
+              <div className="relative size-full motion-reduce:hidden">
+                <video src={video} autoPlay muted loop playsInline aria-label={HERO.imageAlt} className="size-full object-cover" />
+                <div className="absolute inset-0">
+                  <HeroLetters />
+                </div>
+              </div>
+            ) : null}
+            <div className={video ? "hidden size-full motion-reduce:block" : "size-full"}>
+              <HeroBrew label={HERO.imageAlt} />
+            </div>
           </div>
           <p className="fx-pop absolute -bottom-5 left-6 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold shadow-md">
             <WhatsappLogo size={18} weight="fill" className="text-primary" aria-hidden />
@@ -220,14 +317,14 @@ function BenefitsCard() {
 }
 
 /** Categorías a la izquierda y la card de beneficios al lado (debajo en pantallas chicas). */
-function Categories({ categories }: { categories: PublicCategory[] }) {
+function Categories({ t, categories }: { t: HomeT; categories: PublicCategory[] }) {
   return (
     <section id="categorias" className={`${container} mt-24 scroll-mt-28`}>
       <div className={categories.length > 0 ? "grid items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]" : ""}>
         {categories.length > 0 && (
           <div className="fx-pour relative min-w-0 px-1 sm:px-4">
-            <CaretDoubleDown size={18} weight="bold" className="mx-auto mb-1 text-primary/70" aria-hidden />
-            <SectionHeading title={t("categories.title")} text={t("categories.text")} compact />
+            {/* Mismo encabezado que Ofertas: "— 🍃 CATEGORÍAS —" y el título debajo */}
+            <SectionHeading eyebrow={t("categories.eyebrow")} title={t("categories.title")} text={t("categories.text")} compact />
             <CategoryCarousel categories={categories} />
           </div>
         )}
@@ -250,7 +347,7 @@ function ProductSection({ id, heading, products }: { id: string; heading: Sectio
   );
 }
 
-function Ritual({ combosHref }: { combosHref: string }) {
+function Ritual({ t, combosHref }: { t: HomeT; combosHref: string }) {
   const photo = "relative aspect-square w-1/2 max-w-60 overflow-hidden rounded-[1.75rem] bg-surface shadow-[0_14px_30px_rgb(11_17_25/0.14)]";
   return (
     <section className={`${container} relative isolate mt-24`}>
@@ -260,12 +357,13 @@ function Ritual({ combosHref }: { combosHref: string }) {
         aria-hidden
       />
       <div className="grid items-center gap-12 py-6 lg:grid-cols-2">
+        {/* Fotos reales: un combo armado (canasto, termo, mate y yerbera) y un mate imperial de algarrobo */}
         <div className="flex items-center justify-center gap-3 px-2 sm:gap-4" aria-hidden>
           <div className={`${photo} fx-split-a -rotate-[5deg] translate-y-3`}>
-            <Image src="/landing/ritual-yerba.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
+            <Image src="/landing/ritual-combo.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
           </div>
           <div className={`${photo} fx-split-b rotate-[3deg]`}>
-            <Image src="/landing/ritual-termos.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
+            <Image src="/landing/ritual-mate.jpg" alt="" fill sizes="(min-width: 640px) 240px, 45vw" className="object-cover" />
           </div>
         </div>
         <div className="px-2">
@@ -281,67 +379,5 @@ function Ritual({ combosHref }: { combosHref: string }) {
         </div>
       </div>
     </section>
-  );
-}
-
-function Promos({ bombillasHref, combosHref }: { bombillasHref: string; combosHref: string }) {
-  return (
-    <section className={`${container} mt-24 grid gap-6 lg:grid-cols-2`}>
-      <PromoCard
-        dark
-        className="fx-from-left"
-        title={t("promoBombillas.title")}
-        text={t("promoBombillas.text")}
-        href={bombillasHref}
-        cta="Ver bombillas"
-        image="/landing/promo-bombillas.svg"
-      />
-      <PromoCard
-        className="fx-from-right"
-        title={t("promoCombos.title")}
-        text={t("promoCombos.text")}
-        href={combosHref} cta="Ver combos" image="/landing/promo-combos.svg" />
-    </section>
-  );
-}
-
-/** Tarjeta de promo: texto a la izquierda e ilustración a la derecha (SVG livianos en public/landing). */
-function PromoCard({
-  title,
-  text,
-  href,
-  cta,
-  image,
-  dark = false,
-  className = "",
-}: {
-  title: string;
-  text: string;
-  href: string;
-  cta: string;
-  image: string;
-  dark?: boolean;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`${className} flex flex-col-reverse items-center gap-6 rounded-[2rem] p-8 text-center sm:flex-row sm:p-10 sm:text-left ${
-        dark ? "bg-primary-deep text-white" : "bg-surface text-foreground"
-      }`}
-    >
-      <div className="flex-1">
-        <h2 className="font-display text-2xl font-bold leading-tight sm:text-[1.75rem]">{title}</h2>
-        <p className={`mt-3 ${dark ? "text-white/85" : "text-muted"}`}>{text}</p>
-        <Link
-          href={href}
-          className={`mt-6 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 font-bold transition-colors ${
-            dark ? "bg-white text-primary-deep hover:bg-primary-soft" : "bg-primary-deep text-white hover:bg-primary"
-          }`}
-        >
-          {cta} <CaretRight size={16} weight="bold" aria-hidden />
-        </Link>
-      </div>
-      <Image src={image} alt="" width={240} height={240} unoptimized className="fx-stir size-40 shrink-0 sm:size-44" />
-    </div>
   );
 }

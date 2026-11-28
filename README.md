@@ -23,6 +23,20 @@ Landing + catálogo web + sistema de stock/caja en un solo proyecto.
    - `supabase/migrations/20261016000000_web_publica.sql`
    - `supabase/migrations/20261016000001_fix_search_path.sql`
    - `supabase/migrations/20261018000000_lista_de_precios_y_ventas.sql`
+   - `supabase/migrations/20261021000000_descuentos.sql`
+   - `supabase/migrations/20261022000000_web_sin_precio_cero.sql`
+   - `supabase/migrations/20261031000000_web_configurable.sql`
+   - `supabase/migrations/20261113000000_promociones_y_personalizacion.sql`
+   - `supabase/migrations/20261116000000_instagram_posts.sql`
+   - `supabase/migrations/20261116000001_sin_email_ni_facebook.sql`
+   - `supabase/migrations/20261116000002_registro_seguro.sql`
+   - `supabase/migrations/20261117000000_sku_automatico_sin_choques.sql`
+   - `supabase/migrations/20261118000000_promo_imagen_de_fondo.sql`
+   - `supabase/migrations/20261118000001_web_tope_de_stock.sql`
+   - `supabase/migrations/20261119000000_tienda_filtros.sql`
+   - `supabase/migrations/20261121000000_tienda_con_foto_primero.sql`
+   - `supabase/migrations/20261125000000_web_editable.sql`
+   - `supabase/migrations/20261125000001_storage_videos.sql`
 
    Una migración ya aplicada en la base real no se edita: los cambios van siempre en una migración nueva.
 4. Crear el primer usuario en **Authentication → Users → Add user** (con "Auto Confirm"). Será el admin.
@@ -42,7 +56,20 @@ npm run build      # build de producción
 npm run lint
 npm run typecheck
 npm test           # base de datos (Postgres en memoria) + validaciones
+npm run test:e2e   # end-to-end con Playwright contra una instancia corriendo
 ```
+
+### Tests end-to-end
+
+Los specs viven en `e2e/` y cubren los casos de uso marcados **[E2E]** en [docs/qa/casos-de-uso.md](docs/qa/casos-de-uso.md).
+
+- La primera vez: `npx playwright install chromium`.
+- `E2E_BASE_URL` elige el destino (por defecto `http://localhost:3000`). Para correr contra develop en Coolify:
+  `E2E_BASE_URL=<url de develop> npm run test:e2e` (en PowerShell: `$env:E2E_BASE_URL='<url>'; npm run test:e2e`).
+- Los tests del panel usan `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD` desde `.env.local`; sin ellas se omiten.
+- Los que crean datos (producto, ingreso, ajuste, venta y anulación) corren solo con `E2E_ALLOW_WRITES=1`. Usarlo únicamente contra develop.
+- `e2e/a11y/` corre auditorías de accesibilidad WCAG 2.1 AA con axe-core.
+- El reporte HTML queda en `playwright-report/` (`npx playwright show-report`).
 
 Los tests de base de datos corren las migraciones reales sobre [PGlite](https://pglite.dev) con un stub de `auth` y los roles de Supabase, y prueban permisos (admin / empleado / anónimo), stock, ventas, caja y vistas públicas. No hace falta Docker ni internet.
 
@@ -73,9 +100,9 @@ Detalle, reglas de qué puede importar qué y dónde va cada cosa nueva: [docs/E
 
 | | Admin | Empleado |
 |---|---|---|
-| Ver inventario, movimientos, ventas | ✅ | ✅ (sin costos) |
+| Ver inventario, movimientos e historial de ventas | ✅ | — (el panel solo le muestra Nueva venta y Caja) |
 | Crear/editar productos, ingresos, ajustes, recuento | ✅ | — |
-| Registrar ventas, abrir/cerrar caja | ✅ | ✅ |
+| Registrar ventas, ver e imprimir su ticket, abrir/cerrar caja | ✅ | ✅ |
 | Anular ventas, ver costos y ganancias | ✅ | — |
 
 ## Pendiente / a definir

@@ -5,7 +5,7 @@ import { buttonClass } from "@/front/shared/ui/button";
 import { EmptyState, LoadError } from "@/front/shared/ui/empty-state";
 import { Pagination } from "@/front/shared/ui/pagination";
 import { formatDateTime, formatMoney } from "@/shared/format";
-import { SALES_PAGE_SIZE } from "@/shared/query";
+import { buildQuery, SALES_PAGE_SIZE } from "@/shared/query";
 import { SalesFilterBar } from "./sales-filters";
 import type { Paged, PaymentMethod, SaleRow, SalesFilters, SalesTotals } from "@/shared/types";
 
@@ -28,6 +28,8 @@ export function SalesScreen({
   const isToday = from === today && to === today;
   const period = from === to ? (isToday ? "hoy" : `el ${label(from)}`) : `del ${label(from)} al ${label(to)}`;
   const filterParams = { from, to, method, status };
+  // El ticket se abre con los filtros y la página actuales en la URL: al volver, la lista queda igual
+  const ticketQuery = buildQuery({ ...filterParams, page: page > 1 ? page : undefined });
 
   return (
     <div className="space-y-6">
@@ -83,7 +85,7 @@ export function SalesScreen({
                 {list.rows.map((s) => (
                   <tr key={s.id} className="border-b border-dashed border-border last:border-0 hover:bg-background/60">
                     <td className="px-5 py-3">
-                      <Link href={`/admin/ventas/${s.id}`} className="font-semibold text-primary hover:underline">
+                      <Link href={`/admin/ventas/${s.id}${ticketQuery}`} className="font-semibold text-primary hover:underline">
                         N° {s.ticket_number}
                       </Link>
                       <p className="text-xs text-muted">
@@ -102,7 +104,7 @@ export function SalesScreen({
                     </td>
                     <td className="px-5 py-3 text-right">
                       <Link
-                        href={`/admin/ventas/${s.id}`}
+                        href={`/admin/ventas/${s.id}${ticketQuery}`}
                         aria-label={`Ver ticket N° ${s.ticket_number}`}
                         className={buttonClass("secondary", "sm")}
                       >

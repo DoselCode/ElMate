@@ -1,7 +1,7 @@
 import "server-only";
 import { guarded } from "@/back/admin/auth/guarded";
 import { requireAdmin, requireStaff } from "@/back/admin/auth/session";
-import { PAGE_SIZE, pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
+import { PAGE_SIZE, pageParam, param, safeSearch, uuidParam, type SearchParams } from "@/shared/query";
 import type {
   MovementFilters,
   MovementRow,
@@ -33,8 +33,8 @@ export function parseStockFilters(sp: SearchParams): StockFilters {
   const status = param(sp, "status");
   return {
     q: safeSearch(param(sp, "q")),
-    supplier: param(sp, "supplier"),
-    category: param(sp, "category"),
+    supplier: uuidParam(sp, "supplier"),
+    category: uuidParam(sp, "category"),
     status: status === "low" || status === "out" ? status : "",
     showInactive: param(sp, "inactive") === "1",
     page: pageParam(sp),
@@ -136,7 +136,7 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
         .maybeSingle(),
       supabase
         .from("product_variants")
-        .select("id, sku, barcode, attributes, price, compare_at_price, min_stock, stock, active, variant_costs(cost, margin_pct)")
+        .select("id, sku, barcode, attributes, price, compare_at_price, min_stock, stock, active, image, variant_costs(cost, margin_pct)")
         .eq("product_id", id)
         .order("created_at"),
     ]),
@@ -178,6 +178,7 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
       minStock: Number(v.min_stock),
       stock: Number(v.stock),
       active: v.active,
+      image: (v.image as string | null) ?? null,
     })),
   };
 }

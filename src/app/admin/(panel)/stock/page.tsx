@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { requireStaff } from "@/back/admin/auth/session";
+import { requireAdmin } from "@/back/admin/auth/session";
 import { getCatalogOptions, getStockList, getStockSummary, parseStockFilters } from "@/back/admin/stock/queries";
 import { StockScreen } from "@/front/admin/stock/stock-screen";
 import { param } from "@/shared/query";
@@ -16,7 +16,7 @@ export default async function StockPage({ searchParams }: PageProps<"/admin/stoc
   // Si un permiso falla (redirect) antes de mostrarlos, no queda una promesa rechazada sin atender
   list.catch(() => {});
   summary.catch(() => {});
-  const [user, { categories, suppliers }] = await Promise.all([requireStaff(), getCatalogOptions()]);
+  const [user, { categories, suppliers }] = await Promise.all([requireAdmin(), getCatalogOptions()]);
 
   return (
     <StockScreen

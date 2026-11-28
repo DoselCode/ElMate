@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Clock, EnvelopeSimple, FacebookLogo, InstagramLogo, MapPin, Phone, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { Clock, InstagramLogo, MapPin, Phone, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { isInstagramUrl } from "@/shared/instagram";
 import type { PublicCategory, StoreInfo } from "@/shared/types";
 import { normalizeWhatsappNumber } from "@/shared/whatsapp";
 import { FOOTER_PLACEHOLDER } from "../content";
@@ -21,26 +22,26 @@ function withPlaceholders(info: StoreInfo): StoreInfo {
 export function SiteFooter({ store: info, categories }: { store: StoreInfo; categories: PublicCategory[] }) {
   const store = withPlaceholders(info);
   const whatsapp = normalizeWhatsappNumber(store.whatsapp_number);
+  // Mismo horario de lunes a viernes y sábados: una sola línea ("Lun a Sáb")
+  const sameWeek = Boolean(store.hours_weekdays) && store.hours_weekdays === store.hours_saturday;
   const hours = [
-    store.hours_weekdays && `Lun a Vie: ${store.hours_weekdays}`,
-    store.hours_saturday && `Sábados: ${store.hours_saturday}`,
+    sameWeek ? `Lun a Sáb: ${store.hours_weekdays}` : store.hours_weekdays && `Lun a Vie: ${store.hours_weekdays}`,
+    !sameWeek && store.hours_saturday && `Sábados: ${store.hours_saturday}`,
     store.hours_sunday && `Domingos: ${store.hours_sunday}`,
   ].filter(Boolean) as string[];
 
   const socials = [
-    store.instagram_url && { href: store.instagram_url, label: "Instagram", Icon: InstagramLogo },
-    store.facebook_url && { href: store.facebook_url, label: "Facebook", Icon: FacebookLogo },
+    store.instagram_url && isInstagramUrl(store.instagram_url) && { href: store.instagram_url, label: "Instagram", Icon: InstagramLogo },
     whatsapp && { href: `https://wa.me/${whatsapp}`, label: "WhatsApp", Icon: WhatsappLogo },
-    store.email && { href: `mailto:${store.email}`, label: "Email", Icon: EnvelopeSimple },
   ].filter(Boolean) as { href: string; label: string; Icon: typeof InstagramLogo }[];
 
-  const hasContact = store.address || store.phone || store.email || hours.length > 0;
+  const hasContact = store.address || store.phone || hours.length > 0;
 
   return (
     <footer id="contacto" className="mt-16 scroll-mt-24 bg-primary-soft">
       <div className="mx-auto grid max-w-[85rem] gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <Logo name={store.name} className="h-14 w-52" />
+          <Logo name={store.name} src={store.logo} className="h-14 w-52" />
           <p className="mt-4 text-sm leading-relaxed text-muted">
             {store.tagline}
           </p>
@@ -87,15 +88,23 @@ export function SiteFooter({ store: info, categories }: { store: StoreInfo; cate
 
         {hasContact && (
           <FooterColumn title="Contacto">
-            {store.address && <ContactItem Icon={MapPin}>{store.address}</ContactItem>}
+            {store.address && (
+              <ContactItem Icon={MapPin}>
+                {/* Abre la dirección en Google Maps (en el celular, en la app de mapas) */}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline-offset-2 hover:text-primary hover:underline"
+                >
+                  {store.address}
+                  <span className="sr-only"> (abre Google Maps en otra pestaña)</span>
+                </a>
+              </ContactItem>
+            )}
             {store.phone && (
               <ContactItem Icon={Phone}>
                 <a href={`tel:${store.phone.replace(/[^\d+]/g, "")}`} className="hover:text-primary">{store.phone}</a>
-              </ContactItem>
-            )}
-            {store.email && (
-              <ContactItem Icon={EnvelopeSimple}>
-                <a href={`mailto:${store.email}`} className="hover:text-primary">{store.email}</a>
               </ContactItem>
             )}
             {hours.length > 0 && (

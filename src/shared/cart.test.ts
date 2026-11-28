@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addItem, cartCount, lineKey, cartTotal, MAX_QUANTITY, removeItem, sanitizeCart, setQuantity } from "./cart";
+import { addItem, cartCount, lineKey, cartTotal, MAX_QUANTITY, remainingFor, removeItem, sanitizeCart, setQuantity } from "./cart";
 import { buildOrderMessage, normalizeWhatsappNumber, whatsappLink } from "./whatsapp";
 import type { CartItem } from "./types";
 
@@ -79,5 +79,30 @@ describe("WhatsApp", () => {
 
   it("codifica el texto en el link", () => {
     expect(whatsappLink("5491155551234", "Hola & chau")).toBe("https://wa.me/5491155551234?text=Hola%20%26%20chau");
+  });
+});
+
+describe("tope por stock", () => {
+  const conStock = { ...mate, max: 3 };
+
+  it("no deja sumar más que el stock, aunque se agregue varias veces", () => {
+    let items = addItem([], conStock, 2);
+    items = addItem(items, conStock, 5);
+    expect(items[0].quantity).toBe(3);
+    expect(remainingFor(items, "v1", 3)).toBe(0);
+    expect(addItem(items, conStock)[0].quantity).toBe(3);
+  });
+
+  it("el tope es de la variante: se reparte entre líneas con distinto detalle", () => {
+    let items = addItem([], { ...conStock, note: "Juan" }, 2);
+    items = addItem(items, { ...conStock, note: "Ana" }, 5);
+    expect(items.map((i) => i.quantity)).toEqual([2, 1]);
+    items = setQuantity(items, lineKey({ variantId: "v1", note: "Ana" }), 9);
+    expect(items[1].quantity).toBe(1);
+  });
+
+  it("sin control de stock el tope es el máximo del carrito, y el guardado conserva el tope", () => {
+    expect(remainingFor([], "v1", null)).toBe(MAX_QUANTITY);
+    expect(sanitizeCart([{ ...conStock, quantity: 8 }])).toEqual([{ ...conStock, quantity: 3 }]);
   });
 });

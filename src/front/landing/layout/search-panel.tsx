@@ -6,7 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ArrowRight, CircleNotch, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { formatMoney } from "@/shared/format";
 import type { SearchResult } from "@/shared/types";
-import { ProductImage } from "../catalog/product-image";
+import { CategoryImage } from "../catalog/category-art";
 
 type State =
   | { status: "idle" }
@@ -18,6 +18,13 @@ const MIN_CHARS = 2;
 const DEBOUNCE_MS = 180;
 
 const tiendaHref = (q: string) => `/tienda?q=${encodeURIComponent(q.trim())}`;
+
+/** Closing from the keyboard (Escape or the X) returns focus to the header toggle instead of losing it. */
+function closeAndRefocus(onClose: () => void) {
+  const toggle = document.querySelector<HTMLElement>("[data-search-toggle]");
+  onClose();
+  toggle?.focus();
+}
 
 /**
  * Buscador flotante del header: muestra resultados mientras se escribe (sin recargar la página).
@@ -63,7 +70,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
       if (!panelRef.current?.contains(target) && !target.closest("[data-search-toggle]")) onClose();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") closeAndRefocus(onClose);
     };
     document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
@@ -128,7 +135,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
         />
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => closeAndRefocus(onClose)}
           aria-label="Cerrar el buscador"
           className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-muted hover:bg-primary-soft hover:text-foreground"
         >
@@ -157,7 +164,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
                   onMouseEnter={() => setActive(i)}
                   className={`flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors ${i === active ? "bg-primary-soft" : "hover:bg-primary-soft/60"}`}
                 >
-                  <ProductImage src={r.image} alt="" sizes="48px" className="size-12 shrink-0 rounded-xl" />
+                  <CategoryImage src={r.image} slug={r.category_name ?? r.name} sizes="48px" className="size-12 shrink-0 rounded-xl" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">
                       <Highlight text={r.name} query={state.status === "done" ? state.query : ""} />

@@ -1,9 +1,11 @@
 import "server-only";
 import { cache } from "react";
-import { pageParam, param, safeSearch, type SearchParams } from "@/shared/query";
-import type { HomeData, ProductPageData, PublicCategory, PublicPaymentMethod, PublicProduct, PublicPromotion, PublicVariant, SearchResult, ShopFilters, ShopSort, StoreInfo } from "@/shared/types";
+import { safeSearch } from "@/shared/query";
+import { offerableFacets, parseShopFilters } from "@/shared/shop-filters";
+import type { SearchParams } from "@/shared/query";
+import { EMPTY_FACETS, type HomeData, type ProductPageData, type PublicCategory, type PublicPaymentMethod, type PublicProduct, type PublicPromotion, type PublicVariant, type SearchResult, type ShopFacets, type ShopFilters, type StoreInfo } from "@/shared/types";
 import { demoSource } from "./demo-source";
-import { EMPTY_STORE, type CatalogSource, type ProductQuery } from "./source";
+import { EMPTY_STORE, type CatalogSource, type FacetQuery, type ProductQuery } from "./source";
 import { supabaseSource } from "./supabase-source";
 
 /**
@@ -16,7 +18,6 @@ export const isDemoCatalog = process.env.ELMATE_DEMO === "1";
 const source: CatalogSource = isDemoCatalog ? demoSource : supabaseSource;
 
 export const SHOP_PAGE_SIZE = 12;
-const SORTS: ShopSort[] = ["destacados", "precio-asc", "precio-desc", "nuevos"];
 
 async function safe<T>(what: string, fallback: T, fn: () => Promise<T>): Promise<T> {
   try {
@@ -31,23 +32,27 @@ const products = (q: ProductQuery) => safe("productos", { rows: [], total: 0 }, 
 
 // cache(): el layout y la página piden lo mismo en una visita; se consulta una sola vez
 export const getStoreInfo = cache((): Promise<StoreInfo> => safe("datos del local", EMPTY_STORE, () => source.storeInfo()));
-export const getCategories = cache((): Promise<PublicCategory[]> => safe("categorías", [], () => source.categories()));
+/** Categorías con al menos un producto en la web: una vacía no se muestra (menú, home) porque llevaría a una lista vacía. */
+export const getCategories = cache(
+  async (): Promise<PublicCategory[]> => (await safe("categorías", [], () => source.categories())).filter((c) => c.product_count > 0),
+);
 /** Promociones vigentes ahora. */
 export const getPromotions = cache((): Promise<PublicPromotion[]> => safe("promociones", [], () => source.promotions()));
 
 export async function getHomeData(): Promise<HomeData> {
   const [featured, offers, bestIds] = await Promise.all([
-    products({ featuredOnly: true, sort: "destacados", limit: 8 }),
-    products({ onlyOffers: true, sort: "mayor-descuento", limit: 4 }),
+    // Las vidrieras de la home muestran solo productos con foto real
+    products({ featuredOnly: true, withImages: true, sort: "destacados", limit: 8 }),
+    products({ onlyOffers: true, withImages: true, sort: "mayor-descuento", limit: 4 }),
     safe("más vendidos", [] as string[], () => source.bestSellerIds()),
   ]);
 
   // Más vendidos según las ventas; si todavía hay pocas, se completa con destacados
   const ids = bestIds.slice(0, 4);
-  const best = ids.length ? (await products({ ids, sort: "destacados", limit: 4 })).rows : [];
+  const best = ids.length ? (await products({ ids, withImages: true, sort: "destacados", limit: 4 })).rows : [];
   best.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
   if (best.length < 4) {
-    const fill = await products({ sort: "destacados", limit: 8 });
+    const fill = await products({ withImages: true, sort: "destacados", limit: 8 });
     for (const p of fill.rows) {
       if (best.length >= 4) break;
       if (!best.some((b) => b.id === p.id)) best.push(p);
@@ -57,33 +62,59 @@ export async function getHomeData(): Promise<HomeData> {
   return { featured: featured.rows, offers: offers.rows, bestSellers: best };
 }
 
-export function parseShopFilters(sp: SearchParams): ShopFilters {
-  const sort = param(sp, "orden") as ShopSort;
-  return {
-    q: safeSearch(param(sp, "q")),
-    category: param(sp, "categoria"),
-    sort: SORTS.includes(sort) ? sort : "destacados",
-    offers: param(sp, "ofertas") === "1",
-    promo: /^[a-z0-9-]{1,80}$/.test(param(sp, "promo")) ? param(sp, "promo") : "",
-    page: pageParam(sp),
-  };
+/**
+ * Productos de una promoción para ilustrar su card en la home: los de mayor descuento que tengan foto (hasta 4).
+ * Sin ninguno, la home usa los productos en oferta.
+ */
+export async function getPromotionShowcase(slug: string): Promise<PublicProduct[]> {
+  const ids = await safe("los productos de la promoción", [] as string[], () => source.promotionProductIds(slug));
+  if (ids.length === 0) return [];
+  const { rows } = await products({ ids: ids.slice(0, 100), sort: "mayor-descuento", limit: 12 });
+  return rows.filter((p) => p.images.length > 0).slice(0, 4);
 }
 
-export async function listShopProducts(f: ShopFilters): Promise<{ rows: PublicProduct[]; total: number }> {
+/** Claves de las opciones de variante que existen en el catálogo (una consulta por visita). */
+const getShopOptionKeys = cache(async (): Promise<string[]> => {
+  const facets = await safe("opciones de variante", EMPTY_FACETS, () => source.facets({}));
+  return offerableFacets(facets).options.map((o) => o.key);
+});
+
+/** Filtros de la URL; los parámetros que no son una opción del catálogo (?ref=..., ?utm_...) se ignoran. */
+export async function resolveShopFilters(sp: SearchParams): Promise<ShopFilters> {
+  return parseShopFilters(sp, await getShopOptionKeys());
+}
+
+/** Filtros de la tienda en el formato de las consultas; null si la promo pedida no tiene productos. */
+async function shopQueryFilters(f: ShopFilters): Promise<FacetQuery | null> {
   let ids: string[] | undefined;
   if (f.promo) {
     ids = await safe("los productos de la promoción", [] as string[], () => source.promotionProductIds(f.promo));
-    if (ids.length === 0) return { rows: [], total: 0 };
+    if (ids.length === 0) return null;
   }
-  return products({
+  return {
     ids,
     q: f.q || undefined,
     category: f.category || undefined,
     onlyOffers: f.offers,
-    sort: f.sort,
-    limit: SHOP_PAGE_SIZE,
-    offset: (f.page - 1) * SHOP_PAGE_SIZE,
-  });
+    brands: f.brands,
+    priceMin: f.price.min ?? undefined,
+    priceMax: f.price.max ?? undefined,
+    options: f.options,
+    inStock: f.inStock,
+  };
+}
+
+export async function listShopProducts(f: ShopFilters): Promise<{ rows: PublicProduct[]; total: number }> {
+  const query = await shopQueryFilters(f);
+  if (!query) return { rows: [], total: 0 };
+  return products({ ...query, sort: f.sort, limit: SHOP_PAGE_SIZE, offset: (f.page - 1) * SHOP_PAGE_SIZE });
+}
+
+/** Opciones de los filtros laterales con su cantidad. Si fallan, la tienda se ve sin barra lateral. */
+export async function getShopFacets(f: ShopFilters): Promise<ShopFacets> {
+  const query = await shopQueryFilters(f);
+  if (!query) return EMPTY_FACETS;
+  return offerableFacets(await safe("filtros", EMPTY_FACETS, () => source.facets(query)));
 }
 
 export const SEARCH_LIMIT = 6;

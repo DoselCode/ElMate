@@ -5,6 +5,7 @@ import { CartDrawer } from "../cart/cart-drawer";
 import { CartProvider } from "../cart/cart-provider";
 import { SiteFooter } from "./site-footer";
 import { SiteHeader, type NavLink } from "./site-header";
+import { WhatsappFloat } from "./whatsapp-float";
 
 /** Marco de todas las páginas públicas: header, carrito, contenido y footer. */
 export function SiteShell({
@@ -27,6 +28,9 @@ export function SiteShell({
     { href: "#contacto", label: "Contacto" },
   ];
 
+  const whatsapp = normalizeWhatsappNumber(store.whatsapp_number);
+  const hours = store.hours_weekdays ? `Lun a Vie: ${store.hours_weekdays}` : null;
+
   return (
     <CartProvider>
       <a
@@ -35,12 +39,13 @@ export function SiteShell({
       >
         Saltar al contenido
       </a>
-      <SiteHeader storeName={store.name} links={links} />
+      <SiteHeader storeName={store.name} logo={store.logo} links={links} />
       <main id="contenido" className="flex-1 overflow-x-clip">
         {children}
       </main>
       <SiteFooter store={store} categories={categories} />
-      <CartDrawer whatsapp={normalizeWhatsappNumber(store.whatsapp_number)} storeName={store.name} />
+      <CartDrawer whatsapp={whatsapp} storeName={store.name} />
+      {whatsapp && <WhatsappFloat whatsapp={whatsapp} storeName={store.name} hours={hours} />}
     </CartProvider>
   );
 }

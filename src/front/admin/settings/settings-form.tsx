@@ -3,11 +3,13 @@
 import { useState, useTransition } from "react";
 import { saveStoreSettingsAction } from "@/back/admin/settings/actions";
 import { Button } from "@/front/shared/ui/button";
-import { TextField } from "@/front/shared/ui/field";
+import { Field, TextField, inputClass, inputErrorClass } from "@/front/shared/ui/field";
 import { fieldErrors } from "@/shared/schemas/product";
 import { storeSettingsSchema, type StoreSettingsInput } from "@/shared/schemas/settings";
+import { HeroVideoField, HomeTextsFields, LogoField } from "./web-media-fields";
 
-type Key = keyof StoreSettingsInput;
+/** Campos de texto simples (los de logo, video y textos de la web tienen su propio control). */
+type Key = Exclude<keyof StoreSettingsInput, "homeTexts" | "logo" | "heroVideo">;
 
 const SECTIONS: { title: string; description: string; fields: { key: Key; label: string; placeholder?: string; type?: string }[] }[] = [
   {
@@ -24,16 +26,14 @@ const SECTIONS: { title: string; description: string; fields: { key: Key; label:
     fields: [
       { key: "whatsappNumber", label: "WhatsApp para pedidos", placeholder: "+54 9 11 5555-1234", type: "tel" },
       { key: "phone", label: "Teléfono", placeholder: "011 4444-5555", type: "tel" },
-      { key: "email", label: "Email", placeholder: "hola@elmate.com.ar", type: "email" },
       { key: "address", label: "Dirección", placeholder: "Calle 123, Ciudad" },
     ],
   },
   {
     title: "Redes",
-    description: "Pegá el link completo del perfil.",
+    description: "Pegá el link completo del perfil de Instagram.",
     fields: [
       { key: "instagramUrl", label: "Instagram", placeholder: "https://instagram.com/elmate", type: "url" },
-      { key: "facebookUrl", label: "Facebook", placeholder: "https://facebook.com/elmate", type: "url" },
     ],
   },
   {
@@ -78,8 +78,31 @@ export function SettingsForm({ initial }: { initial: StoreSettingsInput }) {
     <form onSubmit={submit} noValidate className="space-y-6 pb-10">
       <header>
         <h1 className="font-display text-2xl font-bold">Datos del local</h1>
-        <p className="mt-1 text-sm text-muted">Lo que ven los clientes en la web: contacto, redes, horarios y el WhatsApp de pedidos.</p>
+        <p className="mt-1 text-sm text-muted">Lo que ven los clientes en la web: logo, textos, video de portada, contacto, redes, horarios y el WhatsApp de pedidos.</p>
       </header>
+
+      <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
+        <h2 className="font-display text-lg font-bold">Logo</h2>
+        <p className="mb-4 mt-0.5 text-sm text-muted">Se muestra en el encabezado y el pie de la web, y en el menú del panel.</p>
+        <LogoField value={values.logo} onChange={(logo) => setValues((v) => ({ ...v, logo }))} />
+        {errors.logo && <p role="alert" className="mt-2 text-xs font-medium text-danger">{errors.logo}</p>}
+      </section>
+
+      <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
+        <h2 className="font-display text-lg font-bold">Video de la portada</h2>
+        <p className="mb-4 mt-0.5 text-sm text-muted">Reemplaza la animación del termo en la portada de la web.</p>
+        <HeroVideoField value={values.heroVideo} onChange={(heroVideo) => setValues((v) => ({ ...v, heroVideo }))} />
+        {errors.heroVideo && <p role="alert" className="mt-2 text-xs font-medium text-danger">{errors.heroVideo}</p>}
+      </section>
+
+      <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
+        <h2 className="font-display text-lg font-bold">Textos de la web</h2>
+        <p className="mb-4 mt-0.5 text-sm text-muted">
+          Cada campo muestra en gris el texto que hoy se ve en la home. Escribí uno nuevo para reemplazarlo; vacío vuelve al original.
+        </p>
+        <HomeTextsFields value={values.homeTexts} errors={errors} onChange={(homeTexts) => setValues((v) => ({ ...v, homeTexts }))} />
+        {errors.homeTexts && <p role="alert" className="mt-2 text-xs font-medium text-danger">{errors.homeTexts}</p>}
+      </section>
 
       {SECTIONS.map((section) => (
         <section key={section.title} className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
@@ -101,6 +124,25 @@ export function SettingsForm({ initial }: { initial: StoreSettingsInput }) {
           </div>
         </section>
       ))}
+
+      <section className="rounded-[var(--radius-card)] bg-surface p-6 shadow-sm">
+        <h2 className="font-display text-lg font-bold">Publicaciones de Instagram</h2>
+        <p className="mb-4 mt-0.5 text-sm text-muted">
+          Pegá el link de cada publicación o reel, uno por línea (hasta 6, la más nueva primero). La web los muestra en la home sin que cargues nada más.
+        </p>
+        <Field label="Links de las publicaciones" htmlFor="settings-instagramPosts" error={errors.instagramPosts} hint="Ej: https://www.instagram.com/p/AbCdEfGhIjK/">
+          <textarea
+            id="settings-instagramPosts"
+            rows={6}
+            value={values.instagramPosts}
+            placeholder={"https://www.instagram.com/p/…\nhttps://www.instagram.com/reel/…"}
+            aria-invalid={Boolean(errors.instagramPosts)}
+            aria-describedby={errors.instagramPosts ? "settings-instagramPosts-error" : undefined}
+            onChange={(e) => setValues((v) => ({ ...v, instagramPosts: e.target.value }))}
+            className={`${inputClass} font-mono ${errors.instagramPosts ? inputErrorClass : ""}`}
+          />
+        </Field>
+      </section>
 
       <div className="flex flex-wrap items-center justify-end gap-3">
         {message && (

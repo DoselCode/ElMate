@@ -1,4 +1,5 @@
 import { formatMoney } from "@/shared/format";
+import { badgePct } from "@/shared/pricing";
 
 /** Precio con el anterior tachado si hay oferta. `from`: "Desde" cuando las variantes tienen distintos precios. */
 export function Price({
@@ -23,7 +24,7 @@ export function Price({
           {formatMoney(compareAt)}
         </p>
       )}
-      <p className={`font-display font-bold tabular-nums text-foreground ${size === "lg" ? "text-4xl" : "text-xl"}`}>
+      <p className={`font-display font-bold tabular-nums text-foreground ${size === "lg" ? "text-4xl" : "text-base sm:text-xl"}`}>
         {from && <span className={`mr-1 font-sans font-semibold text-muted ${size === "lg" ? "text-base" : "text-xs"}`}>Desde</span>}
         {compareAt !== null && <span className="sr-only">Ahora </span>}
         {formatMoney(price)}
@@ -34,10 +35,11 @@ export function Price({
 }
 
 export function DiscountBadge({ pct }: { pct: number | null }) {
-  if (!pct || pct <= 0) return null;
+  const shown = badgePct(pct);
+  if (shown === null) return null;
   return (
     <span className="rounded-full bg-sale px-2.5 py-1 text-xs font-bold text-white">
-      -{pct}%<span className="sr-only"> de descuento</span>
+      -{shown}%<span className="sr-only"> de descuento</span>
     </span>
   );
 }

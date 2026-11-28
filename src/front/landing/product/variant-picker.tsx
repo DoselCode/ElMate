@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { CheckCircle, ShoppingCartSimple, XCircle } from "@phosphor-icons/react";
 import type { PublicPaymentMethod, PublicProduct, PublicVariant } from "@/shared/types";
-import { MAX_NOTE } from "@/shared/cart";
+import { MAX_NOTE, remainingFor, variantQuantity } from "@/shared/cart";
 import { inputClass } from "@/front/shared/ui/field";
 import { QuantityStepper } from "../cart/cart-drawer";
 import { useCart } from "../cart/cart-provider";
 import { formatMoney } from "@/shared/format";
+import { discountPct } from "@/shared/pricing";
 import { DiscountBadge, Price } from "../catalog/price";
+import { useSelectedImage } from "./selected-image";
 
 /**
  * Elección de variante (una fila de botones por opción: Color, Tamaño…), cantidad y "Agregar al carrito".
@@ -23,7 +25,8 @@ export function VariantPicker({
   variants: PublicVariant[];
   paymentMethods: PublicPaymentMethod[];
 }) {
-  const { add } = useCart();
+  const { add, items, open } = useCart();
+  const { setImage } = useSelectedImage();
   const options = product.option_names;
   const initial = variants.find((v) => v.in_stock) ?? variants[0];
   const [selected, setSelected] = useState<Record<string, string>>(initial?.attributes ?? {});
@@ -43,22 +46,31 @@ export function VariantPicker({
   const exists = (option: string, value: string) => variants.some((v) => matches(v, { ...selected, [option]: value }));
 
   function choose(option: string, value: string) {
-    const next = { ...selected, [option]: value };
+    let next = { ...selected, [option]: value };
     // Si la combinación no existe, salta a la primera variante con ese valor
     if (!variants.some((v) => matches(v, next))) {
       const fallback = variants.find((v) => v.attributes[option] === value);
-      if (fallback) return setSelected(fallback.attributes);
+      if (fallback) next = fallback.attributes;
     }
     setSelected(next);
+    // La galería muestra la foto de la variante elegida (si tiene una propia)
+    const picked = variants.find((v) => matches(v, next));
+    if (picked?.image) setImage(picked.image);
   }
 
   const shown = variant ?? initial;
+
+  // Tope de la cantidad: el stock de la variante menos lo que ya está en el carrito (nunca ilimitado)
+  const inCart = variant ? variantQuantity(items, variant.id) : 0;
+  const remaining = variant?.in_stock ? remainingFor(items, variant.id, variant.max_quantity) : 0;
+  const qty = Math.max(1, Math.min(quantity, remaining));
+  const atLimit = variant?.in_stock && remaining > 0 && qty >= remaining && typeof variant.max_quantity === "number";
 
   return (
     <div className="mt-6 space-y-6">
       <div className="flex items-center gap-3">
         <Price price={shown.price} compareAt={shown.compare_at_price} size="lg" perKg={product.unit === "kg"} />
-        {shown.compare_at_price && <DiscountBadge pct={Math.round(100 * (1 - shown.price / shown.compare_at_price))} />}
+        <DiscountBadge pct={discountPct(shown.price, shown.compare_at_price)} />
       </div>
       <PaymentPrices price={shown.price} methods={paymentMethods} />
 
@@ -125,10 +137,10 @@ export function VariantPicker({
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <QuantityStepper value={quantity} onChange={(q) => setQuantity(Math.max(1, q))} label={product.name} />
+        <QuantityStepper value={qty} onChange={(q) => setQuantity(Math.max(1, Math.min(q, remaining)))} label={product.name} max={Math.max(1, remaining)} />
         <button
           type="button"
-          disabled={!variant?.in_stock}
+          disabled={!variant?.in_stock || remaining <= 0}
           onClick={() => {
             if (!variant) return;
             if (label && !note.trim()) return setNoteError(true);
@@ -142,15 +154,29 @@ export function VariantPicker({
                 price: variant.price,
                 image: variant.image ?? product.images[0] ?? null,
                 ...(label ? { note: note.trim() } : {}),
+                ...(typeof variant.max_quantity === "number" ? { max: variant.max_quantity } : {}),
               },
-              quantity,
+              qty,
             );
+            setQuantity(1);
           }}
           className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-bold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
         >
           <ShoppingCartSimple size={20} weight="bold" aria-hidden /> Agregar al carrito
         </button>
       </div>
+      {variant?.in_stock && remaining <= 0 ? (
+        <p role="status" className="-mt-3 text-sm font-semibold text-warning">
+          Ya tenés en el carrito todo el stock disponible de esta opción ({inCart}).{" "}
+          <button type="button" onClick={open} className="cursor-pointer underline underline-offset-2 hover:text-primary">
+            Ver carrito
+          </button>
+        </p>
+      ) : atLimit ? (
+        <p role="status" className="-mt-3 text-sm text-muted">
+          {inCart > 0 ? `Es lo máximo que podés sumar: ya tenés ${inCart} en el carrito.` : "Es todo el stock disponible de esta opción."}
+        </p>
+      ) : null}
     </div>
   );
 }

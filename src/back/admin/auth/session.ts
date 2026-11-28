@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/back/shared/supabase/server";
+import { homeFor } from "@/shared/roles";
 import type { Role } from "@/shared/types";
 
 /**
@@ -48,10 +49,10 @@ export async function requireStaff(): Promise<CurrentUser> {
   return user;
 }
 
-/** Para páginas del panel que solo ve el admin. */
+/** Para páginas del panel que solo ve el admin. El empleado vuelve a su pantalla de inicio (Nueva venta). */
 export async function requireAdmin(): Promise<CurrentUser> {
   const user = await requireStaff();
-  if (user.role !== "admin") redirect("/admin/stock");
+  if (user.role !== "admin") redirect(homeFor(user.role));
   return user;
 }
 

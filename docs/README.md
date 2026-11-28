@@ -58,9 +58,9 @@ Stack: Next.js 16 · TypeScript · Tailwind v4 · Supabase (Postgres, Auth, Stor
 
 | | Admin | Empleado |
 |---|---|---|
-| Ver inventario, movimientos y ventas | ✅ | ✅ (sin costos) |
+| Ver inventario, movimientos e historial de ventas | ✅ | — (el panel solo le muestra Nueva venta y Caja) |
 | Crear/editar productos, ingresos, ajustes | ✅ | — |
-| Registrar ventas, abrir/cerrar caja | ✅ | ✅ |
+| Registrar ventas, ver e imprimir su ticket, abrir/cerrar caja | ✅ | ✅ |
 | Anular ventas, ver costos y ganancias | ✅ | — |
 
 ## Estado actual

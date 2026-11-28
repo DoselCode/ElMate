@@ -24,23 +24,8 @@ export const BENEFITS = {
   ],
 } as const;
 
-/** Perfil de Instagram de la tienda (el de "Datos del local" tiene prioridad en el footer). */
+/** Perfil de Instagram por defecto (el de "Datos del local" tiene prioridad). Las publicaciones se cargan en el panel. */
 export const INSTAGRAM_URL = "https://www.instagram.com/elmate.cordoba/";
-
-export type InstagramPost = {
-  /** Link al posteo en Instagram. */
-  url: string;
-  /** Imagen en public/landing/instagram/ (ej. "/landing/instagram/posteo-1.jpg"). */
-  image: string;
-  /** Texto corto para lectores de pantalla. */
-  alt: string;
-};
-
-/**
- * Últimos posteos, cargados a mano: para actualizarlos, sumar acá el link y la imagen del posteo nuevo
- * (el más reciente primero; la home muestra hasta 6). Con la lista vacía la sección no aparece.
- */
-export const INSTAGRAM_POSTS: InstagramPost[] = [];
 
 export type BlogPost = { slug: string; tag: string; title: string; excerpt: string; image: string; body: string[] };
 
@@ -99,12 +84,10 @@ export const BLOG_POSTS: BlogPost[] = [
  */
 export const FOOTER_PLACEHOLDER = {
   tagline: "Tu tienda matera de confianza: mates artesanales, termos, bombillas y las mejores yerbas.",
-  address: "Av. Siempre Verde 1234, Local 7 — Buenos Aires",
-  phone: "+54 11 5555-1234",
-  email: "hola@elmate.com.ar",
+  address: "Perú 41, Jesús María, Córdoba, Argentina (5220)",
+  phone: "+54 9 3525 41-5125",
   instagram_url: "https://www.instagram.com/elmate.cordoba/",
-  facebook_url: "https://www.facebook.com/",
-  hours_weekdays: "9 a 19 h",
-  hours_saturday: "9 a 13 h",
+  hours_weekdays: "9:00 a 13:00 y de 16:30 a 20:30 hs",
+  hours_saturday: "9:00 a 13:00 y de 16:30 a 20:30 hs",
   hours_sunday: null,
 } as const;

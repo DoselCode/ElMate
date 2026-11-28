@@ -8,7 +8,11 @@ create schema auth;
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
   email text,
-  raw_user_meta_data jsonb not null default '{}'
+  raw_user_meta_data jsonb not null default '{}',
+  -- Por defecto, un usuario creado por el admin (email confirmado); los tests de registro lo pisan
+  raw_app_meta_data jsonb not null default '{"provider":"email"}',
+  email_confirmed_at timestamptz default now(),
+  is_anonymous boolean not null default false
 );
 
 create function auth.uid() returns uuid language sql stable as $$

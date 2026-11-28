@@ -259,6 +259,8 @@ export type VariantForEdit = {
   minStock: number;
   stock: number;
   active: boolean;
+  /** Foto propia de la variante (la que muestra la web al elegirla); null = ninguna. */
+  image: string | null;
 };
 
 export type ProductForEdit = {
@@ -314,6 +316,12 @@ export type PublicProduct = {
   web_order: number | null;
   /** Si tiene texto, la web pide un detalle (grabado, dedicatoria…) al agregar al carrito. */
   customization_label: string | null;
+  /** Marca como clave de URL (web_key), para filtrar. */
+  brand_key: string | null;
+  /** "opción:valor" de sus variantes activas (ej. "color:rojo"). */
+  option_tags: string[];
+  /** Lo mismo, solo de las variantes con stock. */
+  option_tags_in_stock: string[];
 };
 
 export type PublicVariant = {
@@ -326,6 +334,8 @@ export type PublicVariant = {
   compare_at_price: number | null;
   image: string | null;
   in_stock: boolean;
+  /** Cuánto se puede sumar al carrito según el stock (máx. 99); null = no lleva control de stock. */
+  max_quantity: number | null;
 };
 
 export type PublicCategory = {
@@ -343,13 +353,17 @@ export type StoreInfo = {
   logo: string | null;
   phone: string | null;
   whatsapp_number: string | null;
-  email: string | null;
   address: string | null;
   instagram_url: string | null;
-  facebook_url: string | null;
   hours_weekdays: string | null;
   hours_saturday: string | null;
   hours_sunday: string | null;
+  /** Links de publicaciones de Instagram para incrustar en la home (la más nueva primero). */
+  instagram_posts: string[];
+  /** Textos de la home cambiados desde el panel, por clave (ver shared/home-content.ts). */
+  home_texts: Record<string, string>;
+  /** Video de la portada; null = la animación de siempre. */
+  hero_video: string | null;
 };
 
 export type ShopSort = "destacados" | "precio-asc" | "precio-desc" | "nuevos";
@@ -364,7 +378,30 @@ export type ShopFilters = {
   /** slug de una promoción vigente: muestra solo sus productos */
   promo: string;
   page: number;
+  /** claves de marca (web_key) */
+  brands: string[];
+  price: PriceRange;
+  /** clave de opción de variante -> claves de valores elegidos (ej. { color: ["rojo"] }) */
+  options: Record<string, string[]>;
+  inStock: boolean;
 };
+
+export type PriceRange = { min: number | null; max: number | null };
+
+/** Una opción de un filtro con cuántos productos quedan si se elige. */
+export type FacetValue = { value: string; key: string; count: number };
+
+/** Filtros de la tienda generados desde los datos (función shop_facets). */
+export type ShopFacets = {
+  categories: { slug: string; name: string; count: number }[];
+  brands: FacetValue[];
+  options: { name: string; key: string; values: FacetValue[] }[];
+  price: { min: number; max: number } | null;
+  offers: number;
+  inStock: number;
+};
+
+export const EMPTY_FACETS: ShopFacets = { categories: [], brands: [], options: [], price: null, offers: 0, inStock: 0 };
 
 /** Secciones de productos de la home. */
 export type HomeData = { featured: PublicProduct[]; offers: PublicProduct[]; bestSellers: PublicProduct[] };
@@ -400,6 +437,8 @@ export type PublicPromotion = {
   starts_at: string;
   ends_at: string | null;
   product_count: number;
+  /** Imagen de fondo de la card; null = la imagen por defecto (DEFAULT_PROMO_BACKGROUND). */
+  card_image: string | null;
 };
 
 export type ProductPageData = {
@@ -421,6 +460,8 @@ export type CartItem = {
   quantity: number;
   /** Detalle que escribió el cliente (grabado, dedicatoria…). La misma variante con otro detalle es otra línea. */
   note?: string;
+  /** Tope por stock de la variante al agregarla (entre todas sus líneas). Sin tope: MAX_QUANTITY. */
+  max?: number;
 };
 
 // ---- Acciones ------------------------------------------------------------------------------
@@ -470,6 +511,8 @@ export type PromotionForEdit = {
   cardTitle: string | null;
   cardText: string | null;
   cardCta: string | null;
+  /** null = imagen de fondo por defecto. */
+  cardImage: string | null;
   items: PromotionItemForEdit[];
 };
 

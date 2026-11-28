@@ -1,5 +1,38 @@
 import { BLUE, LETTERS, LOGO, letterTransform } from "../layout/brand-letters";
 
+/** Letras del logo (EL / MA / TE) arriba a la derecha; caen una a una (clase brew-letter). */
+function BrandLettersLayer() {
+  return (
+    <g transform="translate(300 26)">
+      {LOGO.map((l, i) => (
+        <g key={i} transform={letterTransform(l)}>
+          <path
+            className="brew-letter"
+            style={{ "--k": i } as React.CSSProperties}
+            d={LETTERS[l.letter]}
+            fill={l.blue ? BLUE : "#eef2f7"}
+            fillRule="evenodd"
+          />
+        </g>
+      ))}
+    </g>
+  );
+}
+
+/**
+ * Solo las letras del logo, con fondo transparente y una sombra para que se lean: van encima del video
+ * de la portada cuando se cargó uno en "Datos del local". Caen apenas carga la página.
+ */
+export function HeroLetters() {
+  return (
+    <svg viewBox="0 0 400 400" aria-hidden className="brew-letters-only pointer-events-none size-full">
+      <g style={{ filter: "drop-shadow(0 2px 6px rgb(0 0 0 / 0.55))" }}>
+        <BrandLettersLayer />
+      </g>
+    </svg>
+  );
+}
+
 /**
  * Ilustración animada del hero: un termo se inclina y ceba agua en el mate; después sigue saliendo vapor.
  * Es SVG + CSS puro (las animaciones están en globals.css, clases brew-*): sin JavaScript ni video.
@@ -82,19 +115,7 @@ export function HeroBrew({ label }: { label: string }) {
       </g>
 
       {/* Logo: las letras caen una a una cuando el agua toca la yerba */}
-      <g transform="translate(300 26)">
-        {LOGO.map((l, i) => (
-          <g key={i} transform={letterTransform(l)}>
-            <path
-              className="brew-letter"
-              style={{ "--k": i } as React.CSSProperties}
-              d={LETTERS[l.letter]}
-              fill={l.blue ? BLUE : "#eef2f7"}
-              fillRule="evenodd"
-            />
-          </g>
-        ))}
-      </g>
+      <BrandLettersLayer />
 
       {/* Vapor del mate */}
       <g

@@ -2,6 +2,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { slugify } from "../../src/shared/slug";
 
 const root = path.resolve(__dirname, "../..");
 const migrationsDir = path.join(root, "supabase/migrations");
@@ -97,6 +98,27 @@ describe("usuarios y roles", () => {
     const profiles = await rows("select id, role from public.profiles order by created_at");
     expect(profiles.find((p) => p.id === adminId)?.role).toBe("admin");
     expect(profiles.find((p) => p.id === staffId)?.role).toBe("empleado");
+  });
+
+  it("quien se registra solo (sin confirmar, por teléfono o anónimo) queda inactivo y sin acceso", async () => {
+    const cases = [
+      "insert into auth.users (email, email_confirmed_at) values ('auto@elmate.test', null) returning id",
+      "insert into auth.users (email, raw_app_meta_data) values ('tel@elmate.test', '{\"provider\":\"phone\"}') returning id",
+      "insert into auth.users (email, is_anonymous) values ('anon@elmate.test', true) returning id",
+    ];
+    for (const sql of cases) {
+      const [u] = await rows(sql);
+      const [p] = await rows("select role, active from public.profiles where id = $1", [u.id]);
+      expect(p.active, sql).toBe(false);
+      const visible = await as(u.id, () => rows("select id from public.products"));
+      expect(visible).toHaveLength(0);
+      await expect(as(u.id, () => rows("select public.open_cash_session($1, 0)", [registerId]))).rejects.toThrow(/Permiso denegado/);
+    }
+  });
+
+  it("el usuario creado por el admin (email confirmado) entra activo", async () => {
+    const [p] = await rows("select active from public.profiles where id = $1", [staffId]);
+    expect(p.active).toBe(true);
   });
 
   it("un empleado no puede ascenderse a admin", async () => {
@@ -675,5 +697,191 @@ describe("web pública sin precios en $0", () => {
     expect(variants).toEqual([{ label: "Negro" }]);
     // en el panel siguen estando
     expect(await as(adminId, () => rows("select 1 from public.stock_overview where sku = 'SIN-PRECIO'"))).toHaveLength(1);
+  });
+});
+
+describe("código automático (SKU) con códigos EM- cargados a mano", () => {
+  it("salta los códigos que ya existen en vez de chocar", async () => {
+    // Simula datos importados o migrados con códigos EM- por delante de la secuencia.
+    const [{ next }] = await rows(
+      "select case when is_called then last_value + 1 else last_value end as next from public.sku_seq",
+    );
+    const taken = [0, 1, 2].map((i) => `EM-${String(Number(next) + i).padStart(5, "0")}`);
+    await saveProduct(adminId, {
+      name: "Importado con EM", slug: "importado-con-em", option_names: ["Talle"],
+      variants: taken.map((sku, i) => ({ sku, attributes: { Talle: String(i) }, price: 1000 })),
+    });
+
+    const id = await saveProduct(adminId, { name: "Nuevo sin código", slug: "nuevo-sin-codigo", variants: [{ sku: "", price: 2000 }] });
+    const [v] = await rows("select sku from public.product_variants where product_id = $1", [id]);
+    expect(v.sku).toMatch(/^EM-\d{5}$/);
+    expect(taken).not.toContain(v.sku);
+  });
+});
+
+describe("promociones: imagen de fondo de la card", () => {
+  const save = (p: Record<string, unknown>) =>
+    as(adminId, () => rows("select public.save_promotion($1::jsonb) as id", [JSON.stringify(p)]));
+  const card = { name: "Día del Padre", slug: "dia-del-padre", show_card: true, items: [] };
+
+  it("guarda la imagen, la publica en la vista y vacía vuelve a la de por defecto (null)", async () => {
+    const [{ id }] = await save({ ...card, card_image: "https://cdn.example.com/fondo.webp" });
+    const [pub] = await as("anon", () => rows("select card_image from public.public_promotions where slug = 'dia-del-padre'"));
+    expect(pub.card_image).toBe("https://cdn.example.com/fondo.webp");
+
+    await save({ ...card, id, card_image: "" });
+    const [after] = await rows("select card_image from public.promotions where id = $1", [id]);
+    expect(after.card_image).toBeNull();
+  });
+
+  it("rechaza algo que no es una URL http(s)", async () => {
+    await expect(save({ ...card, slug: "promo-mala", card_image: "javascript:alert(1)" })).rejects.toThrow();
+  });
+});
+
+describe("web pública: tope de cantidad por stock", () => {
+  it("publica cuánto se puede sumar (entero, máx. 99) y null si no lleva stock", async () => {
+    await saveProduct(adminId, {
+      name: "Bombilla tope", slug: "bombilla-tope", option_names: ["Modelo"],
+      variants: [
+        { sku: "TOPE-POCO", attributes: { Modelo: "Pico" }, price: 5000, initial_stock: 3 },
+        { sku: "TOPE-MUCHO", attributes: { Modelo: "Resorte" }, price: 5000, initial_stock: 250 },
+        { sku: "TOPE-NADA", attributes: { Modelo: "Recta" }, price: 5000, initial_stock: 0 },
+      ],
+    });
+    await saveProduct(adminId, { name: "Grabado tope", slug: "grabado-tope", track_stock: false, variants: [{ sku: "TOPE-GRAB", price: 3000 }] });
+
+    const tope = async (slug: string) =>
+      (await as("anon", () =>
+        rows(
+          "select v.label, v.max_quantity from public.public_variants v join public.public_products p on p.id = v.product_id where p.slug = $1 order by v.label",
+          [slug],
+        ),
+      ));
+    expect(await tope("bombilla-tope")).toEqual([
+      { label: "Pico", max_quantity: 3 },
+      { label: "Recta", max_quantity: 0 },
+      { label: "Resorte", max_quantity: 99 },
+    ]);
+    expect(await tope("grabado-tope")).toEqual([{ label: "", max_quantity: null }]);
+  });
+});
+
+describe("shop facets", () => {
+  // Los productos de este bloque llevan "Facetado" en el nombre: las facetas se piden con q para no contar los de otros tests
+  let categoryA: string;
+  let categoryB: string;
+  const facets = async (filters: Row) =>
+    (await as("anon", () => rows("select public.shop_facets($1::jsonb) as f", [JSON.stringify({ q: "facetado", ...filters })])))[0].f;
+
+  beforeAll(async () => {
+    [{ id: categoryA }] = await rows("insert into public.categories (name, slug, sort_order) values ('Facetas A', 'facetas-a', 90) returning id");
+    [{ id: categoryB }] = await rows("insert into public.categories (name, slug, sort_order) values ('Facetas B', 'facetas-b', 91) returning id");
+    await saveProduct(adminId, {
+      name: "Termo Facetado Uno", slug: "termo-facetado-uno", brand: "Waterdog", category_id: categoryA, option_names: ["Color"],
+      variants: [
+        { sku: "FAC-1-ROJO", attributes: { Color: "Rojo" }, price: 30000, initial_stock: 0 },
+        { sku: "FAC-1-NEGRO", attributes: { Color: "Negro" }, price: 32000, initial_stock: 3 },
+      ],
+    });
+    await saveProduct(adminId, {
+      name: "Termo Facetado Dos", slug: "termo-facetado-dos", brand: "waterdog ", category_id: categoryB, option_names: ["Color"],
+      variants: [{ sku: "FAC-2-ROJO", attributes: { Color: "rojo" }, price: 10000, initial_stock: 2 }],
+    });
+    await saveProduct(adminId, {
+      name: "Mate Facetado", slug: "mate-facetado", brand: "El Mate", category_id: categoryB,
+      variants: [{ sku: "FAC-3", price: 5000, initial_stock: 1 }],
+    });
+    await saveProduct(adminId, {
+      name: "Bombilla Facetado", slug: "bombilla-facetado", category_id: categoryA,
+      variants: [{ sku: "FAC-4", price: 2000, initial_stock: 1 }],
+    });
+  });
+
+  it("web_key da lo mismo que slugify", async () => {
+    for (const text of ["El Mate", "Tamaño", "  Rojo  ", "Waterdog", "Ñandú Café", "a--b__c", "Ça va? ¡Sí!"]) {
+      const [r] = await rows("select public.web_key($1) as k", [text]);
+      expect(r.k, text).toBe(slugify(text));
+    }
+  });
+
+  it("public_products publica la clave de marca y las opciones (todas y con stock)", async () => {
+    const [p] = await as("anon", () =>
+      rows("select brand_key, option_tags, option_tags_in_stock from public.public_products where slug = 'termo-facetado-uno'"),
+    );
+    expect(p.brand_key).toBe("waterdog");
+    expect([...p.option_tags].sort()).toEqual(["color:negro", "color:rojo"]);
+    expect(p.option_tags_in_stock).toEqual(["color:negro"]);
+  });
+
+  it("cuenta cada faceta sin aplicar su propio filtro", async () => {
+    const f = await facets({ brands: ["waterdog"] });
+    expect(f.brands).toEqual([
+      { value: "Waterdog", key: "waterdog", count: 2 },
+      { value: "El Mate", key: "el-mate", count: 1 },
+    ]);
+    expect(f.categories).toEqual([
+      { slug: "facetas-a", name: "Facetas A", count: 1 },
+      { slug: "facetas-b", name: "Facetas B", count: 1 },
+    ]);
+    expect(f.options).toEqual([
+      { name: "Color", key: "color", values: [{ value: "Negro", key: "negro", count: 1 }, { value: "Rojo", key: "rojo", count: 2 }].sort((a, b) => b.count - a.count) },
+    ]);
+  });
+
+  it("no devuelve opciones en cero ni 'sin marca'", async () => {
+    const f = await facets({ category: "facetas-a" });
+    expect(f.brands).toEqual([{ value: "Waterdog", key: "waterdog", count: 1 }]);
+    for (const list of [f.brands, f.categories, ...f.options.map((o: Row) => o.values)]) {
+      for (const item of list) expect(item.count).toBeGreaterThan(0);
+    }
+  });
+
+  it("el rango de precio no se achica con el propio filtro de precio", async () => {
+    const all = await facets({});
+    expect(all.price).toEqual({ min: 2000, max: 30000 });
+    expect((await facets({ price_min: 9000 })).price).toEqual(all.price);
+    expect((await facets({ price_min: 9000 })).brands).toEqual([{ value: "Waterdog", key: "waterdog", count: 2 }]);
+  });
+
+  it("con 'en stock' las opciones cuentan solo variantes disponibles", async () => {
+    const f = await facets({ in_stock: true, options: { color: ["rojo"] } });
+    expect(f.options[0].values).toEqual([
+      { value: "Negro", key: "negro", count: 1 },
+      { value: "Rojo", key: "rojo", count: 1 },
+    ]);
+    expect(f.brands).toEqual([{ value: "Waterdog", key: "waterdog", count: 1 }]);
+    expect(f.in_stock).toBe(1);
+  });
+
+  it("filtra por ids (promo) y cuenta ofertas", async () => {
+    const [{ id }] = await rows("select id from public.products where slug = 'mate-facetado'");
+    const f = await facets({ ids: [id] });
+    expect(f.brands).toEqual([{ value: "El Mate", key: "el-mate", count: 1 }]);
+    expect(f.offers).toBe(0);
+  });
+});
+
+describe("tienda: productos con foto primero", () => {
+  it("public_products informa si el producto tiene foto", async () => {
+    await saveProduct(adminId, { name: "Con foto orden", slug: "con-foto-orden", images: ["https://example.com/a.webp"], variants: [{ sku: "ORD-FOTO", price: 1000 }] });
+    await saveProduct(adminId, { name: "Sin foto orden", slug: "sin-foto-orden", variants: [{ sku: "ORD-SIN", price: 1000 }] });
+    const rowsBySlug = await as("anon", () =>
+      rows("select slug, has_images from public.public_products where slug in ('con-foto-orden', 'sin-foto-orden') order by has_images desc, slug"),
+    );
+    expect(rowsBySlug).toEqual([
+      { slug: "con-foto-orden", has_images: true },
+      { slug: "sin-foto-orden", has_images: false },
+    ]);
+  });
+});
+
+describe("web editable desde Datos del local", () => {
+  it("la vista pública trae los textos de la home y el video de la portada", async () => {
+    await rows(`update public.store_settings set home_texts = '{"hero.text": "Texto del panel"}', hero_video = 'https://cdn.example.com/portada.mp4' where id = 1`);
+    const [s] = await as("anon", () => rows("select home_texts, hero_video from public.public_store_info"));
+    expect(s).toEqual({ home_texts: { "hero.text": "Texto del panel" }, hero_video: "https://cdn.example.com/portada.mp4" });
+    await expect(rows("update public.store_settings set hero_video = 'javascript:alert(1)' where id = 1")).rejects.toThrow();
+    await expect(rows("update public.store_settings set home_texts = '[]' where id = 1")).rejects.toThrow();
   });
 });

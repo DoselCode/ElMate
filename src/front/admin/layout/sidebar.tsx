@@ -1,11 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { ArrowsLeftRight, CashRegister, ChartLineUp, List, Package, Receipt, ShoppingCart, SignOut, Storefront, Tag, X } from "@phosphor-icons/react";
 import { signOutAction } from "@/back/admin/auth/actions";
 import { BrandLetters } from "@/front/landing/layout/brand-letters";
+import { clearPosDraft } from "@/front/admin/sales/pos-draft";
+import { saveSalesQuery, useSalesQuery } from "@/front/admin/sales/sales-last-query";
 import { STAGE_2 } from "@/shared/features";
 import type { Role } from "@/shared/types";
 
@@ -14,9 +17,10 @@ import type { Role } from "@/shared/types";
 const ALL_ITEMS = [
   { href: "/admin/ventas/nueva", label: "Nueva venta", icon: ShoppingCart, adminOnly: false, stage2: true },
   { href: "/admin/caja", label: "Caja", icon: CashRegister, adminOnly: false, stage2: true },
-  { href: "/admin/ventas", label: "Ventas", icon: Receipt, adminOnly: false, stage2: true },
-  { href: "/admin/stock", label: "Inventario y stock", icon: Package, adminOnly: false, stage2: false },
-  { href: "/admin/stock/movements", label: "Movimientos", icon: ArrowsLeftRight, adminOnly: false, stage2: false },
+  // El empleado solo ve Nueva venta y Caja (shared/roles.ts)
+  { href: "/admin/ventas", label: "Ventas", icon: Receipt, adminOnly: true, stage2: true },
+  { href: "/admin/stock", label: "Inventario y stock", icon: Package, adminOnly: true, stage2: false },
+  { href: "/admin/stock/movements", label: "Movimientos", icon: ArrowsLeftRight, adminOnly: true, stage2: false },
   { href: "/admin/promociones", label: "Promociones", icon: Tag, adminOnly: true, stage2: false },
   { href: "/admin/ingresos", label: "Ingresos", icon: ChartLineUp, adminOnly: true, stage2: true },
   { href: "/admin/local", label: "Datos del local", icon: Storefront, adminOnly: true, stage2: false },
@@ -53,10 +57,12 @@ function subscribe(listener: () => void) {
   };
 }
 
-export function Sidebar({ userName, role }: { userName: string; role: Role }) {
+export function Sidebar({ userName, role, logo }: { userName: string; role: Role; logo: string | null }) {
   const pathname = usePathname();
   // En el servidor y en la primera pintada el menú está desplegado; después se lee lo guardado
   const collapsed = useSyncExternalStore(subscribe, readCollapsed, () => false);
+  // "Ventas" vuelve a la lista con los últimos filtros usados en esta pestaña
+  const salesQuery = useSalesQuery();
   const items = ALL_ITEMS.filter((i) => (!i.adminOnly || role === "admin") && (!i.stage2 || STAGE_2));
 
   // /admin/stock es prefijo de /admin/stock/movements (y /admin/ventas de /nueva): el activo es el más específico
@@ -91,7 +97,13 @@ export function Sidebar({ userName, role }: { userName: string; role: Role }) {
             collapsed ? "size-11 p-1.5" : "size-12 p-2 lg:size-24 lg:p-3.5"
           }`}
         >
-          <BrandLetters fill="#1c1c1c" className="h-full w-auto" />
+          {logo ? (
+            <span className="relative block size-full">
+              <Image src={logo} alt="" fill sizes="96px" className="object-contain" />
+            </span>
+          ) : (
+            <BrandLetters fill="#1c1c1c" className="h-full w-auto" />
+          )}
         </div>
         <div className={`font-display text-lg leading-tight tracking-wide ${collapsed ? "lg:hidden" : ""}`}>
           El Mate
@@ -110,7 +122,7 @@ export function Sidebar({ userName, role }: { userName: string; role: Role }) {
           return (
             <Link
               key={href}
-              href={href}
+              href={href === "/admin/ventas" ? `${href}${salesQuery}` : href}
               aria-current={isActive ? "page" : undefined}
               title={collapsed ? label : undefined}
               className={`flex items-center gap-2.5 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors lg:gap-3 lg:py-3 ${
@@ -133,7 +145,14 @@ export function Sidebar({ userName, role }: { userName: string; role: Role }) {
           <p className="truncate text-sm font-semibold">{userName}</p>
           <p className="text-xs capitalize text-white/75">{role}</p>
         </div>
-        <form action={signOutAction}>
+        {/* Al salir se descartan la venta a medio cargar y los filtros recordados de esta pestaña */}
+        <form
+          action={signOutAction}
+          onSubmit={() => {
+            clearPosDraft();
+            saveSalesQuery("");
+          }}
+        >
           <button
             type="submit"
             aria-label="Cerrar sesión"

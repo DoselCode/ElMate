@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "./env";
 
 const LOGIN = "/admin/login";
-const HOME = "/admin/stock";
+/** /admin redirige a la pantalla de inicio de cada rol (app/admin/page.tsx). */
+const HOME = "/admin";
 
 /**
  * Lo ejecuta src/proxy.ts en cada navegación del panel: refresca la sesión de Supabase (cookies)
